@@ -1,5 +1,11 @@
 <template>
-  <canvas ref="canvas"></canvas>
+<div>
+    <input v-model="angleXW" type="range" min="-3.14" max="3.14" value="0" step="0.01">
+    <input v-model="angleYW" type="range" min="-3.14" max="3.14" value="0" step="0.01">
+    <input v-model="angleZW" type="range" min="-3.14" max="3.14" value="0" step="0.01">
+    <input v-model="translateW" type="range" min="-2" max="2" value="0" step="0.01">
+    <canvas ref="canvas"></canvas>
+</div>
 </template>
 
 <script>
@@ -10,7 +16,19 @@ let camera;
 let scene;
 let renderer;
 
+let clock = new THREE.Clock();
+let delta = 0;
+let interval = 1 / 60;
+
 export default {
+    data() {
+        return {
+            angleXW: 0.0,
+            angleYW: 0.0,
+            angleZW: 0.0,
+            translateW: 0.0,
+        }
+    },
     methods: {
         initThree() {
             const height = 800
@@ -39,6 +57,17 @@ export default {
 
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
             scene.add(ambientLight)
+        },
+        animate() {
+            delta += clock.getDelta();
+            if (delta  > interval) {
+                //updateTesseractProjection(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
+                updateTesseractIso(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
+                renderer.render(scene, camera)
+
+                delta = delta % interval;
+            }
+            requestAnimationFrame(this.animate);
         }
     },
     mounted() {
@@ -46,23 +75,8 @@ export default {
         initSpheres()
         initCylinders()
         //initEdges()
-        animate()
+        this.animate()
     }
-}
-
-let clock = new THREE.Clock();
-let delta = 0;
-let interval = 1 / 60;
-
-function animate() {
-    delta += clock.getDelta();
-    if (delta  > interval) {
-        updateTesseract()
-        renderer.render(scene, camera)
-
-        delta = delta % interval;
-    }
-    requestAnimationFrame(animate);
 }
 
 const multiplyMatrices = (a, b) => {
@@ -120,47 +134,59 @@ const cubePoints = [
 
 const cubeEdgeIndices = [
     // 3D cube
-    [0, 1],
-    [1, 2],
-    [2, 3],
-    [3, 0],
-    [4, 5],
-    [5, 6],
-    [6, 7],
-    [7, 4],
-    [3, 7],
-    [0, 4],
-    [2, 6],
-    [1, 5],
+    [0, 1], //0
+    [1, 2], //1
+    [2, 3], //2
+    [3, 0], //3
+    [4, 5], //4
+    [5, 6], //5
+    [6, 7], //6
+    [7, 4], //7
+    [3, 7], //8
+    [0, 4], //9
+    [2, 6], //10
+    [1, 5], //11
 
     // cube connectors
-    [0, 8],
-    [1, 9],
-    [2, 10],
-    [3, 11],
-    [4, 12],
-    [5, 13],
-    [6, 14],
-    [7, 15],
+    [0, 8], //12
+    [1, 9], //13
+    [2, 10], //14
+    [3, 11], //15
+    [4, 12], //16
+    [5, 13], //17
+    [6, 14], //18
+    [7, 15], //19
  
     // tessy cube
-    [8, 9],
-    [9, 10],
-    [10, 11],
-    [11, 8],
-    [12, 13],
-    [13, 14],
-    [14, 15],
-    [15, 12],
-    [11, 15],
-    [8, 12],
-    [10, 14],
-    [9, 13],
+    [8, 9], //20
+    [9, 10], //21
+    [10, 11], //22
+    [11, 8], //23
+    [12, 13], //24
+    [13, 14], //25
+    [14, 15], //26
+    [15, 12], //27
+    [11, 15], //28
+    [8, 12], //29
+    [10, 14], //30
+    [9, 13], //31
+]
+
+const edgeIndicesByCube = [
+    [0, 1, 2, 3, 9, 11, 10, 8, 4, 5, 6, 7], //outer
+    [0, 1, 2, 3, 12, 13, 14, 15, 20, 21, 22, 23], //left
+    [9, 7, 8, 3, 16, 19, 15, 12, 29, 27, 28, 23], //front
+    [0, 11, 4, 9, 12, 13, 17, 16, 20, 31, 24, 29], //bottom
+    [4, 5, 6, 7, 16, 17, 18, 19, 24, 25, 26, 27], //right
+    [11, 5, 10, 1, 13, 17, 18, 14, 31, 25, 30, 21], //back
+    [2, 8, 6, 10, 14, 15, 19, 18, 22, 28, 26, 20], //top
+    [20, 21, 22, 23, 29, 31, 30, 28, 24, 25, 26, 27], //inner
 ]
 
 const sphereRadius = 0.09
 const cylinderScaleFactor = 0.06
 const projectionDistance4D = 3
+const scaleFactor = 2
 let sphereMeshes = []
 let lineGeometries = []
 let linePointArrays = []
@@ -226,51 +252,62 @@ function initCylinders() {
     }
 }
 
-let angle = 0
-function updateTesseract() {
-    let finalPoints = []
-    for (let i = 0; i < cubePoints.length; i++){
-        let workingVector = vectorToMatrix(cubePoints[i]);
+function rotateCube4D(angleXW, angleYW, angleZW) {
+    const rotationXW = [
+        [Math.cos(angleXW), 0, 0, Math.sin(angleXW)],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+        [-Math.sin(angleXW), 0, 0, Math.cos(angleXW)]
+    ];
 
-        const scaleFactor = 2
+    const rotationYW = [
+        [1, 0, 0, 0],
+        [0, Math.cos(angleYW), 0, -1*Math.sin(angleYW)],
+        [0, 0, 1, 0],
+        [0, Math.sin(angleYW), 0, Math.cos(angleYW)]
+    ];
+
+    const rotationZW = [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, Math.cos(angleZW), -1*Math.sin(angleZW)],
+        [0, 0, Math.sin(angleZW), Math.cos(angleZW)]
+    ];
+
+    let m = multiplyMatrices(rotationXW, rotationYW)
+    m = multiplyMatrices(m, rotationZW)
+    
+    let points4d = []
+    for (let i = 0; i < cubePoints.length; i++){
+        let v = vectorToMatrix(cubePoints[i]);
+        v = multiplyMatrices(m, v);
+
+        // Turn matrices back to numbers
+        points4d.push([v[0][0], v[1][0], v[2][0], v[3][0]])
+    }
+
+    return points4d
+}
+
+
+function updateTesseractProjection(angleXW, angleYW, angleZW, translateW) {
+    let rotatedPoints = rotateCube4D(angleXW, angleYW, angleZW)
+    let finalPoints = []
+    for (let i = 0; i < rotatedPoints.length; i++){
+        let workingVector = vectorToMatrix(rotatedPoints[i]);
+
+        let w = 1 / (projectionDistance4D - workingVector[3][0]);
+        const projectionMatrix = [
+            [w, 0, 0, 0],
+            [0, w, 0, 0],
+            [0, 0, w, 0]
+        ];
+
         const scale = [
             [scaleFactor, 0, 0, 0],
             [0, scaleFactor, 0, 0],
             [0, 0, scaleFactor, 0],
             [0, 0, 0, scaleFactor]
-        ];
-
-        const rotationXW = [
-            [Math.cos(angle), 0, 0, Math.sin(angle)],
-            [0, 1, 0, 0],
-            [0, 0, 1, 0],
-            [-Math.sin(angle), 0, 0, Math.cos(angle)]
-        ];
-
-        const rotationYW = [
-            [1, 0, 0, 0],
-            [0, Math.cos(angle), 0, -1*Math.sin(angle)],
-            [0, 0, 1, 0],
-            [0, Math.sin(angle), 0, Math.cos(angle)]
-        ];
-
-        const rotationZW = [
-            [1, 0, 0, 0],
-            [0, 1, 0, 0],
-            [0, 0, Math.cos(angle), -1*Math.sin(angle)],
-            [0, 0, Math.sin(angle), Math.cos(angle)]
-        ];
-
-        workingVector = multiplyMatrices(rotationXW, workingVector);
-        //workingVector = multiplyMatrices(rotationYW, workingVector)
-        //workingVector = multiplyMatrices(rotationZW, workingVector)
-
-        let w = 1 / (projectionDistance4D - workingVector[3][0]);
-
-        const projectionMatrix = [
-            [w, 0, 0, 0],
-            [0, w, 0, 0],
-            [0, 0, w, 0]
         ];
 
         workingVector = multiplyMatrices(scale, workingVector)
@@ -282,14 +319,18 @@ function updateTesseract() {
         finalPoints[i] = [projected3d[0][0], projected3d[1][0], projected3d[2][0]]
     }
     drawPoints(finalPoints)
-    //drawEdges(finalPoints)
     drawCylinders(finalPoints)
-    angle += 0.01
 }
 
 function drawPoints(points) {
     for (let i = 0; i < sphereMeshes.length; i++){
-        sphereMeshes[i].position.set(points[i][0], points[i][1], points[i][2])
+        if (i < points.length) {
+            sphereMeshes[i].visible = true
+            sphereMeshes[i].position.set(points[i][0], points[i][1], points[i][2])
+        } else {
+            sphereMeshes[i].visible = false
+        }
+
     }
 }
 
@@ -453,6 +494,55 @@ function drawEdges(points) {
 
         lineGeometries[i].attributes.position.needsUpdate = true
     }
+}
+
+function updateTesseractIso(angleXW, angleYW, angleZW, translateW){
+    let rotatedPoints = rotateCube4D(angleXW, angleYW, angleZW)
+    let points4d = []
+    for (let i = 0; i < rotatedPoints.length; i++){
+        let workingVector = vectorToMatrix(rotatedPoints[i]);
+
+        // Turn matrices back to numbers
+        points4d.push([workingVector[0][0], workingVector[1][0], workingVector[2][0], workingVector[3][0] + translateW])
+    }
+    let points3d = getIntersectionPoints(points4d)
+    drawPoints(points3d)
+}
+
+function lerp(a, b, t) {
+    if (t == 0)
+        return a;
+    else if (t == 1)
+        return b;
+
+    return a * (1 - t) + b * t;
+}
+
+function getIntersectionPoint3D(greaterPoint, lesserPoint, wClip) {
+    let wDistance = greaterPoint[3] - lesserPoint[3]
+    let t = (greaterPoint[3] - wClip) / wDistance
+
+    return [lerp(greaterPoint[0], lesserPoint[0], t),
+            lerp(greaterPoint[1], lesserPoint[1], t),
+            lerp(greaterPoint[2], lesserPoint[2], t)]
+}
+
+function getIntersectionPoints(points4d) {
+    //get intersecting points for all edges
+    let wClip = 0.0
+    let intersectionPoints = []
+    for (let i = 0; i < cubeEdgeIndices.length; i++) {
+        let p1 = points4d[cubeEdgeIndices[i][0]]
+        let p2 = points4d[cubeEdgeIndices[i][1]]
+        
+        if (p1[3] >= wClip && p2[3] < wClip) {
+            intersectionPoints.push(getIntersectionPoint3D(p1, p2, wClip))
+        } else if (p2[3] >= wClip && p1[3] < wClip){
+            intersectionPoints.push(getIntersectionPoint3D(p2, p1, wClip))
+        }
+    }
+    return intersectionPoints
+    // go through faces and create duplicates of vertices
 }
 
 </script>

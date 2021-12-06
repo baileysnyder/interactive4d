@@ -72,8 +72,9 @@ export default {
     },
     mounted() {
         this.initThree()
-        initSpheres()
-        initCylinders()
+        //initSpheres()
+        //initCylinders()
+        initConvexShape()
         //initEdges()
         this.animate()
     }
@@ -132,7 +133,7 @@ const cubePoints = [
     [ 1,  1, -1,  1], //15
 ]
 
-const cubeEdgeIndices = [
+const edgeIndices = [
     // 3D cube
     [0, 1], //0
     [1, 2], //1
@@ -179,7 +180,7 @@ const edgeIndicesByCube = [
     [0, 11, 4, 9, 12, 13, 17, 16, 20, 31, 24, 29], //bottom
     [4, 5, 6, 7, 16, 17, 18, 19, 24, 25, 26, 27], //right
     [11, 5, 10, 1, 13, 17, 18, 14, 31, 25, 30, 21], //back
-    [2, 8, 6, 10, 14, 15, 19, 18, 22, 28, 26, 20], //top
+    [2, 8, 6, 10, 14, 15, 19, 18, 22, 28, 26, 30], //top
     [20, 21, 22, 23, 29, 31, 30, 28, 24, 25, 26, 27], //inner
 ]
 
@@ -191,6 +192,7 @@ let sphereMeshes = []
 let lineGeometries = []
 let linePointArrays = []
 let cylinderGeometries = []
+let convexGeometry;
 
 function initSpheres() {
     for (let i = 0; i < cubePoints.length; i++){
@@ -205,9 +207,9 @@ function initSpheres() {
 }
 
 function initEdges() {
-    for (let i = 0; i < cubeEdgeIndices.length; i++) {
-        const startIndex = cubeEdgeIndices[i][0]
-        const endIndex = cubeEdgeIndices[i][1]
+    for (let i = 0; i < edgeIndices.length; i++) {
+        const startIndex = edgeIndices[i][0]
+        const endIndex = edgeIndices[i][1]
 
         const material = new THREE.LineBasicMaterial( { color: 0xffffff})
 
@@ -232,7 +234,7 @@ function initEdges() {
 }
 
 function initCylinders() {
-    for (let i = 0; i < cubeEdgeIndices.length; i++){
+    for (let i = 0; i < edgeIndices.length; i++){
         const geometry = new THREE.CylinderGeometry(0.1, 0.1, 0.1, 16, 1, true)
         geometry.getAttribute('position').setUsage(THREE.DynamicDrawUsage)
         cylinderGeometries.push(geometry)
@@ -250,6 +252,22 @@ function initCylinders() {
         // }
         // console.log(vecarray)
     }
+}
+
+function initConvexShape() {
+    const geometry = new THREE.BufferGeometry()
+    const positionAttribute = new THREE.BufferAttribute(new Float32Array(0), 3)
+    positionAttribute.setUsage(THREE.DynamicDrawUsage)
+    geometry.setAttribute('position', positionAttribute)
+
+    convexGeometry = geometry
+
+    const material = new THREE.MeshStandardMaterial()
+    material.transparent = true
+    material.opacity = 0.75
+    material.side = THREE.DoubleSide
+    const mesh = new THREE.Mesh(geometry, material)
+    scene.add(mesh)
 }
 
 function rotateCube4D(angleXW, angleYW, angleZW) {
@@ -368,16 +386,20 @@ function subtractVectors(vDommy, vSub){
     return vNew
 }
 
-function normalizeVector(v) {
-    let distance = 0
+function getVectorMagnitude(v) {
+    let mag = 0
     for (let i = 0; i < v.length; i++) {
-        distance += v[i] * v[i]
+        mag += v[i] * v[i]
     }
-    distance = Math.sqrt(distance)
+    return Math.sqrt(mag)
+}
 
-    if (distance > 0) {
+function normalizeVector(v) {
+    let mag = getVectorMagnitude(v)
+
+    if (mag > 0) {
         for (let i = 0; i < v.length; i++) {
-            v[i] = v[i] / distance        
+            v[i] = v[i] / mag
         }
     }
 }
@@ -412,9 +434,9 @@ function crossProduct(v, u) {
 }
 
 function drawCylinders(points) {
-    for (let i = 0; i < cubeEdgeIndices.length; i++) {
-        let endpoint1 = points[cubeEdgeIndices[i][0]]
-        let endpoint2 = points[cubeEdgeIndices[i][1]]
+    for (let i = 0; i < edgeIndices.length; i++) {
+        let endpoint1 = points[edgeIndices[i][0]]
+        let endpoint2 = points[edgeIndices[i][1]]
 
         // This axis used for cylinder height
         let xAxis = subtractVectors(endpoint2, endpoint1)
@@ -484,8 +506,8 @@ function drawCylinders(points) {
 
 function drawEdges(points) {
     for (let i = 0; i < lineGeometries.length; i++) {
-        const startIndex = cubeEdgeIndices[i][0]
-        const endIndex = cubeEdgeIndices[i][1]
+        const startIndex = edgeIndices[i][0]
+        const endIndex = edgeIndices[i][1]
 
         for (let j = 0; j < 3; j++) {
             linePointArrays[i][j] = points[startIndex][j]
@@ -494,6 +516,29 @@ function drawEdges(points) {
 
         lineGeometries[i].attributes.position.needsUpdate = true
     }
+}
+
+function addVectorInplace(u, v) {
+    for (let i = 0; i < u.length; i++) {
+        u[i] += v[i]   
+    }
+}
+
+function scaleVectorInplace(u, scalar) {
+    for (let i = 0; i < u.length; i++) {
+        u[i] = u[i]*scalar
+    }
+}
+
+function dotProduct(u, v) {
+    if (u.length !== v.length) {
+        throw new Error('Dot product vectors must be the same length')
+    }
+    let dot = 0
+    for (let i = 0; i < u.length; i++) {
+        dot += u[i] * v[i]
+    }
+    return dot;
 }
 
 function updateTesseractIso(angleXW, angleYW, angleZW, translateW){
@@ -505,8 +550,8 @@ function updateTesseractIso(angleXW, angleYW, angleZW, translateW){
         // Turn matrices back to numbers
         points4d.push([workingVector[0][0], workingVector[1][0], workingVector[2][0], workingVector[3][0] + translateW])
     }
-    let points3d = getIntersectionPoints(points4d)
-    drawPoints(points3d)
+    let faceGeometry = getIntersectionPointsByCube(points4d)
+    drawFaces(faceGeometry)
 }
 
 function lerp(a, b, t) {
@@ -527,22 +572,171 @@ function getIntersectionPoint3D(greaterPoint, lesserPoint, wClip) {
             lerp(greaterPoint[2], lesserPoint[2], t)]
 }
 
-function getIntersectionPoints(points4d) {
-    //get intersecting points for all edges
+class FaceGeometry {
+    constructor(origin, pointsByFace) {
+        this.origin = origin
+        this.pointsByFace = pointsByFace
+    }
+}
+
+function getCenterOfPoints(points) {
+    let centerPoint = [0, 0, 0]
+    for (let i = 0; i < points.length; i++) {
+        addVectorInplace(centerPoint, points[i])
+    }
+    scaleVectorInplace(centerPoint, 1/points.length)
+    return centerPoint
+}
+
+function getIntersectionPointsByCube(points4d) {
     let wClip = 0.0
-    let intersectionPoints = []
-    for (let i = 0; i < cubeEdgeIndices.length; i++) {
-        let p1 = points4d[cubeEdgeIndices[i][0]]
-        let p2 = points4d[cubeEdgeIndices[i][1]]
+    let intersectionPoints = {} // edge index is key, point is value
+    for (let i = 0; i < edgeIndices.length; i++) {
+        let p1 = points4d[edgeIndices[i][0]]
+        let p2 = points4d[edgeIndices[i][1]]
         
         if (p1[3] >= wClip && p2[3] < wClip) {
-            intersectionPoints.push(getIntersectionPoint3D(p1, p2, wClip))
+            intersectionPoints[i] = getIntersectionPoint3D(p1, p2, wClip)
         } else if (p2[3] >= wClip && p1[3] < wClip){
-            intersectionPoints.push(getIntersectionPoint3D(p2, p1, wClip))
+            intersectionPoints[i] = getIntersectionPoint3D(p2, p1, wClip)
         }
     }
-    return intersectionPoints
-    // go through faces and create duplicates of vertices
+
+    let arr = Object.values(intersectionPoints)
+    let centerPoint = getCenterOfPoints(arr)
+
+    // Each tesseract cube will make up 0 or 1 faces of the final 3D object
+    let pointsByCube = []
+    for (let i = 0; i < edgeIndicesByCube.length; i++) {
+        let pointsThisCube = []
+        for (let j = 0; j < edgeIndicesByCube[i].length; j++) {
+            let edgeIndex = edgeIndicesByCube[i][j]
+
+            if (intersectionPoints[edgeIndex]) {
+                pointsThisCube.push(intersectionPoints[edgeIndex])
+            }
+        }
+
+        if (pointsThisCube.length > 2) {
+            pointsByCube.push(pointsThisCube)
+        }
+    }
+
+    return new FaceGeometry(centerPoint, pointsByCube)
+}
+
+// angleStartDirection should be perpendicular to u
+function calcAngleBetweenVectors(u, v, angleStartDirection) {
+    let dot = dotProduct(u, v)
+    let uMag = getVectorMagnitude(u)
+    let vMag = getVectorMagnitude(v)
+
+    let cosTheta = dot / (uMag * vMag)
+    let angle = Math.acos(cosTheta)
+
+    if (dotProduct(v, angleStartDirection) < 0) {
+        angle = (2*Math.PI) - angle
+    }
+    return angle
+}
+
+function swap(arr, xp, yp)
+{
+    var temp = arr[xp];
+    arr[xp] = arr[yp];
+    arr[yp] = temp;
+}
+
+function bubbleSortBoth(compareArray, otherArray) {
+    if (compareArray.length !== otherArray.length) {
+        throw new Error('Compare and other array must be same length')
+    }
+
+    for (let i = 0; i < compareArray.length-1; i++) {
+        for (let j = 0; j < compareArray.length-i-1; j++) {
+            if (compareArray[j] > compareArray[j+1]) {
+                swap(compareArray,j,j+1);
+                swap(otherArray,j,j+1);
+            }
+        }
+    }
+}
+
+function drawFaces(faceGeometry) {
+    let pointsByFace = faceGeometry.pointsByFace
+    if (pointsByFace.length < 1) {
+        return;
+    }
+
+    let positions = []
+    let normals = []
+
+
+    for (let i = 0; i < pointsByFace.length; i++) {
+        if (pointsByFace[i].length < 3) {
+            continue;
+        }
+        
+        // Choose 3 random points from face to calculate a normal vector direction
+        let p1 = pointsByFace[i][0]
+        let p2 = pointsByFace[i][1]
+        let p3 = pointsByFace[i][2]
+
+        let normal = crossProduct(subtractVectors(p2, p1), subtractVectors(p3, p1))
+        normalizeVector(normal)
+
+        // Check if normal is flipped
+        let p1FromOrigin = subtractVectors(p1, faceGeometry.origin)
+        normalizeVector(p1FromOrigin)
+
+        if (dotProduct(p1FromOrigin, normal) < 0) {
+            scaleVectorInplace(normal, -1)
+        }
+
+        let theta0Vector = getArbitraryPerpendicularVector(normal)
+        normalizeVector(theta0Vector)
+        let angleStartDirection = crossProduct(normal, theta0Vector)
+        normalizeVector(angleStartDirection)
+
+        let faceCenter = getCenterOfPoints(pointsByFace[i])
+
+        let angles = []
+        for (let j = 0; j < pointsByFace[i].length; j++) {
+            let v = subtractVectors(pointsByFace[i][j], faceCenter)
+            angles.push(calcAngleBetweenVectors(theta0Vector, v, angleStartDirection)) 
+        }
+
+        bubbleSortBoth(angles, pointsByFace[i])
+        let faceVertices = getFaceVertices(pointsByFace[i])
+
+        positions.push(...faceVertices)
+        for (let k = 0; k < faceVertices.length/3; k++) {
+            normals.push(...normal)            
+        }
+    }
+
+    const positionAttribute = new THREE.BufferAttribute(new Float32Array(positions), 3)
+    const normalAttribute = new THREE.BufferAttribute(new Float32Array(normals), 3)
+    //positionAttribute.setUsage(THREE.DynamicDrawUsage)
+    //normalAttribute.setUsage(THREE.DynamicDrawUsage)
+
+    convexGeometry.setAttribute('position', positionAttribute)
+    convexGeometry.setAttribute('normal', normalAttribute)
+    //convexGeometry.computeVertexNormals()
+
+
+}
+
+function getFaceVertices(sortedPoints) {
+    let  trianglePoints = []
+    while (sortedPoints.length > 2) {
+        trianglePoints.push(...sortedPoints[0])
+        trianglePoints.push(...sortedPoints[1])
+        trianglePoints.push(...sortedPoints[2])
+        
+        sortedPoints.splice(1, 1)
+    }
+    return trianglePoints
 }
 
 </script>

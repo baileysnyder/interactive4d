@@ -1,9 +1,9 @@
 <template>
 <div>
-    <input v-model="angleXW" type="range" min="-3.14" max="3.14" value="0" step="0.01">
-    <input v-model="angleYW" type="range" min="-3.14" max="3.14" value="0" step="0.01">
-    <input v-model="angleZW" type="range" min="-3.14" max="3.14" value="0" step="0.01">
-    <input v-model="translateW" type="range" min="-2" max="2" value="0" step="0.01">
+    <input v-model="angleXW" type="range" min="-3.14" max="3.14" value="0" step="0.001" style="margin-left: 25px;">
+    <input v-model="angleYW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
+    <input v-model="angleZW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
+    <input v-model="translateW" type="range" min="-2" max="2" value="0" step="0.001">
     <canvas ref="canvas"></canvas>
 </div>
 </template>
@@ -11,6 +11,9 @@
 <script>
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
+import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
+import { Line2 } from 'three/examples/jsm/lines/Line2.js';
 
 let camera;
 let scene;
@@ -31,7 +34,7 @@ export default {
     },
     methods: {
         initThree() {
-            const height = 800
+            const height = 600
             const width = 600
 
             const canvas = this.$refs.canvas
@@ -63,6 +66,7 @@ export default {
             if (delta  > interval) {
                 //updateTesseractProjection(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
                 updateTesseractIso(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
+                renderer.clearDepth()
                 renderer.render(scene, camera)
 
                 delta = delta % interval;
@@ -75,6 +79,7 @@ export default {
         //initSpheres()
         //initCylinders()
         initConvexShape()
+        initConvexEdges()
         //initEdges()
         this.animate()
     }
@@ -190,6 +195,7 @@ const projectionDistance4D = 3
 const scaleFactor = 2
 let sphereMeshes = []
 let lineGeometries = []
+let lineObjects = []
 let linePointArrays = []
 let cylinderGeometries = []
 let convexGeometry;
@@ -264,10 +270,62 @@ function initConvexShape() {
 
     const material = new THREE.MeshStandardMaterial()
     material.transparent = true
-    material.opacity = 0.75
-    material.side = THREE.DoubleSide
+    material.opacity = 0.97
+    material.color = new THREE.Color(0xFFEE56)
+    //material.side = THREE.DoubleSide
+    //material.blending = THREE.CustomBlending
+    //material.blendEquation = THREE.SubtractEquation
     const mesh = new THREE.Mesh(geometry, material)
     scene.add(mesh)
+}
+
+function initConvexEdges() {
+    for (let i = 0; i < 48; i++) {
+        // const material = new THREE.LineBasicMaterial( { color: 0x000000})
+
+        const geoPoints = new Float32Array(6)
+        for (let j = 0; j < geoPoints.length; j++) {
+            geoPoints[j] = j + (i%2)
+        }
+        linePointArrays.push(geoPoints)
+
+
+        // const geometry = new THREE.BufferGeometry()
+        // const positionAttribute = new THREE.BufferAttribute(geoPoints, 3)
+        // positionAttribute.setUsage(THREE.DynamicDrawUsage)
+        // geometry.setAttribute('position', positionAttribute)
+
+        const geometry = new LineGeometry();
+		geometry.setPositions( geoPoints );
+
+        // const line = new THREE.Line(geometry, material)
+        // line.visible = false
+
+        // scene.add(line)
+        // lineGeometries.push(geometry)
+        // lineObjects.push(line)
+
+        //const geometry = new MeshLine(geometry1)
+        //geometry.setPoints(geoPoints)
+
+        const material = new LineMaterial({
+            linewidth: 5.5,
+            color: 0xffffff,
+        })
+        material.resolution.set(600, 600)
+
+        let line = new Line2( geometry, material );
+        //line.computeLineDistances();
+        //line.scale.set( 1, 1, 1 );
+        scene.add( line );
+
+        //const mesh = new THREE.Mesh(geometry, material)
+        //mesh.visible = false
+        //scene.add(mesh)
+
+        lineGeometries.push(geometry)
+        lineObjects.push(line)
+    }
 }
 
 function rotateCube4D(angleXW, angleYW, angleZW) {
@@ -550,7 +608,8 @@ function updateTesseractIso(angleXW, angleYW, angleZW, translateW){
         // Turn matrices back to numbers
         points4d.push([workingVector[0][0], workingVector[1][0], workingVector[2][0], workingVector[3][0] + translateW])
     }
-    let faceGeometry = getIntersectionPointsByCube(points4d)
+    let intersectionPoints = getIntersectionPoints(points4d)
+    let faceGeometry = separatePointsByCube(intersectionPoints)
     drawFaces(faceGeometry)
 }
 
@@ -563,7 +622,7 @@ function lerp(a, b, t) {
     return a * (1 - t) + b * t;
 }
 
-function getIntersectionPoint3D(greaterPoint, lesserPoint, wClip) {
+function getIntersectionPoint(greaterPoint, lesserPoint, wClip) {
     let wDistance = greaterPoint[3] - lesserPoint[3]
     let t = (greaterPoint[3] - wClip) / wDistance
 
@@ -588,7 +647,7 @@ function getCenterOfPoints(points) {
     return centerPoint
 }
 
-function getIntersectionPointsByCube(points4d) {
+function getIntersectionPoints(points4d) {
     let wClip = 0.0
     let intersectionPoints = {} // edge index is key, point is value
     for (let i = 0; i < edgeIndices.length; i++) {
@@ -596,12 +655,15 @@ function getIntersectionPointsByCube(points4d) {
         let p2 = points4d[edgeIndices[i][1]]
         
         if (p1[3] >= wClip && p2[3] < wClip) {
-            intersectionPoints[i] = getIntersectionPoint3D(p1, p2, wClip)
+            intersectionPoints[i] = getIntersectionPoint(p1, p2, wClip)
         } else if (p2[3] >= wClip && p1[3] < wClip){
-            intersectionPoints[i] = getIntersectionPoint3D(p2, p1, wClip)
+            intersectionPoints[i] = getIntersectionPoint(p2, p1, wClip)
         }
     }
+    return intersectionPoints
+}
 
+function separatePointsByCube(intersectionPoints) {
     let arr = Object.values(intersectionPoints)
     let centerPoint = getCenterOfPoints(arr)
 
@@ -664,13 +726,26 @@ function bubbleSortBoth(compareArray, otherArray) {
 
 function drawFaces(faceGeometry) {
     let pointsByFace = faceGeometry.pointsByFace
-    if (pointsByFace.length < 1) {
-        return;
-    }
 
     let positions = []
     let normals = []
 
+    let edgeIndex = 0
+
+    function drawEdgesForFace(sortedFacePoints) {
+        let scale = 1
+        for (let i = 0; i < sortedFacePoints.length; i++) {
+            let endIndex = i == sortedFacePoints.length-1 ? 0 : i+1
+            for (let j = 0; j < 3; j++) {         
+                linePointArrays[edgeIndex][j] = sortedFacePoints[i][j] * scale
+                linePointArrays[edgeIndex][j+3] = sortedFacePoints[endIndex][j] * scale
+            }
+            lineObjects[edgeIndex].visible = true
+            lineGeometries[edgeIndex].setPositions(linePointArrays[edgeIndex])
+            lineGeometries[edgeIndex].attributes.position.needsUpdate = true
+            edgeIndex++
+        }
+    }
 
     for (let i = 0; i < pointsByFace.length; i++) {
         if (pointsByFace[i].length < 3) {
@@ -707,6 +782,7 @@ function drawFaces(faceGeometry) {
         }
 
         bubbleSortBoth(angles, pointsByFace[i])
+        drawEdgesForFace(pointsByFace[i])
         let faceVertices = getFaceVertices(pointsByFace[i])
 
         positions.push(...faceVertices)
@@ -724,8 +800,12 @@ function drawFaces(faceGeometry) {
     convexGeometry.setAttribute('normal', normalAttribute)
     //convexGeometry.computeVertexNormals()
 
-
+    for (let i = edgeIndex; i < lineObjects.length; i++) {
+        lineObjects[i].visible = false        
+    }
 }
+
+
 
 function getFaceVertices(sortedPoints) {
     let  trianglePoints = []

@@ -12,6 +12,5 @@
     "core-js": "^3.15.1",
     "nuxt": "^2.15.7",
     "three": "^0.134.0"
-  },
-  "devDependencies": {}
+  }
 }

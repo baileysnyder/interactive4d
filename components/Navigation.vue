@@ -1,11 +1,11 @@
 <template>
-  <div>
-      <NuxtLink to="/">SANDBOX</NuxtLink>
-      <NuxtLink to="/2d-flatland">2D FLATLAND</NuxtLink>
-      <NuxtLink to="/">2D SLICES</NuxtLink>
-      <NuxtLink to="/">3D FUN</NuxtLink>
-      <NuxtLink to="/">4D SLICES</NuxtLink>
-      <NuxtLink to="/">4D PROJECTION</NuxtLink>
+  <div id="wrapper">
+      <NuxtLink to="/" class="navlink">SANDBOX</NuxtLink>
+      <NuxtLink to="/2d-flatland" class="navlink">2D FLATLAND</NuxtLink>
+      <NuxtLink to="/" class="navlink">2D SLICES</NuxtLink>
+      <NuxtLink to="/" class="navlink">3D FUN</NuxtLink>
+      <NuxtLink to="/" class="navlink">4D SLICES</NuxtLink>
+      <NuxtLink to="/" class="navlink">4D PROJECTION</NuxtLink>
   </div>
 </template>
 
@@ -15,6 +15,8 @@ export default {
 }
 </script>
 
-<style>
-
+<style scoped>
+.navlink {
+  display: block;
+}
 </style>

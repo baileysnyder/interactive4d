@@ -1,10 +1,14 @@
 <template>
 <div>
-    <input v-model="angleXW" type="range" min="-3.14" max="3.14" value="0" step="0.001" style="margin-left: 25px;">
-    <input v-model="angleYW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
-    <input v-model="angleZW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
-    <input v-model="translateW" type="range" min="-2" max="2" value="0" step="0.001">
-    <canvas ref="canvas"></canvas>
+    <div id="three-container">
+        <canvas ref="canvas"></canvas>
+        <div id="three-overlay">
+            <input v-model="angleXW" type="range" min="-3.14" max="3.14" value="0" step="0.001" style="margin-left: 25px;">
+            <input v-model="angleYW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
+            <input v-model="angleZW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
+            <input v-model="translateW" type="range" min="-2" max="2" value="0" step="0.001">
+        </div>
+    </div>
 </div>
 </template>
 
@@ -32,11 +36,25 @@ export default {
             translateW: 0.0,
         }
     },
+    props: {
+        canvasSize: Object,
+    },
+    watch: {
+        canvasSize: {
+            handler: function(newD, oldD) {
+                let width = newD.width
+                let height = newD.height
+
+                camera.aspect = width / height
+                camera.updateProjectionMatrix()
+                renderer.setSize(width, height)
+            }
+        }
+    },
     methods: {
         initThree() {
-            const height = 600
-            const width = 600
-
+            let width = this.canvasSize.width
+            let height = this.canvasSize.height
             const canvas = this.$refs.canvas
             scene = new THREE.Scene()
 
@@ -66,7 +84,7 @@ export default {
             if (delta  > interval) {
                 //updateTesseractProjection(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
                 updateTesseractIso(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
-                renderer.clearDepth()
+                //renderer.clearDepth()
                 renderer.render(scene, camera)
 
                 delta = delta % interval;
@@ -822,5 +840,11 @@ function getFaceVertices(sortedPoints) {
 </script>
 
 <style>
+#three-container {
+  position: relative;
+}
+#three-container canvas, #three-overlay {
+  position: absolute;
+}
 
 </style>

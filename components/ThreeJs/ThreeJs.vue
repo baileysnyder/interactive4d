@@ -3,6 +3,8 @@
     <div id="three-container">
         <canvas ref="canvas"></canvas>
         <div id="three-overlay">
+            <button @click="initProjectionHypercube">Projection</button>
+            <button @click="initConvexHypercube">Isometric</button>
             <input v-model="angleXW" type="range" min="-3.14" max="3.14" value="0" step="0.001" style="margin-left: 25px;">
             <input v-model="angleYW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
             <input v-model="angleZW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
@@ -34,6 +36,11 @@ export default {
             angleYW: 0.0,
             angleZW: 0.0,
             translateW: 0.0,
+            displayObject: undefined,
+            displayObjects: {
+                convexHypercube: 0,
+                projectionHypercube: 1
+            }
         }
     },
     props: {
@@ -82,23 +89,42 @@ export default {
         animate() {
             delta += clock.getDelta();
             if (delta  > interval) {
-                //updateTesseractProjection(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
-                updateTesseractIso(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
+                switch (this.displayObject) {
+                    case (this.displayObjects.convexHypercube):
+                        updateTesseractIso(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
+                        break;
+                    case (this.displayObjects.projectionHypercube):
+                        updateTesseractProjection(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
+                        break;
+                }
+                
                 //renderer.clearDepth()
                 renderer.render(scene, camera)
 
                 delta = delta % interval;
             }
             requestAnimationFrame(this.animate);
+        },
+        initConvexHypercube() {
+            undoAllInits()
+
+            initConvexShape()
+            initConvexEdges()
+
+            this.displayObject = this.displayObjects.convexHypercube
+        },
+        initProjectionHypercube() {
+            undoAllInits()
+
+            initSpheres()
+            initCylinders()
+
+            this.displayObject = this.displayObjects.projectionHypercube
         }
     },
     mounted() {
         this.initThree()
-        //initSpheres()
-        //initCylinders()
-        initConvexShape()
-        initConvexEdges()
-        //initEdges()
+        this.initConvexHypercube()
         this.animate()
     }
 }
@@ -211,12 +237,37 @@ const sphereRadius = 0.09
 const cylinderScaleFactor = 0.06
 const projectionDistance4D = 3
 const scaleFactor = 2
+
 let sphereMeshes = []
-let lineGeometries = []
-let lineObjects = []
-let linePointArrays = []
 let cylinderGeometries = []
-let convexGeometry;
+let cylinderMeshes = []
+let lineGeometries = []
+let linePointArrays = []
+let lineMeshes = []
+let convexGeometry = undefined
+let convexMesh = undefined
+
+function removeAllFromScene(arr) {
+    arr.forEach(e => {
+        scene.remove(e)
+    });
+}
+
+function undoAllInits() {
+    removeAllFromScene(sphereMeshes)
+    removeAllFromScene(cylinderMeshes)
+    removeAllFromScene(lineMeshes)
+    scene.remove(convexMesh)
+
+    sphereMeshes = []
+    cylinderGeometries = []
+    cylinderMeshes = []
+    lineMeshes = []
+    lineGeometries = []
+    linePointArrays = []
+    convexGeometry = undefined
+    convexMesh = undefined
+}
 
 function initSpheres() {
     for (let i = 0; i < cubePoints.length; i++){
@@ -230,33 +281,6 @@ function initSpheres() {
     }
 }
 
-function initEdges() {
-    for (let i = 0; i < edgeIndices.length; i++) {
-        const startIndex = edgeIndices[i][0]
-        const endIndex = edgeIndices[i][1]
-
-        const material = new THREE.LineBasicMaterial( { color: 0xffffff})
-
-        const geoPoints = new Float32Array(6)
-        for (let j = 0; j < 3; j++) {
-            geoPoints[j] = cubePoints[startIndex][j]
-            geoPoints[j+3] = cubePoints[endIndex][j]
-        }
-        linePointArrays.push(geoPoints)
-
-
-        const geometry = new THREE.BufferGeometry()
-        const positionAttribute = new THREE.BufferAttribute(geoPoints, 3)
-        positionAttribute.setUsage(THREE.DynamicDrawUsage)
-        geometry.setAttribute('position', positionAttribute)
-
-        const line = new THREE.Line(geometry, material)
-
-        scene.add(line)
-        lineGeometries.push(geometry)
-    }
-}
-
 function initCylinders() {
     for (let i = 0; i < edgeIndices.length; i++){
         const geometry = new THREE.CylinderGeometry(0.1, 0.1, 0.1, 16, 1, true)
@@ -267,6 +291,7 @@ function initCylinders() {
         const mesh = new THREE.Mesh(geometry, material)
 
         scene.add(mesh)
+        cylinderMeshes.push(mesh)
 
         // let vecarray = []
         // let arr = geometry.getAttribute('position').array
@@ -295,36 +320,19 @@ function initConvexShape() {
     //material.blendEquation = THREE.SubtractEquation
     const mesh = new THREE.Mesh(geometry, material)
     scene.add(mesh)
+    convexMesh = mesh
 }
 
 function initConvexEdges() {
     for (let i = 0; i < 48; i++) {
-        // const material = new THREE.LineBasicMaterial( { color: 0x000000})
-
         const geoPoints = new Float32Array(6)
         for (let j = 0; j < geoPoints.length; j++) {
             geoPoints[j] = j + (i%2)
         }
         linePointArrays.push(geoPoints)
 
-
-        // const geometry = new THREE.BufferGeometry()
-        // const positionAttribute = new THREE.BufferAttribute(geoPoints, 3)
-        // positionAttribute.setUsage(THREE.DynamicDrawUsage)
-        // geometry.setAttribute('position', positionAttribute)
-
         const geometry = new LineGeometry();
 		geometry.setPositions( geoPoints );
-
-        // const line = new THREE.Line(geometry, material)
-        // line.visible = false
-
-        // scene.add(line)
-        // lineGeometries.push(geometry)
-        // lineObjects.push(line)
-
-        //const geometry = new MeshLine(geometry1)
-        //geometry.setPoints(geoPoints)
 
         const material = new LineMaterial({
             linewidth: 5.5,
@@ -333,16 +341,10 @@ function initConvexEdges() {
         material.resolution.set(600, 600)
 
         let line = new Line2( geometry, material );
-        //line.computeLineDistances();
-        //line.scale.set( 1, 1, 1 );
         scene.add( line );
 
-        //const mesh = new THREE.Mesh(geometry, material)
-        //mesh.visible = false
-        //scene.add(mesh)
-
         lineGeometries.push(geometry)
-        lineObjects.push(line)
+        lineMeshes.push(line)
     }
 }
 
@@ -552,30 +554,43 @@ function drawCylinders(points) {
             [0, 0, 0, 1],
         ]
 
-        let m1 = multiplyMatrices(translation1, rotation)
-        m1 = multiplyMatrices(m1, scale)
-        
-        let m2 = multiplyMatrices(translation2, rotation)
-        m2 = multiplyMatrices(m2, scale)
+        let m1 = multiplyMatrices(translation1, scale)        
+        let m2 = multiplyMatrices(translation2, scale)
 
         let vArray = cylinderGeometries[i].getAttribute('position').array
-        for (let j = 0; j < baseCirclePoints.length; j++) {          
-            let v = vectorToMatrix([...baseCirclePoints[j], 1])
-            v = multiplyMatrices(m1, v)
+        let nArray = cylinderGeometries[i].getAttribute('normal').array
+
+        let rotatedPoints = []
+        for (let j = 0; j < baseCirclePoints.length; j++) {
+            let r = vectorToMatrix([...baseCirclePoints[j], 1])
+            r = multiplyMatrices(rotation, r)
+            rotatedPoints.push(r)
+
+            let v = multiplyMatrices(m1, r)
             vArray[j*3] = v[0][0]
             vArray[j*3 + 1] = v[1][0]
             vArray[j*3 + 2] = v[2][0]
+
+            let n = [r[0][0], r[1][0], r[2][0]]
+            normalizeVector(n)
+            nArray[j*3] = n[0]
+            nArray[j*3 + 1] = n[1]
+            nArray[j*3 + 2] = n[2]
         }
 
         let startIndex =  (vArray.length / 2)
         for (let j = 0; j < baseCirclePoints.length; j++) {
-            let v = vectorToMatrix([...baseCirclePoints[j], 1])
-            v = multiplyMatrices(m2, v)
+            let v = multiplyMatrices(m2, rotatedPoints[j])
             vArray[startIndex + (j*3)] = v[0][0]
             vArray[startIndex + (j*3) + 1] = v[1][0]
             vArray[startIndex + (j*3) + 2] = v[2][0]
+
+            nArray[startIndex + (j*3)] = nArray[j*3]
+            nArray[startIndex + (j*3) + 1] = nArray[j*3 + 1]
+            nArray[startIndex + (j*3) + 2] = nArray[j*3 + 2]
         }
-        cylinderGeometries[i].computeVertexNormals()
+
+        cylinderGeometries[i].attributes.normal.needsUpdate = true
         cylinderGeometries[i].attributes.position.needsUpdate = true
     }
 }
@@ -758,7 +773,7 @@ function drawFaces(faceGeometry) {
                 linePointArrays[edgeIndex][j] = sortedFacePoints[i][j] * scale
                 linePointArrays[edgeIndex][j+3] = sortedFacePoints[endIndex][j] * scale
             }
-            lineObjects[edgeIndex].visible = true
+            lineMeshes[edgeIndex].visible = true
             lineGeometries[edgeIndex].setPositions(linePointArrays[edgeIndex])
             lineGeometries[edgeIndex].attributes.position.needsUpdate = true
             edgeIndex++
@@ -818,8 +833,8 @@ function drawFaces(faceGeometry) {
     convexGeometry.setAttribute('normal', normalAttribute)
     //convexGeometry.computeVertexNormals()
 
-    for (let i = edgeIndex; i < lineObjects.length; i++) {
-        lineObjects[i].visible = false        
+    for (let i = edgeIndex; i < lineMeshes.length; i++) {
+        lineMeshes[i].visible = false        
     }
 }
 

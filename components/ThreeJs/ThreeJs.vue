@@ -40,23 +40,34 @@ export default {
             displayObjects: {
                 convexHypercube: 0,
                 projectionHypercube: 1
-            }
+            },
+            objectNeedsUpdate: false
         }
     },
     props: {
         canvasSize: Object,
     },
     watch: {
-        canvasSize: {
-            handler: function(newD, oldD) {
-                let width = newD.width
-                let height = newD.height
+        canvasSize: function(newD, oldD) {
+            let width = newD.width
+            let height = newD.height
 
-                camera.aspect = width / height
-                camera.updateProjectionMatrix()
-                renderer.setSize(width, height)
-            }
-        }
+            camera.aspect = width / height
+            camera.updateProjectionMatrix()
+            renderer.setSize(width, height)
+        },
+        angleXW: function() {
+            this.objectNeedsUpdate = true
+        },
+        angleYW: function() {
+            this.objectNeedsUpdate = true
+        },
+        angleZW: function() {
+            this.objectNeedsUpdate = true
+        },
+        translateW: function() {
+            this.objectNeedsUpdate = true
+        },
     },
     methods: {
         initThree() {
@@ -89,15 +100,18 @@ export default {
         animate() {
             delta += clock.getDelta();
             if (delta  > interval) {
-                switch (this.displayObject) {
-                    case (this.displayObjects.convexHypercube):
-                        updateTesseractIso(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
-                        break;
-                    case (this.displayObjects.projectionHypercube):
-                        updateTesseractProjection(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
-                        break;
+                if (this.objectNeedsUpdate) {
+                    switch (this.displayObject) {
+                        case (this.displayObjects.convexHypercube):
+                            updateTesseractIso(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
+                            break;
+                        case (this.displayObjects.projectionHypercube):
+                            updateTesseractProjection(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
+                            break;
+                    }
+                    this.objectNeedsUpdate = false
                 }
-                
+               
                 //renderer.clearDepth()
                 renderer.render(scene, camera)
 
@@ -112,6 +126,7 @@ export default {
             initConvexEdges()
 
             this.displayObject = this.displayObjects.convexHypercube
+            this.objectNeedsUpdate = true
         },
         initProjectionHypercube() {
             undoAllInits()
@@ -120,6 +135,7 @@ export default {
             initCylinders()
 
             this.displayObject = this.displayObjects.projectionHypercube
+            this.objectNeedsUpdate = true
         }
     },
     mounted() {
@@ -324,10 +340,10 @@ function initConvexShape() {
 }
 
 function initConvexEdges() {
-    for (let i = 0; i < 48; i++) {
+    for (let i = 0; i < 18; i++) {
         const geoPoints = new Float32Array(6)
         for (let j = 0; j < geoPoints.length; j++) {
-            geoPoints[j] = j + (i%2)
+            geoPoints[j] = 0
         }
         linePointArrays.push(geoPoints)
 
@@ -426,7 +442,6 @@ function drawPoints(points) {
         } else {
             sphereMeshes[i].visible = false
         }
-
     }
 }
 
@@ -638,7 +653,7 @@ function updateTesseractIso(angleXW, angleYW, angleZW, translateW){
     for (let i = 0; i < rotatedPoints.length; i++){
         let workingVector = vectorToMatrix(rotatedPoints[i]);
 
-        // Turn matrices back to numbers
+        // Translate and turn matrices back to numbers
         points4d.push([workingVector[0][0], workingVector[1][0], workingVector[2][0], workingVector[3][0] + translateW])
     }
     let intersectionPoints = getIntersectionPoints(points4d)
@@ -668,6 +683,13 @@ class FaceGeometry {
     constructor(origin, pointsByFace) {
         this.origin = origin
         this.pointsByFace = pointsByFace
+    }
+}
+
+class IntersectionPoint {
+    constructor(point, edgeIndex) {
+        this.point = point
+        this.edgeIndex = edgeIndex
     }
 }
 
@@ -708,7 +730,7 @@ function separatePointsByCube(intersectionPoints) {
             let edgeIndex = edgeIndicesByCube[i][j]
 
             if (intersectionPoints[edgeIndex]) {
-                pointsThisCube.push(intersectionPoints[edgeIndex])
+                pointsThisCube.push(new IntersectionPoint(intersectionPoints[edgeIndex], edgeIndex))
             }
         }
 
@@ -720,8 +742,8 @@ function separatePointsByCube(intersectionPoints) {
     return new FaceGeometry(centerPoint, pointsByCube)
 }
 
-// angleStartDirection should be perpendicular to u
-function calcAngleBetweenVectors(u, v, angleStartDirection) {
+// posAngleVector should be perpendicular to u
+function calcAngleBetweenVectors(u, v, posAngleVector) {
     let dot = dotProduct(u, v)
     let uMag = getVectorMagnitude(u)
     let vMag = getVectorMagnitude(v)
@@ -729,17 +751,16 @@ function calcAngleBetweenVectors(u, v, angleStartDirection) {
     let cosTheta = dot / (uMag * vMag)
     let angle = Math.acos(cosTheta)
 
-    if (dotProduct(v, angleStartDirection) < 0) {
+    if (dotProduct(v, posAngleVector) < 0) {
         angle = (2*Math.PI) - angle
     }
     return angle
 }
 
-function swap(arr, xp, yp)
-{
-    var temp = arr[xp];
-    arr[xp] = arr[yp];
-    arr[yp] = temp;
+function swap(arr, x, y) {
+    let temp = arr[x];
+    arr[x] = arr[y];
+    arr[y] = temp;
 }
 
 function bubbleSortBoth(compareArray, otherArray) {
@@ -758,20 +779,45 @@ function bubbleSortBoth(compareArray, otherArray) {
 }
 
 function drawFaces(faceGeometry) {
-    let pointsByFace = faceGeometry.pointsByFace
+    function sortFacePoints(facePoints, normal) {
+        let theta0Vector = getArbitraryPerpendicularVector(normal)
+        normalizeVector(theta0Vector)
+        let posAngleVector = crossProduct(normal, theta0Vector)
+        normalizeVector(posAngleVector)
 
-    let positions = []
-    let normals = []
+        let faceCenter = getCenterOfPoints(facePoints.map(ip => ip.point))
 
+        let angles = []
+        for (let i = 0; i < facePoints.length; i++) {
+            let v = subtractVectors(facePoints[i].point, faceCenter)
+            angles.push(calcAngleBetweenVectors(theta0Vector, v, posAngleVector)) 
+        }
+
+        bubbleSortBoth(angles, facePoints)
+    }
+
+    let edgePointPairs = []
+    for (let i = 0; i < edgeIndices.length; i++) {
+        edgePointPairs.push([])
+        
+    }
     let edgeIndex = 0
-
     function drawEdgesForFace(sortedFacePoints) {
         let scale = 1
         for (let i = 0; i < sortedFacePoints.length; i++) {
             let endIndex = i == sortedFacePoints.length-1 ? 0 : i+1
+            // avoid duplicate lines
+            // there's only ever 3 lines coming from 1 point so keeping in arrays is fine for performance
+            if (edgePointPairs[sortedFacePoints[i].edgeIndex].includes(sortedFacePoints[endIndex].edgeIndex)) {
+                continue;
+            } else {
+                edgePointPairs[sortedFacePoints[i].edgeIndex].push(sortedFacePoints[endIndex].edgeIndex)
+                edgePointPairs[sortedFacePoints[endIndex].edgeIndex].push(sortedFacePoints[i].edgeIndex)
+            }
+
             for (let j = 0; j < 3; j++) {         
-                linePointArrays[edgeIndex][j] = sortedFacePoints[i][j] * scale
-                linePointArrays[edgeIndex][j+3] = sortedFacePoints[endIndex][j] * scale
+                linePointArrays[edgeIndex][j] = sortedFacePoints[i].point[j] * scale
+                linePointArrays[edgeIndex][j+3] = sortedFacePoints[endIndex].point[j] * scale
             }
             lineMeshes[edgeIndex].visible = true
             lineGeometries[edgeIndex].setPositions(linePointArrays[edgeIndex])
@@ -780,15 +826,20 @@ function drawFaces(faceGeometry) {
         }
     }
 
+    let pointsByFace = faceGeometry.pointsByFace
+    let positions = []
+    let normals = []
+
     for (let i = 0; i < pointsByFace.length; i++) {
         if (pointsByFace[i].length < 3) {
-            continue;
+            console.error('Cannot make a face with less than 3 points')
+            continue
         }
         
         // Choose 3 random points from face to calculate a normal vector direction
-        let p1 = pointsByFace[i][0]
-        let p2 = pointsByFace[i][1]
-        let p3 = pointsByFace[i][2]
+        let p1 = pointsByFace[i][0].point
+        let p2 = pointsByFace[i][1].point
+        let p3 = pointsByFace[i][2].point
 
         let normal = crossProduct(subtractVectors(p2, p1), subtractVectors(p3, p1))
         normalizeVector(normal)
@@ -801,28 +852,18 @@ function drawFaces(faceGeometry) {
             scaleVectorInplace(normal, -1)
         }
 
-        let theta0Vector = getArbitraryPerpendicularVector(normal)
-        normalizeVector(theta0Vector)
-        let angleStartDirection = crossProduct(normal, theta0Vector)
-        normalizeVector(angleStartDirection)
+        sortFacePoints(pointsByFace[i], normal)
 
-        let faceCenter = getCenterOfPoints(pointsByFace[i])
-
-        let angles = []
-        for (let j = 0; j < pointsByFace[i].length; j++) {
-            let v = subtractVectors(pointsByFace[i][j], faceCenter)
-            angles.push(calcAngleBetweenVectors(theta0Vector, v, angleStartDirection)) 
-        }
-
-        bubbleSortBoth(angles, pointsByFace[i])
         drawEdgesForFace(pointsByFace[i])
-        let faceVertices = getFaceVertices(pointsByFace[i])
+        let faceVertices = getFaceVertices(pointsByFace[i].map(ip => ip.point))
 
         positions.push(...faceVertices)
         for (let k = 0; k < faceVertices.length/3; k++) {
             normals.push(...normal)            
         }
     }
+
+
 
     const positionAttribute = new THREE.BufferAttribute(new Float32Array(positions), 3)
     const normalAttribute = new THREE.BufferAttribute(new Float32Array(normals), 3)

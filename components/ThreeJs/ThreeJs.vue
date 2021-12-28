@@ -3,12 +3,33 @@
     <div id="three-container">
         <canvas ref="canvas"></canvas>
         <div id="three-overlay">
-            <button @click="initProjectionHypercube">Projection</button>
-            <button @click="initConvexHypercube">Isometric</button>
-            <input v-model="angleXW" type="range" min="-3.14" max="3.14" value="0" step="0.001" style="margin-left: 25px;">
-            <input v-model="angleYW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
-            <input v-model="angleZW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
-            <input v-model="translateW" type="range" min="-2" max="2" value="0" step="0.001">
+            <div class="top-right sticky-box">
+                <button @click="initProjectionHypercube">Projection</button>
+                <button @click="initConvexHypercube">Isometric</button>
+            </div>
+            <div class="bottom-right sticky-box">
+                <div class="slider">
+                    <label for="angleXW">XW</label>
+                    <input id="angleXW" v-model="angleXW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
+                    <input type="text" size="4">
+                </div>
+                <div class="slider">
+                    <label for="angleYW">YW</label>
+                    <input id="angleYW" v-model="angleYW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
+                    <input type="text" size="4">
+                </div>
+                <div class="slider">
+                    <label for="angleZW">ZW</label>
+                    <input id="angleZW" v-model="angleZW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
+                    <input type="text" size="4">
+                </div>
+                <div class="slider">
+                    <label for="translateW">W</label>
+                    <input id="translateW" v-model="translateW" type="range" min="-2" max="2" value="0" step="0.01">
+                    <input type="text" size="4">
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
@@ -55,6 +76,13 @@ export default {
             camera.aspect = width / height
             camera.updateProjectionMatrix()
             renderer.setSize(width, height)
+
+            if (lineMaterials && lineMaterials.length > 0) {
+                for (let i = 0; i < lineMaterials.length; i++) {
+                    lineMaterials[i].resolution.set(width, height)
+                    
+                }
+            }
         },
         angleXW: function() {
             this.objectNeedsUpdate = true
@@ -123,7 +151,7 @@ export default {
             undoAllInits()
 
             initConvexShape()
-            initConvexEdges()
+            initConvexEdges(this.canvasSize.width, this.canvasSize.height)
 
             this.displayObject = this.displayObjects.convexHypercube
             this.objectNeedsUpdate = true
@@ -258,6 +286,7 @@ let sphereMeshes = []
 let cylinderGeometries = []
 let cylinderMeshes = []
 let lineGeometries = []
+let lineMaterials = []
 let linePointArrays = []
 let lineMeshes = []
 let convexGeometry = undefined
@@ -273,12 +302,14 @@ function undoAllInits() {
     removeAllFromScene(sphereMeshes)
     removeAllFromScene(cylinderMeshes)
     removeAllFromScene(lineMeshes)
+    removeAllFromScene(lineMaterials)
     scene.remove(convexMesh)
 
     sphereMeshes = []
     cylinderGeometries = []
     cylinderMeshes = []
     lineMeshes = []
+    lineMaterials = []
     lineGeometries = []
     linePointArrays = []
     convexGeometry = undefined
@@ -339,7 +370,7 @@ function initConvexShape() {
     convexMesh = mesh
 }
 
-function initConvexEdges() {
+function initConvexEdges(canvasWidth, canvasHeight) {
     for (let i = 0; i < 18; i++) {
         const geoPoints = new Float32Array(6)
         for (let j = 0; j < geoPoints.length; j++) {
@@ -354,12 +385,13 @@ function initConvexEdges() {
             linewidth: 5.5,
             color: 0xffffff,
         })
-        material.resolution.set(600, 600)
+        material.resolution.set(canvasWidth, canvasHeight)
 
         let line = new Line2( geometry, material );
         scene.add( line );
 
         lineGeometries.push(geometry)
+        lineMaterials.push(material)
         lineMeshes.push(line)
     }
 }
@@ -898,9 +930,41 @@ function getFaceVertices(sortedPoints) {
 <style>
 #three-container {
   position: relative;
+  width: 100%;
+  height: 100%;
 }
 #three-container canvas, #three-overlay {
   position: absolute;
+}
+
+#three-overlay {
+    width:100%;
+    height:100%;
+    pointer-events: none;
+}
+
+.top-right {
+    position: absolute;
+    right: 0;
+}
+
+.bottom-right {
+    position: absolute;
+    right: 0;
+    bottom: 0;
+}
+
+.sticky-box {
+    padding: 4px;
+    pointer-events: auto;
+}
+
+.slider {
+    text-align: right;
+}
+
+label {
+    color: white;
 }
 
 </style>

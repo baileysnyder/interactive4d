@@ -6,6 +6,7 @@
             <div class="top-right sticky-box">
                 <button @click="initProjectionHypercube">Projection</button>
                 <button @click="initConvexHypercube">Isometric</button>
+                <button @click="initSphere">Sphere</button>
             </div>
             <div class="bottom-right sticky-box">
                 <div class="slider">
@@ -60,7 +61,8 @@ export default {
             displayObject: undefined,
             displayObjects: {
                 convexHypercube: 0,
-                projectionHypercube: 1
+                projectionHypercube: 1,
+                hypersphere: 2,
             },
             objectNeedsUpdate: false
         }
@@ -132,10 +134,13 @@ export default {
                     switch (this.displayObject) {
                         case (this.displayObjects.convexHypercube):
                             updateTesseractIso(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
-                            break;
+                            break
                         case (this.displayObjects.projectionHypercube):
                             updateTesseractProjection(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
-                            break;
+                            break
+                        case (this.displayObjects.hypersphere):
+                            updateHypersphere(parseFloat(this.translateW))
+                            break
                     }
                     this.objectNeedsUpdate = false
                 }
@@ -163,6 +168,14 @@ export default {
             initCylinders()
 
             this.displayObject = this.displayObjects.projectionHypercube
+            this.objectNeedsUpdate = true
+        },
+        initSphere() {
+            undoAllInits()
+
+            initHypersphere()
+
+            this.displayObject = this.displayObjects.hypersphere
             this.objectNeedsUpdate = true
         }
     },
@@ -277,10 +290,11 @@ const edgeIndicesByCube = [
     [20, 21, 22, 23, 29, 31, 30, 28, 24, 25, 26, 27], //inner
 ]
 
-const sphereRadius = 0.09
+const projectionSphereRadius = 0.09
 const cylinderScaleFactor = 0.06
 const projectionDistance4D = 3
 const scaleFactor = 2
+const hypersphereRadius = 1.5
 
 let sphereMeshes = []
 let cylinderGeometries = []
@@ -291,6 +305,7 @@ let linePointArrays = []
 let lineMeshes = []
 let convexGeometry = undefined
 let convexMesh = undefined
+let hypersphereMesh = undefined
 
 function removeAllFromScene(arr) {
     arr.forEach(e => {
@@ -304,6 +319,7 @@ function undoAllInits() {
     removeAllFromScene(lineMeshes)
     removeAllFromScene(lineMaterials)
     scene.remove(convexMesh)
+    scene.remove(hypersphereMesh)
 
     sphereMeshes = []
     cylinderGeometries = []
@@ -314,11 +330,12 @@ function undoAllInits() {
     linePointArrays = []
     convexGeometry = undefined
     convexMesh = undefined
+    hypersphereMesh = undefined
 }
 
 function initSpheres() {
     for (let i = 0; i < cubePoints.length; i++){
-        const geometry = new THREE.SphereGeometry(sphereRadius)
+        const geometry = new THREE.SphereGeometry(projectionSphereRadius)
         const material = new THREE.MeshStandardMaterial()
 
         const mesh = new THREE.Mesh(geometry, material)
@@ -394,6 +411,16 @@ function initConvexEdges(canvasWidth, canvasHeight) {
         lineMaterials.push(material)
         lineMeshes.push(line)
     }
+}
+
+function initHypersphere() {
+    const geometry = new THREE.SphereGeometry(hypersphereRadius, 64, 32)
+    const material = new THREE.MeshStandardMaterial()
+
+    const mesh = new THREE.Mesh(geometry, material)
+
+    scene.add(mesh)
+    hypersphereMesh = mesh
 }
 
 function rotateCube4D(angleXW, angleYW, angleZW) {
@@ -923,6 +950,23 @@ function getFaceVertices(sortedPoints) {
         sortedPoints.splice(1, 1)
     }
     return trianglePoints
+}
+
+function updateHypersphere(translateW) {
+    let radius = getSphereIntersectionRadius(hypersphereRadius, Math.abs(translateW))
+    let scale = radius / hypersphereRadius
+
+    hypersphereMesh.scale.x = scale;
+    hypersphereMesh.scale.y = scale;
+    hypersphereMesh.scale.z = scale;
+}
+
+function getSphereIntersectionRadius(parentRadius, distance) {
+    if (distance >= parentRadius) {
+        return 0
+    }
+
+    return Math.sqrt((parentRadius*parentRadius) - (distance*distance))
 }
 
 </script>

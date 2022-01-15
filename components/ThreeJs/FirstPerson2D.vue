@@ -1,5 +1,8 @@
 <template>
-  <p>There is so much text to write about 2D. It is soo flat.</p>
+    <div>
+        <canvas></canvas>
+        <p>It's 2D</p>
+    </div>
 </template>
 
 <script>

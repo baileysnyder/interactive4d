@@ -81,8 +81,7 @@ export default {
 
             if (lineMaterials && lineMaterials.length > 0) {
                 for (let i = 0; i < lineMaterials.length; i++) {
-                    lineMaterials[i].resolution.set(width, height)
-                    
+                    lineMaterials[i].resolution.set(width, height)                   
                 }
             }
         },

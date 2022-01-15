@@ -1,45 +1,107 @@
 <template>
-<div>
+<div ref="topContainer">
     <h1>Interactive 4D Visualizer</h1>
     <h2>From Flatland to the Fourth Dimension</h2>
-    <div id="main" :style="{'width': mainWidth + 'px', 'height': mainHeight + 'px'}">
-        <nuxt />
+    <div id="main-content" :style="{'width': mainWidth + 'px', 'height': mainHeight + 'px'}">
+          <div class="wrapper" ref="wrapper">
+            <Interactive ref="interactive" class="resizable-box interactive-box" :canvasSize="{width: interactiveWidth, height: interactiveHeight}" :style="{'width': interactiveWidth + 'px'}" />
+            <div @mousedown="onMousedownHandler" class="handler" ></div>
+            <nuxt ref="article" class="resizable-box article-box"/>
+        </div>
     </div>
-    <Navigation id="navigation"/>
+    <Navigation ref="navigation" id="navigation"/>
     <p>Donate</p>
 </div>
 </template>
 
 <script>
 import Navigation from '../components/Navigation'
+import Interactive from '../components/ThreeJs/Interactive'
+
+const navigationWidth = 170
+const headerFooterHeight = 200
+const minInteractiveWidth = 0.2
 
 export default {
     components: {
-        Navigation
+        Navigation,
+        Interactive
     },
     data() {
         return {
-            mainWidth: window.innerWidth - 150,
-            mainHeight: window.innerHeight - 200
+            mainWidth: window.innerWidth - navigationWidth,
+            mainHeight: window.innerHeight - headerFooterHeight,
+
+            isHandlerDragging: false,
+            interactiveWidth: (window.innerWidth - navigationWidth) / 2,
+            interactiveHeight: window.innerHeight - headerFooterHeight,
         }
     },
     mounted() {
         window.addEventListener('resize', this.onResize)
-    },
-    methods: {
-        onResize() {
-            this.mainWidth = window.innerWidth - 150
-            this.mainHeight = window.innerHeight - 200
 
-            let emit = {
-                width: this.mainWidth,
-                height: this.mainHeight
+        const vueContext = this
+        const interactive = this.$refs.interactive.$el
+        const topContainer = this.$refs.topContainer
+        const wrapper = this.$refs.wrapper
+        document.addEventListener('mouseup', function(e) {
+            vueContext.isHandlerDragging = false
+
+            //interactive.removeEventListener('mousemove', preventEvent)
+            //article.removeEventListener('mousemove', preventEvent)
+            topContainer.removeEventListener('mousemove', preventEvent)
+        })
+
+        document.addEventListener('mousemove', function(e) {
+            // Don't do anything if dragging flag is false
+            if (!vueContext.isHandlerDragging) {
+                return false
             }
 
-            $nuxt.$emit('resize-main-container', emit)
+            // Get offset
+            let containerOffsetLeft = wrapper.offsetLeft
+
+            // Get x-coordinate of pointer relative to container
+            let pointerRelativeXpos = e.clientX - containerOffsetLeft
+            
+            // Arbitrary minimum width set on box A, otherwise its inner content will collapse to width of 0
+            let minWidth = vueContext.mainWidth * minInteractiveWidth
+            let maxWidth = vueContext.mainWidth - minWidth
+
+            // Resize box A
+            // * 8px is the left/right spacing between .handler and its inner pseudo-element
+            let width = pointerRelativeXpos - 8
+            if (width < minWidth) {
+                width = minWidth
+            } else if (width > maxWidth) {
+                width = maxWidth
+            }
+
+            interactive.style.width = width + 'px'
+            vueContext.interactiveWidth = width
+        })
+    },
+    methods: {
+        onMousedownHandler(e) {
+            this.isHandlerDragging = true
+            const topContainter = this.$refs.topContainer
+
+            topContainter.addEventListener('mousemove', preventEvent)
+        },
+        onResize() {
+            this.mainWidth = window.innerWidth - navigationWidth
+            this.mainHeight = window.innerHeight - headerFooterHeight
+
+            this.interactiveWidth = this.mainWidth / 2
+            this.interactiveHeight = this.mainHeight
         }
     }
 }
+
+let preventEvent = function(e) {
+    e.preventDefault()
+}
+
 </script>
 
 <style scoped>
@@ -52,7 +114,7 @@ h2 {
     font-style: italic;
 }
 
-#main {
+#main-content {
     display: inline-block;
 }
 
@@ -61,5 +123,46 @@ h2 {
     vertical-align: top;
     position: fixed;
     padding-left: 10px;
+}
+
+.wrapper {
+  display:flex;
+  height: 100%;
+}
+
+.resizable-box {
+  box-sizing: border-box;
+}
+
+.interactive-box {
+  flex: 0 0 auto;
+}
+
+.article-box {
+    display: flex;
+    flex-flow: column;
+    flex: 1 1 auto;
+}
+
+.handler {
+  width: 20px;
+  padding: 0;
+  cursor: ew-resize;
+  flex: 0 0 auto;
+}
+
+.handler::before {
+  content: '';
+  display: block;
+  width: 4px;
+  height: 100%;
+  background: rgb(37, 37, 37);
+  margin: 0 auto;
+}
+</style>
+
+<style>
+.article-header {
+    text-align: center;
 }
 </style>

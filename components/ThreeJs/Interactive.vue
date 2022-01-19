@@ -1,7 +1,7 @@
 <template>
 <div>
     <div v-show="componentToDisplay === 'Placeholder'" class="placeholder resizable" :style="{'width': canvasSize.width + 'px'}"></div>
-    <FirstPerson2D v-show="componentToDisplay === 'FirstPerson2D'" />
+    <FirstPerson2D v-show="componentToDisplay === 'FirstPerson2D'" :canvasSize="canvasSize"/>
     <ThreeJs v-show="componentToDisplay === 'ThreeJs'" ref="threejs" class="resizable" :canvasSize="canvasSize" :style="{'width': canvasSize.width + 'px'}" />
 </div>
 </template>

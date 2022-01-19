@@ -46,9 +46,6 @@ export default {
         const wrapper = this.$refs.wrapper
         document.addEventListener('mouseup', function(e) {
             vueContext.isHandlerDragging = false
-
-            //interactive.removeEventListener('mousemove', preventEvent)
-            //article.removeEventListener('mousemove', preventEvent)
             topContainer.removeEventListener('mousemove', preventEvent)
         })
 

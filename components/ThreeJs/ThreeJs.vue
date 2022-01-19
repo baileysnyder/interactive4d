@@ -30,7 +30,6 @@
                     <input type="text" size="4">
                 </div>
             </div>
-
         </div>
     </div>
 </div>
@@ -128,7 +127,7 @@ export default {
         },
         animate() {
             delta += clock.getDelta();
-            if (delta  > interval) {
+            if (delta > interval) {
                 if (this.objectNeedsUpdate) {
                     switch (this.displayObject) {
                         case (this.displayObjects.convexHypercube):

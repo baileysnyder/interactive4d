@@ -172,6 +172,7 @@ export default {
             undoAllInits()
 
             initHypersphere()
+            this.translateW = 0
 
             this.displayObject = this.displayObjects.hypersphere
             this.objectNeedsUpdate = true

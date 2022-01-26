@@ -116,6 +116,13 @@ class Line {
         }
         return this.vector
     }
+
+    getPerpendicularVector() {
+        if (!this.perpendicularVector) {
+            this.perpendicularVector = [this.getVector()[1], -this.getVector()[0]]
+        }
+        return this.perpendicularVector
+    }
 }
 
 let pressedUp = false
@@ -138,7 +145,7 @@ const gameHeight = 100
 
 const viewingAngle = Math.PI/2
 const viewDistance = 50
-const projDistance = 1
+const projDistance = 0.5
 
 function createLines(points, maxColor, minColor) {
     let lines = []
@@ -156,88 +163,123 @@ function createColor(r, g, b) {
 }
 
 const minColorRatio = 13
-function calcMinColor(color, minColorRatio) {
-    return createColor(color.r/minColorRatio, color.g/minColorRatio, color.b/minColorRatio)
+function calcMinColor(color, ratio) {
+    return createColor(color.r/ratio, color.g/ratio, color.b/ratio)
 }
 
-const squarePoints = [
-    [20, 20],
-    [50, 20],
-    [50, 50],
-    [20, 50],
-]
-const sqaureColor = createColor(255, 238, 86)
-const squareLines = createLines(squarePoints, sqaureColor, calcMinColor(sqaureColor, minColorRatio))
+let squareLines
+let lineObject
+let triangleLines
+let circleLines
+let wallLines
 
-const lineObject = new Line(60, 78, 90, 70)
-const lineColor = createColor(20, 228, 243)
-lineObject.setColors(lineColor, calcMinColor(lineColor, minColorRatio))
+const circleRadius = 17
+const circleCenter = [120, 33]
+const collisionWidth = 2
+const circleColliderR = circleRadius+collisionWidth
+let squareCollider
+let triangleCollider
+let lineColliderR // storing it rotated to do less math on collision check
 
-const trianglePoints = [
-    [145, 80],
-    [160, 59],
-    [175, 80],
-]
-const triangleColor = createColor(243, 20, 20)
-const triangleLines = createLines(trianglePoints, triangleColor, calcMinColor(triangleColor, 10))
-
-const circleCenterX = 120
-const circleCenterY = 30
-const circleRadius = 18
-// points calculated from unit circle
-let circlePoints = [
-    [1.0, 0.0],
-    [0.9807852804032304, 0.19509032201612825],
-    [0.9238795325112867, 0.3826834323650898],
-    [0.8314696123025452, 0.5555702330196022],
-    [0.7071067811865476, 0.7071067811865476],
-    [0.5555702330196023, 0.8314696123025452],
-    [0.38268343236508984, 0.9238795325112867],
-    [0.19509032201612833, 0.9807852804032304],
-    [0, 1.0],
-    [-0.1950903220161282, 0.9807852804032304],
-    [-0.3826834323650897, 0.9238795325112867],
-    [-0.555570233019602, 0.8314696123025453],
-    [-0.7071067811865475, 0.7071067811865476],
-    [-0.8314696123025453, 0.5555702330196022],
-    [-0.9238795325112867, 0.3826834323650899],
-    [-0.9807852804032304, 0.1950903220161286],
-    [-1.0, 0],
-    [-0.9807852804032304, -0.19509032201612836],
-    [-0.9238795325112868, -0.38268343236508967],
-    [-0.8314696123025455, -0.555570233019602],
-    [-0.7071067811865477, -0.7071067811865475],
-    [-0.5555702330196022, -0.8314696123025452],
-    [-0.38268343236509034, -0.9238795325112865],
-    [-0.19509032201612866, -0.9807852804032303],
-    [0, -1.0],
-    [0.1950903220161283, -0.9807852804032304],
-    [0.38268343236509, -0.9238795325112866],
-    [0.5555702330196018, -0.8314696123025455],
-    [0.7071067811865474, -0.7071067811865477],
-    [0.8314696123025452, -0.5555702330196022],
-    [0.9238795325112865, -0.3826834323650904],
-    [0.9807852804032303, -0.19509032201612872],
-]
-
-for (let i = 0; i < circlePoints.length; i++) {
-    circlePoints[i][0] = circlePoints[i][0]*circleRadius + circleCenterX
-    circlePoints[i][1] = circlePoints[i][1]*circleRadius + circleCenterY   
-}
-
-const circleColor = createColor(20, 243, 20)
-const circleLines = createLines(circlePoints, circleColor, calcMinColor(circleColor, minColorRatio))
-
-const wallPoints = [
-    [0, 0],
-    [gameWidth-1, 0],
-    [gameWidth-1, gameHeight-1],
-    [0, gameHeight-1]
-]
-const wallColor = createColor(100, 100, 100)
-const wallLines = createLines(wallPoints, wallColor, calcMinColor(wallColor, minColorRatio))
-
+initShapes()
 const allLines = squareLines.concat(triangleLines).concat(lineObject).concat(circleLines).concat(wallLines)
+
+function initShapes() {
+    const squarePoints = [
+        [20, 22],
+        [50, 22],
+        [50, 52],
+        [20, 52],
+    ]
+    const sqaureColor = createColor(255, 238, 86)
+    squareLines = createLines(squarePoints, sqaureColor, calcMinColor(sqaureColor, minColorRatio))
+    squareCollider = {
+        minX: squarePoints[0][0]-collisionWidth,
+        maxX: squarePoints[1][0]+collisionWidth,
+        minY: squarePoints[0][1]-collisionWidth,
+        maxY: squarePoints[2][1]+collisionWidth
+    }
+
+    lineObject = new Line(60, 74, 90, 66)
+    const lineColor = createColor(20, 228, 243)
+    lineObject.setColors(lineColor, calcMinColor(lineColor, minColorRatio))
+    const lineCollisionWidth = 1.5
+    lineColliderR = {
+        minX: 0,
+        maxX: lineObject.getMagnitude(),
+        minY: -lineCollisionWidth/2,
+        maxY: lineCollisionWidth/2
+    }
+
+    const tLineLen = 30
+    const tLineHalfLen = tLineLen/2
+    const tStart = [150, 82]
+    const trianglePoints = [
+        [tStart[0], tStart[1]],
+        [tStart[0]+tLineHalfLen, tStart[1] - Math.sqrt(tLineLen*tLineLen - tLineHalfLen*tLineHalfLen)], //pythagorean
+        [tStart[0]+tLineLen, tStart[1]],
+    ]
+    const triangleColor = createColor(243, 20, 20)
+    triangleLines = createLines(trianglePoints, triangleColor, calcMinColor(triangleColor, 10))
+    triangleCollider = {
+        minX: trianglePoints[0][0]-collisionWidth,
+        maxX: trianglePoints[2][0]+collisionWidth,
+        minY: trianglePoints[1][1]-collisionWidth,
+        maxY: trianglePoints[0][1]+collisionWidth
+    }
+
+    // points calculated from unit circle
+    let circlePoints = [
+        [1.0, 0.0],
+        [0.9807852804032304, 0.19509032201612825],
+        [0.9238795325112867, 0.3826834323650898],
+        [0.8314696123025452, 0.5555702330196022],
+        [0.7071067811865476, 0.7071067811865476],
+        [0.5555702330196023, 0.8314696123025452],
+        [0.38268343236508984, 0.9238795325112867],
+        [0.19509032201612833, 0.9807852804032304],
+        [0, 1.0],
+        [-0.1950903220161282, 0.9807852804032304],
+        [-0.3826834323650897, 0.9238795325112867],
+        [-0.555570233019602, 0.8314696123025453],
+        [-0.7071067811865475, 0.7071067811865476],
+        [-0.8314696123025453, 0.5555702330196022],
+        [-0.9238795325112867, 0.3826834323650899],
+        [-0.9807852804032304, 0.1950903220161286],
+        [-1.0, 0],
+        [-0.9807852804032304, -0.19509032201612836],
+        [-0.9238795325112868, -0.38268343236508967],
+        [-0.8314696123025455, -0.555570233019602],
+        [-0.7071067811865477, -0.7071067811865475],
+        [-0.5555702330196022, -0.8314696123025452],
+        [-0.38268343236509034, -0.9238795325112865],
+        [-0.19509032201612866, -0.9807852804032303],
+        [0, -1.0],
+        [0.1950903220161283, -0.9807852804032304],
+        [0.38268343236509, -0.9238795325112866],
+        [0.5555702330196018, -0.8314696123025455],
+        [0.7071067811865474, -0.7071067811865477],
+        [0.8314696123025452, -0.5555702330196022],
+        [0.9238795325112865, -0.3826834323650904],
+        [0.9807852804032303, -0.19509032201612872],
+    ]
+    for (let i = 0; i < circlePoints.length; i++) {
+        circlePoints[i][0] = circlePoints[i][0]*circleRadius + circleCenter[0]
+        circlePoints[i][1] = circlePoints[i][1]*circleRadius + circleCenter[1]
+    }
+    const circleColor = createColor(20, 243, 20)
+    circleLines = createLines(circlePoints, circleColor, calcMinColor(circleColor, minColorRatio))
+
+    const wallPoints = [
+        [0, 0],
+        [gameWidth-1, 0],
+        [gameWidth-1, gameHeight-1],
+        [0, gameHeight-1]
+    ]
+    const wallColor = createColor(100, 100, 100)
+    wallLines = createLines(wallPoints, wallColor, calcMinColor(wallColor, minColorRatio))
+}
+
 
 function onKeyDown(e) {
     setKeyVariable(e.keyCode, true)
@@ -318,50 +360,134 @@ function updatePlayerPosition() {
 
     let deltaP = [moveSpeed * Math.cos(angle), moveSpeed * Math.sin(angle)]
     let newP = addVectors(deltaP, playerPosition)
-    let newP2 = addVectors(scaleVector(deltaP, 2), playerPosition)
 
-    let collisionLine = undefined
-    let minDistance = gameWidth
-
-    // can use angle with center point to determine which edge it's hitting for square and triangle
-    // if collision distance is <= player radius then move along that edge
-
-    for (const line of allLines) {
-        let pos1Relative = subtractVectors(playerPosition, line.p1)
-        let pos2Relative = subtractVectors(newP2, line.p1)
-        let moveLine = new Line(pos1Relative[0], pos1Relative[1], pos2Relative[0], pos2Relative[1])
-        let distance = checkCollision(0, line.getMagnitude(), -line.getAngle(), moveLine)
-        if (distance < minDistance) {
-            collisionLine = line
-            minDistance = distance
+    let moveLine = new Line(playerPosition[0], playerPosition[1], newP[0], newP[1])
+    let collisionFunctions = [checkSquareCollision, checkTriangleCollision, checkCircleCollision, checkLineBoxCollision]
+    for (const cf of collisionFunctions) {
+        let adjustedEndpoint = cf(moveLine)
+        if (adjustedEndpoint) {
+            newP = adjustedEndpoint
+            break
         }
     }
 
-    if (collisionLine){
-        let moveVector = subtractVectors(newP, playerPosition)
-        let a = getAngleBetween(moveVector, collisionLine.getVector())
-
-        let sign = 1
-        if (a > Math.PI/2) {
-            a = Math.PI - a
-            sign = -1
-        }
-
-        let magnitude = getVectorMagnitude(moveVector) * Math.cos(a) * sign
-        let direction = normalizedVector(collisionLine.getVector())
-        let v = scaleVector(direction, magnitude)
-        newP = addVectors(playerPosition, v)
-    }
-
-    // get distance from y1 to line. divide by magnitude of position vector. compare these values between 
-
-
-    if (newP[0] >= 0 && newP[0] < gameWidth-1) {
+    if (newP[0] >= collisionWidth && newP[0] < gameWidth-1-collisionWidth) {
         playerPosition[0] = newP[0]
     }
-    if (newP[1] >= 0 && newP[1] < gameHeight-1) {
+    if (newP[1] >= collisionWidth && newP[1] < gameHeight-1-collisionWidth) {
         playerPosition[1] = newP[1]
     }
+}
+
+function checkSquareCollision(moveLine) {
+    if (moveLine.p2[0] <= squareCollider.minX || moveLine.p2[0] >= squareCollider.maxX ||
+        moveLine.p2[1] <= squareCollider.minY || moveLine.p2[1] >= squareCollider.maxY) {
+        return undefined
+    }
+
+    let p = moveLine.p2
+
+    if (moveLine.p1[0] <= squareCollider.minX) {
+        p[0] = squareCollider.minX
+    } else if (moveLine.p1[0] >= squareCollider.maxX) {
+        p[0] = squareCollider.maxX
+    } else if (moveLine.p1[1] <= squareCollider.minY) {
+        p[1] = squareCollider.minY
+    } else if (moveLine.p1[1] >= squareCollider.maxY) {
+        p[1] = squareCollider.maxY
+    }
+
+    return p
+}
+
+function checkTriangleCollision(moveLine) {
+    // check if in square surrounding triangle
+    if (moveLine.p2[0] <= triangleCollider.minX || moveLine.p2[0] >= triangleCollider.maxX ||
+        moveLine.p2[1] <= triangleCollider.minY || moveLine.p2[1] >= triangleCollider.maxY) {
+        return undefined
+    }
+
+    // bottom line
+    if (moveLine.p1[1] >= triangleCollider.maxY) {
+        return [moveLine.p2[0], triangleCollider.maxY]
+    }
+
+    // assuming equilateral triangle
+    let deltaY = triangleCollider.maxY - moveLine.p2[1]
+    let deltaX = deltaY*Math.tan(Math.PI/6)
+
+    let minX = triangleCollider.minX + deltaX
+    let maxX = triangleCollider.maxX - deltaX
+
+    if (moveLine.p2[0] <= minX || moveLine.p2[0] >= maxX) {
+        return undefined
+    }
+
+    let midPoint = minX + ((maxX-minX)/2)
+    let edgeVector
+    if (moveLine.p1[0] <= midPoint) {
+        edgeVector = triangleLines[0].getVector()
+    } else if (moveLine.p1[0] > midPoint) {
+        edgeVector = triangleLines[1].getVector()
+    }
+
+    let v = calcMovementAlongLine(moveLine.getVector(), edgeVector)
+    return addVectors(moveLine.p1, v)
+}
+
+function checkCircleCollision(moveLine) {
+    let endV = subtractVectors(moveLine.p2, circleCenter)
+    if (getVectorMagnitude(endV) >= circleColliderR) {
+        return undefined
+    }
+
+    let startV = subtractVectors(moveLine.p1, circleCenter)
+    let perpendicularV = [startV[1], -startV[0]]
+
+    let v = calcMovementAlongLine(moveLine.getVector(), perpendicularV)
+    return addVectors(moveLine.p1, v)
+}
+
+function checkLineBoxCollision(moveLine) {
+    let angle = lineObject.getAngle()
+    let endRelative = subtractVectors(moveLine.p2, lineObject.p1)
+
+    let y = getYAfterRotate(endRelative, -angle)
+    if (y < lineColliderR.minY || y > lineColliderR.maxY) {
+        return
+    }
+
+    let x = getXAfterRotate(endRelative, -angle)   
+    if (x < lineColliderR.minX || x > lineColliderR.maxX) {
+        return
+    }
+
+    let startRelative = subtractVectors(moveLine.p1, lineObject.p1)
+    let startX = getXAfterRotate(startRelative, -angle)    
+
+    let v
+    if (startX <= lineColliderR.minX || startX >= lineColliderR.maxX) {
+        v = calcMovementAlongLine(moveLine.getVector(), lineObject.getPerpendicularVector())
+    } else {
+        v = calcMovementAlongLine(moveLine.getVector(), lineObject.getVector())
+    }
+
+    return addVectors(moveLine.p1, v)
+}
+
+function calcMovementAlongLine(moveVector, lineVector) {
+    let a = getAngleBetween(moveVector, lineVector)
+
+    let sign = 1
+    if (a > Math.PI/2) {
+        a = Math.PI - a
+        sign = -1
+    }
+
+    let magnitude = getVectorMagnitude(moveVector) * Math.cos(a) * sign
+    let direction = normalizedVector(lineVector)
+    let v = scaleVector(direction, magnitude)
+    return v
 }
 
 function normalizedVector(v) {
@@ -475,7 +601,7 @@ function drawCanvas(canvas) {
     ctx.putImageData(image, 0, 0)
 }
 
-function checkCollision(minX, maxX, angle, lineToCheck) {
+function checkLineCollision(minX, maxX, angle, lineToCheck) {
     let y1 = getYAfterRotate(lineToCheck.p1, angle)
     let y2 = getYAfterRotate(lineToCheck.p2, angle)
 

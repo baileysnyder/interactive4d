@@ -1,8 +1,8 @@
 <template>
 <div>
-    <div id="three-container">
+    <div class="three-container">
         <canvas ref="canvas"></canvas>
-        <div id="three-overlay">
+        <div class="three-overlay">
             <div class="top-right sticky-box">
                 <button @click="initProjectionHypercube">Projection</button>
                 <button @click="initConvexHypercube">Isometric</button>
@@ -12,22 +12,22 @@
                 <div class="slider">
                     <label for="angleXW">XW</label>
                     <input id="angleXW" v-model="angleXW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
-                    <input type="text" size="4">
+                    <input class="slider-text" type="text" size="4">
                 </div>
                 <div class="slider">
                     <label for="angleYW">YW</label>
                     <input id="angleYW" v-model="angleYW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
-                    <input type="text" size="4">
+                    <input class="slider-text" type="text" size="4">
                 </div>
                 <div class="slider">
                     <label for="angleZW">ZW</label>
                     <input id="angleZW" v-model="angleZW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
-                    <input type="text" size="4">
+                    <input class="slider-text" type="text" size="4">
                 </div>
                 <div class="slider">
                     <label for="translateW">W</label>
                     <input id="translateW" v-model="translateW" type="range" min="-2" max="2" value="0" step="0.01">
-                    <input type="text" size="4">
+                    <input class="slider-text" type="text" size="4">
                 </div>
             </div>
         </div>
@@ -41,6 +41,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
 import { Line2 } from 'three/examples/jsm/lines/Line2.js';
+import * as Util from '../../scripts/util';
 
 let camera;
 let scene;
@@ -185,39 +186,7 @@ export default {
     }
 }
 
-const multiplyMatrices = (a, b) => {
-   if (!Array.isArray(a) || !Array.isArray(b) || !a.length || !b.length) {
-      throw new Error('arguments should be in 2-dimensional array format');
-   }
-   let x = a.length,
-   z = a[0].length,
-   y = b[0].length;
-   if (b.length !== z) {
-      // XxZ & ZxY => XxY
-      throw new Error('number of columns in the first matrix should be the same as the number of rows in the second');
-   }
-   let productRow = Array.apply(null, new Array(y)).map(Number.prototype.valueOf, 0);
-   let product = new Array(x);
-   for (let p = 0; p < x; p++) {
-      product[p] = productRow.slice();
-   }
-   for (let i = 0; i < x; i++) {
-      for (let j = 0; j < y; j++) {
-         for (let k = 0; k < z; k++) {
-            product[i][j] += a[i][k] * b[k][j];
-         }
-      }
-   }
-   return product;
-}
 
-function vectorToMatrix(vec){
-    let m = [];
-    for (let i = 0; i < vec.length; i++) {
-        m[i] = [vec[i]];
-    }
-    return m;
-}
 
 const cubePoints = [
     [-1, -1, -1, -1], //0
@@ -444,13 +413,13 @@ function rotateCube4D(angleXW, angleYW, angleZW) {
         [0, 0, Math.sin(angleZW), Math.cos(angleZW)]
     ];
 
-    let m = multiplyMatrices(rotationXW, rotationYW)
-    m = multiplyMatrices(m, rotationZW)
+    let m = Util.multiplyMatrices(rotationXW, rotationYW)
+    m = Util.multiplyMatrices(m, rotationZW)
     
     let points4d = []
     for (let i = 0; i < cubePoints.length; i++){
-        let v = vectorToMatrix(cubePoints[i]);
-        v = multiplyMatrices(m, v);
+        let v = Util.vectorToMatrix(cubePoints[i]);
+        v = Util.multiplyMatrices(m, v);
 
         // Turn matrices back to numbers
         points4d.push([v[0][0], v[1][0], v[2][0], v[3][0]])
@@ -464,7 +433,7 @@ function updateTesseractProjection(angleXW, angleYW, angleZW, translateW) {
     let rotatedPoints = rotateCube4D(angleXW, angleYW, angleZW)
     let finalPoints = []
     for (let i = 0; i < rotatedPoints.length; i++){
-        let workingVector = vectorToMatrix(rotatedPoints[i]);
+        let workingVector = Util.vectorToMatrix(rotatedPoints[i]);
 
         let w = 1 / (projectionDistance4D - workingVector[3][0]);
         const projectionMatrix = [
@@ -480,10 +449,10 @@ function updateTesseractProjection(angleXW, angleYW, angleZW, translateW) {
             [0, 0, 0, scaleFactor]
         ];
 
-        workingVector = multiplyMatrices(scale, workingVector)
+        workingVector = Util.multiplyMatrices(scale, workingVector)
 
         // From 4D to 3D
-        let projected3d = multiplyMatrices(projectionMatrix, workingVector)
+        let projected3d = Util.multiplyMatrices(projectionMatrix, workingVector)
 
         // Turn matrices back to numbers
         finalPoints[i] = [projected3d[0][0], projected3d[1][0], projected3d[2][0]]
@@ -525,79 +494,20 @@ const baseCirclePoints = [
     [0, 0, 1],
 ]
 
-function subtractVectors(vDommy, vSub){
-    if (vDommy.length !== vSub.length) {
-        throw new Error('Vector dimensions must match')
-    }
-
-    let vNew = []
-    for (let i = 0; i < vDommy.length; i++) {
-        vNew.push(vDommy[i] - vSub[i])
-    }
-    return vNew
-}
-
-function getVectorMagnitude(v) {
-    let mag = 0
-    for (let i = 0; i < v.length; i++) {
-        mag += v[i] * v[i]
-    }
-    return Math.sqrt(mag)
-}
-
-function normalizeVector(v) {
-    let mag = getVectorMagnitude(v)
-
-    if (mag > 0) {
-        for (let i = 0; i < v.length; i++) {
-            v[i] = v[i] / mag
-        }
-    }
-}
-
-function getArbitraryPerpendicularVector([x, y, z]) {
-  let result = [0,0,0]
-
-  if (x == 0 || y == 0 || z == 0) {
-    if (x == 0)
-      result[0] = 1;
-    else if (y == 0)
-      result[1] = 1;
-    else
-      result[2] = 1;
-  }
-  else {
-    // If xyz is all set, we set the z coordinate as first and second argument .
-    // As the dot product must be zero, we add the negated sum of x and y as third argument
-    result[0] = z;      // z*x
-    result[1] = z;      // z*x + z*y
-    result[2] = -(x+y); // z*x + z*y - z(x+y) = z*(x+y) - z*(x+y) = 0
-  }
-  return result;
-}
-
-function crossProduct(v, u) {
-    let p = [];
-    p.push((v[1]*u[2]) - (v[2]*u[1]))
-    p.push((v[2]*u[0]) - (v[0]*u[2]))
-    p.push((v[0]*u[1]) - (v[1]*u[0]))
-    return p
-}
-
 function drawCylinders(points) {
     for (let i = 0; i < edgeIndices.length; i++) {
         let endpoint1 = points[edgeIndices[i][0]]
         let endpoint2 = points[edgeIndices[i][1]]
 
         // This axis used for cylinder height
-        let xAxis = subtractVectors(endpoint2, endpoint1)
-        normalizeVector(xAxis)
+        let xAxis = Util.subtractVectors(endpoint2, endpoint1)
+        Util.normalizeVector(xAxis)
 
-        let yAxis = getArbitraryPerpendicularVector(xAxis)
-        normalizeVector(yAxis)
+        let yAxis = Util.getArbitraryPerpendicularVector3D(xAxis)
+        Util.normalizeVector(yAxis)
 
-        let zAxis = crossProduct(xAxis, yAxis)
-        normalizeVector(zAxis)
+        let zAxis = Util.crossProduct(xAxis, yAxis)
+        Util.normalizeVector(zAxis)
 
         let rotation = [
             [xAxis[0], yAxis[0], zAxis[0], 0],
@@ -627,25 +537,25 @@ function drawCylinders(points) {
             [0, 0, 0, 1],
         ]
 
-        let m1 = multiplyMatrices(translation1, scale)        
-        let m2 = multiplyMatrices(translation2, scale)
+        let m1 = Util.multiplyMatrices(translation1, scale)        
+        let m2 = Util.multiplyMatrices(translation2, scale)
 
         let vArray = cylinderGeometries[i].getAttribute('position').array
         let nArray = cylinderGeometries[i].getAttribute('normal').array
 
         let rotatedPoints = []
         for (let j = 0; j < baseCirclePoints.length; j++) {
-            let r = vectorToMatrix([...baseCirclePoints[j], 1])
-            r = multiplyMatrices(rotation, r)
+            let r = Util.vectorToMatrix([...baseCirclePoints[j], 1])
+            r = Util.multiplyMatrices(rotation, r)
             rotatedPoints.push(r)
 
-            let v = multiplyMatrices(m1, r)
+            let v = Util.multiplyMatrices(m1, r)
             vArray[j*3] = v[0][0]
             vArray[j*3 + 1] = v[1][0]
             vArray[j*3 + 2] = v[2][0]
 
             let n = [r[0][0], r[1][0], r[2][0]]
-            normalizeVector(n)
+            Util.normalizeVector(n)
             nArray[j*3] = n[0]
             nArray[j*3 + 1] = n[1]
             nArray[j*3 + 2] = n[2]
@@ -653,7 +563,7 @@ function drawCylinders(points) {
 
         let startIndex =  (vArray.length / 2)
         for (let j = 0; j < baseCirclePoints.length; j++) {
-            let v = multiplyMatrices(m2, rotatedPoints[j])
+            let v = Util.multiplyMatrices(m2, rotatedPoints[j])
             vArray[startIndex + (j*3)] = v[0][0]
             vArray[startIndex + (j*3) + 1] = v[1][0]
             vArray[startIndex + (j*3) + 2] = v[2][0]
@@ -682,34 +592,11 @@ function drawEdges(points) {
     }
 }
 
-function addVectorInplace(u, v) {
-    for (let i = 0; i < u.length; i++) {
-        u[i] += v[i]   
-    }
-}
-
-function scaleVectorInplace(u, scalar) {
-    for (let i = 0; i < u.length; i++) {
-        u[i] = u[i]*scalar
-    }
-}
-
-function dotProduct(u, v) {
-    if (u.length !== v.length) {
-        throw new Error('Dot product vectors must be the same length')
-    }
-    let dot = 0
-    for (let i = 0; i < u.length; i++) {
-        dot += u[i] * v[i]
-    }
-    return dot;
-}
-
 function updateTesseractIso(angleXW, angleYW, angleZW, translateW){
     let rotatedPoints = rotateCube4D(angleXW, angleYW, angleZW)
     let points4d = []
     for (let i = 0; i < rotatedPoints.length; i++){
-        let workingVector = vectorToMatrix(rotatedPoints[i]);
+        let workingVector = Util.vectorToMatrix(rotatedPoints[i]);
 
         // Translate and turn matrices back to numbers
         points4d.push([workingVector[0][0], workingVector[1][0], workingVector[2][0], workingVector[3][0] + translateW])
@@ -719,22 +606,13 @@ function updateTesseractIso(angleXW, angleYW, angleZW, translateW){
     drawFaces(faceGeometry)
 }
 
-function lerp(a, b, t) {
-    if (t == 0)
-        return a;
-    else if (t == 1)
-        return b;
-
-    return a * (1 - t) + b * t;
-}
-
 function getIntersectionPoint(greaterPoint, lesserPoint, wClip) {
     let wDistance = greaterPoint[3] - lesserPoint[3]
     let t = (greaterPoint[3] - wClip) / wDistance
 
-    return [lerp(greaterPoint[0], lesserPoint[0], t),
-            lerp(greaterPoint[1], lesserPoint[1], t),
-            lerp(greaterPoint[2], lesserPoint[2], t)]
+    return [Util.lerp(greaterPoint[0], lesserPoint[0], t),
+            Util.lerp(greaterPoint[1], lesserPoint[1], t),
+            Util.lerp(greaterPoint[2], lesserPoint[2], t)]
 }
 
 class FaceGeometry {
@@ -754,9 +632,9 @@ class IntersectionPoint {
 function getCenterOfPoints(points) {
     let centerPoint = [0, 0, 0]
     for (let i = 0; i < points.length; i++) {
-        addVectorInplace(centerPoint, points[i])
+        Util.addVectorInplace(centerPoint, points[i])
     }
-    scaleVectorInplace(centerPoint, 1/points.length)
+    Util.scaleVectorInplace(centerPoint, 1/points.length)
     return centerPoint
 }
 
@@ -802,14 +680,14 @@ function separatePointsByCube(intersectionPoints) {
 
 // posAngleVector should be perpendicular to u
 function calcAngleBetweenVectors(u, v, posAngleVector) {
-    let dot = dotProduct(u, v)
-    let uMag = getVectorMagnitude(u)
-    let vMag = getVectorMagnitude(v)
+    let dot = Util.dotProduct(u, v)
+    let uMag = Util.getVectorMagnitude(u)
+    let vMag = Util.getVectorMagnitude(v)
 
     let cosTheta = dot / (uMag * vMag)
     let angle = Math.acos(cosTheta)
 
-    if (dotProduct(v, posAngleVector) < 0) {
+    if (Util.dotProduct(v, posAngleVector) < 0) {
         angle = (2*Math.PI) - angle
     }
     return angle
@@ -838,16 +716,16 @@ function bubbleSortBoth(compareArray, otherArray) {
 
 function drawFaces(faceGeometry) {
     function sortFacePoints(facePoints, normal) {
-        let theta0Vector = getArbitraryPerpendicularVector(normal)
-        normalizeVector(theta0Vector)
-        let posAngleVector = crossProduct(normal, theta0Vector)
-        normalizeVector(posAngleVector)
+        let theta0Vector = Util.getArbitraryPerpendicularVector3D(normal)
+        Util.normalizeVector(theta0Vector)
+        let posAngleVector = Util.crossProduct(normal, theta0Vector)
+        Util.normalizeVector(posAngleVector)
 
         let faceCenter = getCenterOfPoints(facePoints.map(ip => ip.point))
 
         let angles = []
         for (let i = 0; i < facePoints.length; i++) {
-            let v = subtractVectors(facePoints[i].point, faceCenter)
+            let v = Util.subtractVectors(facePoints[i].point, faceCenter)
             angles.push(calcAngleBetweenVectors(theta0Vector, v, posAngleVector)) 
         }
 
@@ -899,15 +777,15 @@ function drawFaces(faceGeometry) {
         let p2 = pointsByFace[i][1].point
         let p3 = pointsByFace[i][2].point
 
-        let normal = crossProduct(subtractVectors(p2, p1), subtractVectors(p3, p1))
-        normalizeVector(normal)
+        let normal = Util.crossProduct(Util.subtractVectors(p2, p1), Util.subtractVectors(p3, p1))
+        Util.normalizeVector(normal)
 
         // Check if normal is flipped
-        let p1FromOrigin = subtractVectors(p1, faceGeometry.origin)
-        normalizeVector(p1FromOrigin)
+        let p1FromOrigin = Util.subtractVectors(p1, faceGeometry.origin)
+        Util.normalizeVector(p1FromOrigin)
 
-        if (dotProduct(p1FromOrigin, normal) < 0) {
-            scaleVectorInplace(normal, -1)
+        if (Util.dotProduct(p1FromOrigin, normal) < 0) {
+            Util.scaleVectorInplace(normal, -1)
         }
 
         sortFacePoints(pointsByFace[i], normal)
@@ -920,8 +798,6 @@ function drawFaces(faceGeometry) {
             normals.push(...normal)            
         }
     }
-
-
 
     const positionAttribute = new THREE.BufferAttribute(new Float32Array(positions), 3)
     const normalAttribute = new THREE.BufferAttribute(new Float32Array(normals), 3)
@@ -937,8 +813,6 @@ function drawFaces(faceGeometry) {
     }
 }
 
-
-
 function getFaceVertices(sortedPoints) {
     let  trianglePoints = []
     while (sortedPoints.length > 2) {
@@ -952,7 +826,7 @@ function getFaceVertices(sortedPoints) {
 }
 
 function updateHypersphere(translateW) {
-    let radius = getSphereIntersectionRadius(hypersphereRadius, Math.abs(translateW))
+    let radius = Util.getSphereIntersectionRadius(hypersphereRadius, Math.abs(translateW))
     let scale = radius / hypersphereRadius
 
     hypersphereMesh.scale.x = scale;
@@ -960,27 +834,19 @@ function updateHypersphere(translateW) {
     hypersphereMesh.scale.z = scale;
 }
 
-function getSphereIntersectionRadius(parentRadius, distance) {
-    if (distance >= parentRadius) {
-        return 0
-    }
-
-    return Math.sqrt((parentRadius*parentRadius) - (distance*distance))
-}
-
 </script>
 
-<style>
-#three-container {
+<style scoped>
+.three-container {
   position: relative;
   width: 100%;
   height: 100%;
 }
-#three-container canvas, #three-overlay {
+.three-container canvas, .three-overlay {
   position: absolute;
 }
 
-#three-overlay {
+.three-overlay {
     width:100%;
     height:100%;
     pointer-events: none;
@@ -1006,8 +872,9 @@ function getSphereIntersectionRadius(parentRadius, distance) {
     text-align: right;
 }
 
-label {
-    color: white;
+.slider-text {
+    border-radius: 4px;
+    border: none;
+    text-align: center;
 }
-
 </style>

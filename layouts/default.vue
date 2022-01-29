@@ -16,7 +16,7 @@
 
 <script>
 import Navigation from '../components/Navigation'
-import Interactive from '../components/ThreeJs/Interactive'
+import Interactive from '../components/Interactive/Interactive'
 
 const navigationWidth = 170
 const headerFooterHeight = 200
@@ -113,6 +113,9 @@ h2 {
 
 #main-content {
     display: inline-block;
+    border-radius: 16px;
+    overflow: hidden;
+    /* box-shadow: 6px 6px 3px rgba(0, 0, 0, 0.5); */
 }
 
 #navigation {
@@ -125,6 +128,8 @@ h2 {
 .wrapper {
   display:flex;
   height: 100%;
+
+  background: rgb(32, 32, 32);
 }
 
 .resizable-box {
@@ -139,10 +144,12 @@ h2 {
     display: flex;
     flex-flow: column;
     flex: 1 1 auto;
+
+    background: rgb(24, 24, 24);
 }
 
 .handler {
-  width: 20px;
+  width: 18px;
   padding: 0;
   cursor: ew-resize;
   flex: 0 0 auto;
@@ -151,15 +158,25 @@ h2 {
 .handler::before {
   content: '';
   display: block;
-  width: 4px;
   height: 100%;
-  background: rgb(37, 37, 37);
   margin: 0 auto;
 }
+
 </style>
 
 <style>
+/* global styling */
+body {
+    background: rgb(44, 44, 44);
+    color: rgb(232, 232, 232);
+    font-family: 'IBM Plex Sans';
+}
+
 .article-header {
     text-align: center;
+}
+
+.article-box p {
+    margin: 20px;
 }
 </style>

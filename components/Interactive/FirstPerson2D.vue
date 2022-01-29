@@ -1,23 +1,45 @@
 <template>
     <div id="fp-container">
-        <canvas ref="canvas"></canvas>
-        <!-- <p>To control with keyboard, move with WASD, rotate camera with Q and E keys.</p>
-        <p>Otherwise you can move by interacting with these control sticks:</p>
-        <p>Toggle Overhead View</p> -->
-        <canvas ref="overheadCanvas"></canvas>
+        <canvas id="main-canvas" ref="canvas"></canvas>
+        <div ref="controls" id="controls">
+            <div id="arrows">
+                <p class="controls-header">Move:</p>
+                <button class="control-button">up</button>
+                <div class="button-column">
+                    <button class="control-button">left</button>
+                    <button class="control-button">right</button>
+                </div>
+                <button class="control-button">down</button>
+            </div>
+            <div id="controls-text">
+                <p>Look around: mouse</p>
+                <p>Alternative movement: WASD</p>
+            </div>
+        </div>
+        <div ref="toggleOverhead">
+            <button class="middle-button">Toggle Overhead View</button>
+        </div>
+
+        <canvas id="overhead-canvas" ref="overheadCanvas"></canvas>
     </div>
 </template>
 
 <script>
+import * as Util from '../../scripts/util';
 
 let previousTimestamp = 0;
 let interval = 1000/60;
+const rotPerFullSwipe = 3*Math.PI/4
 
 export default {
     data() {
         return {
             canvasPercentH: 0.5,
-            overheadCanvasPercentH: 0.3
+            overheadCanvasPercentH: 0.3,
+            canvas: undefined,
+            overheadCanvas: undefined,
+            prevOffsetX: 0,
+            angleNeedsUpdate: true,
         }
     },
     props: {
@@ -29,56 +51,101 @@ export default {
             let height = newD.height
 
             this.updateCanvases(width, height)
-            const canvas = this.$refs.canvas
-            const overheadCanvas = this.$refs.overheadCanvas
-            drawCanvas(canvas)
-            drawOverheadCanvas(overheadCanvas)
-        },
-        angleXW: function() {
-            this.objectNeedsUpdate = true
-        },
-        angleYW: function() {
-            this.objectNeedsUpdate = true
-        },
-        angleZW: function() {
-            this.objectNeedsUpdate = true
-        },
-        translateW: function() {
-            this.objectNeedsUpdate = true
-        },
+            drawCanvas(this.canvas)
+            drawOverheadCanvas(this.overheadCanvas)
+        }
     },
     methods: {
         animate(timestamp) {
             let delta = timestamp - previousTimestamp
             if (delta >= interval) {
-                const canvas = this.$refs.canvas
-                const overheadCanvas = this.$refs.overheadCanvas
-
-                updatePlayerPosition()
-                drawCanvas(canvas)
-                drawOverheadCanvas(overheadCanvas)
-
+                if (this.angleNeedsUpdate || pressedUp || pressedLeft || pressedDown || pressedRight) {
+                    updatePlayerPosition()
+                    drawCanvas(this.canvas)
+                    drawOverheadCanvas(this.overheadCanvas)
+                    this.angleNeedsUpdate = false
+                }
                 previousTimestamp = timestamp
             }
             requestAnimationFrame(this.animate);
         },
         updateCanvases(width, height) {
-            const canvas = this.$refs.canvas
-            canvas.width = width
-            canvas.height = height*this.canvasPercentH
+            this.canvas.width = width
+            this.canvas.height = height*this.canvasPercentH
 
-            const overheadCanvas = this.$refs.overheadCanvas
-            overheadCanvas.width = 2*height*this.overheadCanvasPercentH
-            overheadCanvas.height = height*this.overheadCanvasPercentH
+            let remainingHeight = height - this.canvas.offsetHeight - this.$refs.controls.offsetHeight - this.$refs.toggleOverhead.offsetHeight
+            if (remainingHeight*2 < width) {
+                this.overheadCanvas.width = 2*remainingHeight
+                this.overheadCanvas.height = remainingHeight
+            } else {
+                this.overheadCanvas.width = width
+                this.overheadCanvas.height = width/2
+            }
+        },
+        onCanvasPointerDown(e) {
+            e.preventDefault()
+            this.canvas.setPointerCapture(e.pointerId)
+            this.canvas.addEventListener("pointermove", this.onDragCanvas)
+            this.canvas.addEventListener("pointerup", this.onReleaseCanvas)
+            this.prevOffsetX = e.offsetX
+        },
+        onDragCanvas(e) {
+            if (e.pointerType === 'touch') {
+                e.preventDefault()
+            }
+            let deltaX = e.offsetX - this.prevOffsetX
+            let rotPerPixel = rotPerFullSwipe / this.canvas.width
+            let deltaA = rotPerPixel*deltaX
+            addPlayerAngle(deltaA)
+            this.prevOffsetX = e.offsetX
+            this.angleNeedsUpdate = true
+        },
+        onReleaseCanvas(e) {
+            this.canvas.releasePointerCapture(e.pointerId)
+            this.canvas.removeEventListener("pointermove", this.onDragCanvas)
+            this.canvas.removeEventListener("pointermove", this.onReleaseCanvas)
         }
     },
     mounted() {
+        this.canvas = this.$refs.canvas
+        this.overheadCanvas = this.$refs.overheadCanvas
         this.updateCanvases(this.canvasSize.width, this.canvasSize.height)
 
         window.addEventListener("keydown", onKeyDown)
         window.addEventListener("keyup", onKeyUp)
 
+        this.canvas.addEventListener("pointerdown", this.onCanvasPointerDown)
+        // prevent scrolling
+        this.canvas.addEventListener("touchmove", function(e) {
+            e.preventDefault()
+        }, {passive: false})
+
         this.animate(0)
+    }
+}
+
+let pressedUp = false
+let pressedLeft = false
+let pressedDown = false
+let pressedRight = false
+
+function onKeyDown(e) {
+    setKeyVariable(e.keyCode, true)
+}
+
+function onKeyUp(e) {
+    setKeyVariable(e.keyCode, false)
+}
+
+function setKeyVariable(code, isPressing) {
+    if (code === 87) {
+        pressedUp = isPressing
+    } else if (code === 65) {
+        pressedLeft = isPressing
+    } else if (code === 83) {
+        pressedDown = isPressing
+    } else if (code === 68) {
+        pressedRight = isPressing
     }
 }
 
@@ -104,7 +171,7 @@ class Line {
     getMagnitude() {
         if (!this.magnitude) {
             let v = this.getVector()
-            this.magnitude = getVectorMagnitude(v)
+            this.magnitude = Util.getVectorMagnitude(v)
         }
         return this.magnitude
     }
@@ -112,7 +179,7 @@ class Line {
     // arbitrarily using p2-p1 instead of p1-p2. Need to keep in mind when using.
     getVector() {
         if (!this.vector) {
-            this.vector = subtractVectors(this.p2, this.p1)
+            this.vector = Util.subtractVectors(this.p2, this.p1)
         }
         return this.vector
     }
@@ -124,14 +191,6 @@ class Line {
         return this.perpendicularVector
     }
 }
-
-let pressedUp = false
-let pressedLeft = false
-let pressedDown = false
-let pressedRight = false
-
-let pressedRotateL = false
-let pressedRotateR = false
 
 // 0 is facing in positive x direction
 // Positive rotation is clockwise
@@ -162,7 +221,7 @@ function createColor(r, g, b) {
     return {r, g, b}
 }
 
-const minColorRatio = 13
+const minColorRatio = 9
 function calcMinColor(color, ratio) {
     return createColor(color.r/ratio, color.g/ratio, color.b/ratio)
 }
@@ -220,7 +279,7 @@ function initShapes() {
         [tStart[0]+tLineLen, tStart[1]],
     ]
     const triangleColor = createColor(243, 20, 20)
-    triangleLines = createLines(trianglePoints, triangleColor, calcMinColor(triangleColor, 10))
+    triangleLines = createLines(trianglePoints, triangleColor, calcMinColor(triangleColor, 7))
     triangleCollider = {
         minX: trianglePoints[0][0]-collisionWidth,
         maxX: trianglePoints[2][0]+collisionWidth,
@@ -280,47 +339,16 @@ function initShapes() {
     wallLines = createLines(wallPoints, wallColor, calcMinColor(wallColor, minColorRatio))
 }
 
-
-function onKeyDown(e) {
-    setKeyVariable(e.keyCode, true)
-}
-
-function onKeyUp(e) {
-    setKeyVariable(e.keyCode, false)
-}
-
-function setKeyVariable(code, isPressing) {
-    if (code === 87) {
-        pressedUp = isPressing
-    } else if (code === 65) {
-        pressedLeft = isPressing
-    } else if (code === 83) {
-        pressedDown = isPressing
-    } else if (code === 68) {
-        pressedRight = isPressing
-    } else if (code === 81) {
-        pressedRotateL = isPressing
-    } else if (code === 69) {
-        pressedRotateR = isPressing
-    }
-}
-
-function updatePlayerPosition() {
-    let deltaR = 0
-    if (pressedRotateL) {
-        deltaR -= rotateSpeed
-    }
-    if (pressedRotateR) {
-        deltaR += rotateSpeed
-    }
-    playerAngle += deltaR
-
+function addPlayerAngle(angle) {
+    playerAngle += angle
     if (playerAngle > 2*Math.PI) {
         playerAngle -= 2*Math.PI
     } else if (playerAngle < 0) {
         playerAngle += 2*Math.PI
     }
+}
 
+function updatePlayerPosition() {
     let ySign = 0
     if (pressedUp && !pressedDown) {
         ySign = 1
@@ -359,7 +387,7 @@ function updatePlayerPosition() {
     }
 
     let deltaP = [moveSpeed * Math.cos(angle), moveSpeed * Math.sin(angle)]
-    let newP = addVectors(deltaP, playerPosition)
+    let newP = Util.addVectors(deltaP, playerPosition)
 
     let moveLine = new Line(playerPosition[0], playerPosition[1], newP[0], newP[1])
     let collisionFunctions = [checkSquareCollision, checkTriangleCollision, checkCircleCollision, checkLineBoxCollision]
@@ -432,25 +460,25 @@ function checkTriangleCollision(moveLine) {
     }
 
     let v = calcMovementAlongLine(moveLine.getVector(), edgeVector)
-    return addVectors(moveLine.p1, v)
+    return Util.addVectors(moveLine.p1, v)
 }
 
 function checkCircleCollision(moveLine) {
-    let endV = subtractVectors(moveLine.p2, circleCenter)
-    if (getVectorMagnitude(endV) >= circleColliderR) {
+    let endV = Util.subtractVectors(moveLine.p2, circleCenter)
+    if (Util.getVectorMagnitude(endV) >= circleColliderR) {
         return undefined
     }
 
-    let startV = subtractVectors(moveLine.p1, circleCenter)
+    let startV = Util.subtractVectors(moveLine.p1, circleCenter)
     let perpendicularV = [startV[1], -startV[0]]
 
     let v = calcMovementAlongLine(moveLine.getVector(), perpendicularV)
-    return addVectors(moveLine.p1, v)
+    return Util.addVectors(moveLine.p1, v)
 }
 
 function checkLineBoxCollision(moveLine) {
     let angle = lineObject.getAngle()
-    let endRelative = subtractVectors(moveLine.p2, lineObject.p1)
+    let endRelative = Util.subtractVectors(moveLine.p2, lineObject.p1)
 
     let y = getYAfterRotate(endRelative, -angle)
     if (y < lineColliderR.minY || y > lineColliderR.maxY) {
@@ -462,7 +490,7 @@ function checkLineBoxCollision(moveLine) {
         return
     }
 
-    let startRelative = subtractVectors(moveLine.p1, lineObject.p1)
+    let startRelative = Util.subtractVectors(moveLine.p1, lineObject.p1)
     let startX = getXAfterRotate(startRelative, -angle)    
 
     let v
@@ -472,11 +500,11 @@ function checkLineBoxCollision(moveLine) {
         v = calcMovementAlongLine(moveLine.getVector(), lineObject.getVector())
     }
 
-    return addVectors(moveLine.p1, v)
+    return Util.addVectors(moveLine.p1, v)
 }
 
 function calcMovementAlongLine(moveVector, lineVector) {
-    let a = getAngleBetween(moveVector, lineVector)
+    let a = Util.getAngleBetween(moveVector, lineVector)
 
     let sign = 1
     if (a > Math.PI/2) {
@@ -484,32 +512,16 @@ function calcMovementAlongLine(moveVector, lineVector) {
         sign = -1
     }
 
-    let magnitude = getVectorMagnitude(moveVector) * Math.cos(a) * sign
-    let direction = normalizedVector(lineVector)
-    let v = scaleVector(direction, magnitude)
+    let magnitude = Util.getVectorMagnitude(moveVector) * Math.cos(a) * sign
+    let direction = Util.getNormalizedVector(lineVector)
+    let v = Util.scaleVector(direction, magnitude)
     return v
-}
-
-function normalizedVector(v) {
-    let mag = getVectorMagnitude(v)
-    let u = []
-
-    if (mag > 0) {
-        for (let i = 0; i < v.length; i++) {
-            u.push(v[i] / mag)
-        }
-    }
-    return u
 }
 
 function getPointAtAngle(startingPosition, lineLength, angle) {
     let x = startingPosition[0] + (lineLength * Math.cos(angle))
     let y = startingPosition[1] + (lineLength * Math.sin(angle))
     return [x, y]
-}
-
-function clamp(num, min, max){
-    return Math.min(Math.max(num, min), max);
 }
 
 function drawCanvas(canvas) {
@@ -523,9 +535,9 @@ function drawCanvas(canvas) {
     let cwPoint = getPointAtAngle(playerPosition, edgeLength, cwAngle)
 
     let farCenterPoint = [(ccwPoint[0]+cwPoint[0])/2, (ccwPoint[1]+cwPoint[1])/2]
-    let theta0Vector = subtractVectors(farCenterPoint, playerPosition)
-    let ccwVector = subtractVectors(ccwPoint, playerPosition)
-    let cwVector = subtractVectors(cwPoint, playerPosition)
+    let theta0Vector = Util.subtractVectors(farCenterPoint, playerPosition)
+    let ccwVector = Util.subtractVectors(ccwPoint, playerPosition)
+    let cwVector = Util.subtractVectors(cwPoint, playerPosition)
 
     let projPlaneEdgeDistance = projDistance / Math.cos(viewingAngle/2)
     let projCcwPoint = getPointAtAngle([0, 0], projPlaneEdgeDistance, ccwAngle)
@@ -544,7 +556,7 @@ function drawCanvas(canvas) {
     allLines.forEach(line => {
         let relativeLine = new Line(line.p1[0]-playerPosition[0], line.p1[1]-playerPosition[1], line.p2[0]-playerPosition[0], line.p2[1]-playerPosition[1])
         let projDistances = []
-        let angle = getAngleBetween(relativeLine.p1, theta0Vector)
+        let angle = Util.getAngleBetween(relativeLine.p1, theta0Vector)
         if (angle <= viewingAngle/2) {
             let d = project2Dto1D(relativeLine.p1, angle, projPlaneLength/2, canvas.width)
             if (d) {
@@ -552,7 +564,7 @@ function drawCanvas(canvas) {
             }
         }
 
-        angle = getAngleBetween(relativeLine.p2, theta0Vector)
+        angle = Util.getAngleBetween(relativeLine.p2, theta0Vector)
         if (angle <= viewingAngle/2) {
             let d = project2Dto1D(relativeLine.p2, angle, projPlaneLength/2, canvas.width)
             if (d) {
@@ -634,7 +646,7 @@ function getIntersectionEdgeLine(lineToRotate, angle, lineToCheck) {
     let d2 = getXAfterRotate(lineToCheck.p2, -angle)
 
     let ratio = y1/(y1-y2)
-    let intersect = lerp(d1, d2, ratio)
+    let intersect = Util.lerp(d1, d2, ratio)
 
     let min = getXAfterRotate(lineToRotate.p1, -angle)
     let max = getXAfterRotate(lineToRotate.p2, -angle)
@@ -658,7 +670,7 @@ function getIntersectionProjPlane(angle, lineToCheck, projPlaneLength) {
     let y2 = getYAfterRotate(lineToCheck.p2, -angle)
 
     let ratio = (projDistance-x1)/(x2-x1)
-    let intersect = lerp(y1, y2, ratio)
+    let intersect = Util.lerp(y1, y2, ratio)
 
     let min = -projPlaneLength/2
     let max = projPlaneLength/2
@@ -679,17 +691,17 @@ function getYAfterRotate(point, angle) {
 }
 
 function project2Dto1D(vectorFromPlayer, angle, projPlaneHalfLength, canvasWidth) {
-    let distance = getVectorMagnitude(vectorFromPlayer)
+    let distance = Util.getVectorMagnitude(vectorFromPlayer)
     let dProj = projDistance / Math.cos(angle)
     if (distance < dProj) {
         return undefined
     }
     let s = dProj / distance
-    let scaled = scaleVector(vectorFromPlayer, s)
+    let scaled = Util.scaleVector(vectorFromPlayer, s)
 
     // rotate projection plane to be in line with y axis
     let proj1D = getYAfterRotate(scaled, -playerAngle)
-    proj1D = clamp(proj1D, -projPlaneHalfLength, projPlaneHalfLength)
+    proj1D = Util.clamp(proj1D, -projPlaneHalfLength, projPlaneHalfLength)
     let t = (proj1D + projPlaneHalfLength) / (projPlaneHalfLength*2)
 
     let canvasX = Math.round(t*(canvasWidth-1))
@@ -697,25 +709,16 @@ function project2Dto1D(vectorFromPlayer, angle, projPlaneHalfLength, canvasWidth
     return {canvasX, distance}
 }
 
-function lerp(a, b, t) {
-    if (t == 0)
-        return a;
-    else if (t == 1)
-        return b;
-
-    return a * (1 - t) + b * t;
-}
-
 function lerpColor(c1, c2, t) {
-    let r = lerp(c1.r, c2.r, t)
-    let g = lerp(c1.g, c2.g, t)
-    let b = lerp(c1.b, c2.b, t)
+    let r = Util.lerp(c1.r, c2.r, t)
+    let g = Util.lerp(c1.g, c2.g, t)
+    let b = Util.lerp(c1.b, c2.b, t)
 
     return createColor(r, g, b)
 }
 
 function distanceToColor(distance, maxColor, minColor) {
-    let clampD = clamp(distance, 0, viewDistance-projDistance)
+    let clampD = Util.clamp(distance, 0, viewDistance-projDistance)
     let t = clampD / (viewDistance-projDistance)
 
     return lerpColor(maxColor, minColor, t)
@@ -731,7 +734,7 @@ function drawGradient(p1, p2, maxColor, minColor, canvas, imageData, canvasDista
     for (let x = start.canvasX; x <= end.canvasX; x++) {
         let t = (x - start.canvasX)/totalDistance
 
-        let distance = lerp(start.distance, end.distance, t)
+        let distance = Util.lerp(start.distance, end.distance, t)
         if (canvasDistances[x] < distance){
             continue;
         }
@@ -747,81 +750,6 @@ function drawGradient(p1, p2, maxColor, minColor, canvas, imageData, canvasDista
             imageData[index+2] = c.b      
         }
     }
-}
-
-function dotProduct(u, v) {
-    if (u.length !== v.length) {
-        throw new Error('Dot product vectors must be the same length')
-    }
-    let dot = 0
-    for (let i = 0; i < u.length; i++) {
-        dot += u[i] * v[i]
-    }
-    return dot;
-}
-
-function getVectorMagnitude(v) {
-    let mag = 0
-    for (let i = 0; i < v.length; i++) {
-        mag += v[i] * v[i]
-    }
-    return Math.sqrt(mag)
-}
-
-function getAngleBetween(v1, v2) {
-    let dot = dotProduct(v1, v2)
-    return Math.acos(dot / (getVectorMagnitude(v1)*getVectorMagnitude(v2)))
-}
-
-function get360AngleBetween(v1, v2) {
-    let dot = dotProduct(v1, v2)
-    let det = determinant2D(v1, v2)
-
-    return Math.atan2(det, dot)
-}
-
-function determinant2D(v, u) {
-    return v[0]*u[1] - v[1]*u[0]
-}
-
-function scaleVector(u, scalar) {
-    let v = []
-    for (let i = 0; i < u.length; i++) {
-        v.push(u[i]*scalar)
-    }
-    return v
-}
-
-function scaleVectorInplace(u, scalar) {
-    for (let i = 0; i < u.length; i++) {
-        u[i] = u[i]*scalar
-    }
-}
-
-function addVectorInplace(u, v) {
-    for (let i = 0; i < u.length; i++) {
-        u[i] += v[i]   
-    }
-}
-
-function addVectors(u, v) {
-    let w = []
-    for (let i = 0; i < u.length; i++) {
-        w.push(u[i] + v[i])   
-    }
-    return w
-}
-
-function subtractVectors(vDommy, vSub){
-    if (vDommy.length !== vSub.length) {
-        throw new Error('Vector dimensions must match')
-    }
-
-    let vNew = []
-    for (let i = 0; i < vDommy.length; i++) {
-        vNew.push(vDommy[i] - vSub[i])
-    }
-    return vNew
 }
 
 function drawOverheadCanvas(canvas) {
@@ -856,9 +784,9 @@ function drawOverheadCanvas(canvas) {
     let vectorHyp = [x2-x1,y2-y1]
     let vectorPlayer = [canvasX-x1, canvasY-y1]
 
-    let scaleAmount = dotProduct(vectorHyp, vectorPlayer)/dotProduct(vectorHyp, vectorHyp)
-    scaleVectorInplace(vectorHyp, scaleAmount)
-    addVectorInplace(vectorHyp, [x1, y1])
+    let scaleAmount = Util.dotProduct(vectorHyp, vectorPlayer)/Util.dotProduct(vectorHyp, vectorHyp)
+    Util.scaleVectorInplace(vectorHyp, scaleAmount)
+    Util.addVectorInplace(vectorHyp, [x1, y1])
 
     //ctx.beginPath()
     //ctx.arc(vectorHyp[0], vectorHyp[1], 5, 0, 2*Math.PI)
@@ -896,6 +824,53 @@ function drawGameLine(context, line, scaleX, scaleY) {
 
 #fp-container {
     text-align: center;
+    height: 100%;
+
+    background: rgb(15, 15, 15);
+    color: white;
+}
+
+#main-canvas {
+    display: block;
+}
+
+#overhead-canvas {
+    display: inline-block;
+}
+
+#controls {
+    width: 100%;
+    height: 20%;
+}
+
+#arrows {
+    width: 50%;
+    height: 100%;
+    float: left;
+}
+
+#controls-text {
+    width: 50%;
+    height: 100%;
+    display: inline-block;
+    text-align: left;
+}
+
+.control-button {
+    width: 20%;
+    height: 30%;
+}
+
+.button-column {
+    height: 30%;
+}
+
+.button-column .control-button {
+    height: 100%;
+}
+
+.controls-header {
+    position: absolute;
 }
 
 </style>

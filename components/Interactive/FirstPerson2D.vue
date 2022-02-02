@@ -13,7 +13,7 @@
             </div>
             <div id="controls-text">
                 <p>Look around: mouse</p>
-                <p>Alternative movement: WASD</p>
+                <p>Move Keys: WASD</p>
             </div>
         </div>
         <div ref="toggleOverhead">

@@ -5,22 +5,23 @@
             <div class="three-overlay">
                 <div class="top-right sticky-box">
                     <button @click="initSphere">Sphere</button>
+                    <button @click="initCone">Cone</button>
                 </div>
                 <div class="bottom-right sticky-box">
                     <div class="slider">
                         <label for="angleXZ">XZ</label>
-                        <input id="angleXZ" v-model="angleXZ" type="range" min="-3.14" max="3.14" value="0" step="0.001">
-                        <input class="slider-text" type="text" size="4">
+                        <input id="angleXZ" v-model="angleXZ" type="range" min="-6.28" max="6.28" value="0" step="0.001">
+                        <input v-model="angleXZ" class="slider-text" type="text" size="4">
                     </div>
                     <div class="slider">
                         <label for="angleYZ">YZ</label>
-                        <input id="angleYZ" v-model="angleYZ" type="range" min="-3.14" max="3.14" value="0" step="0.001">
-                        <input class="slider-text" type="text" size="4">
+                        <input id="angleYZ" v-model="angleYZ" type="range" min="-6.28" max="6.28" value="0" step="0.001">
+                        <input v-model="angleYZ" class="slider-text" type="text" size="4">
                     </div>
                     <div class="slider">
                         <label for="translateZ">Z</label>
                         <input id="translateZ" v-model="translateZ" type="range" min="-2" max="2" value="0" step="0.01">
-                        <input class="slider-text" type="text" size="4">
+                        <input v-model="translateZ" class="slider-text" type="text" size="4">
                     </div>
                 </div>
             </div>
@@ -119,14 +120,14 @@ export default {
                 if (this.objectNeedsUpdate) {
                     switch (this.displayObject) {
                         case (this.displayObjects.sphere):
-                            updateSphere(parseFloat(this.translateZ))
-                            updateCircleSlice(this.sliceCanvas, parseFloat(this.translateZ))
+                            updateSphere(this.sliceCanvas, parseFloat(this.translateZ))
                             break
                         case (this.displayObjects.cube):
                             break
                         case (this.displayObjects.projCube):
                             break
                         case (this.displayObjects.cone):
+                            updateCone(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
                             break
                     }
                     this.objectNeedsUpdate = false
@@ -147,6 +148,13 @@ export default {
             this.displayObject = this.displayObjects.sphere
             this.objectNeedsUpdate = true
         },
+        initCone(){
+            undoAllInits()
+            initCone()
+
+            this.displayObject = this.displayObjects.cone
+            this.objectNeedsUpdate = true
+        },
     },
     mounted() {
         this.canvas = this.$refs.canvas
@@ -162,16 +170,34 @@ export default {
 
 const planeColor = '#1B1B1B'
 const sphereColor = '#14F314'
+const coneColor = '#F31414'
 
 let sphereMesh = undefined
 let planeMesh = undefined
+let coneMesh = undefined
+let coneGeometry = undefined
 const sphereRadius = 1
 const planeWidth = 4
+const coneSegments = 32
+const coneHeight = sphereRadius*Math.tan(Math.PI/3)
+
+const coneNegZBase = [0, -coneHeight/2, -sphereRadius]
+const conePosZBase = [0, -coneHeight/2, sphereRadius]
 
 function undoAllInits() {
-    scene.remove(sphereMesh)
+    removeThreejsMesh(sphereMesh)
+    removeThreejsMesh(coneMesh)
 
     sphereMesh = undefined
+    coneMesh = undefined
+}
+
+function removeThreejsMesh(mesh) {
+    if (mesh) {
+        scene.remove(mesh)
+        mesh.geometry.dispose()
+        mesh.material.dispose()
+    }
 }
 
 function initPlane() {
@@ -179,6 +205,8 @@ function initPlane() {
     const material = new THREE.MeshBasicMaterial()
     material.side = THREE.DoubleSide
     material.color = new THREE.Color(planeColor)
+    //material.transparent = true
+    //material.opacity = 0.8
 
     const mesh = new THREE.Mesh(geometry, material)
 
@@ -187,7 +215,7 @@ function initPlane() {
 }
 
 function initSphere() {
-    const geometry = new THREE.SphereGeometry(sphereRadius)
+    const geometry = new THREE.SphereGeometry(sphereRadius, 48, 24)
     const material = new THREE.MeshStandardMaterial()
     material.color = new THREE.Color(sphereColor)
     //material.transparent = true
@@ -199,8 +227,22 @@ function initSphere() {
     sphereMesh = mesh
 }
 
-function updateSphere(translateZ) {
+function initCone() {
+    // assuming equilateral
+    coneGeometry = new THREE.ConeGeometry(sphereRadius, sphereRadius*Math.tan(Math.PI/3), coneSegments)
+    const material = new THREE.MeshStandardMaterial()
+    material.color = new THREE.Color(coneColor)
+    material.wireframe = true
+
+    const mesh = new THREE.Mesh(coneGeometry, material)
+
+    scene.add(mesh)
+    coneMesh = mesh
+}
+
+function updateSphere(canvas, translateZ) {
     sphereMesh.position.z = translateZ
+    updateCircleSlice(canvas, translateZ)
 }
 
 function updateCircleSlice(canvas, translateZ) {
@@ -208,8 +250,6 @@ function updateCircleSlice(canvas, translateZ) {
     updateSliceCanvas(canvas)
 
     let squareLength = Math.min(canvas.width, canvas.height)
-    let startX = (canvas.width-squareLength) / 2
-    let startY = (canvas.height-squareLength) / 2
 
     let radius = Util.getSphereIntersectionRadius(sphereRadius, translateZ)
 
@@ -219,6 +259,144 @@ function updateCircleSlice(canvas, translateZ) {
     ctx.arc(canvas.width/2, canvas.height/2, canvasRadius, 0, 2*Math.PI)
     ctx.fillStyle=sphereColor;
     ctx.fill()
+}
+
+function updateCone(canvas, angleXZ, angleYZ, translateZ) {
+    coneMesh.position.z = translateZ
+    //coneMesh.rotation.y = angleXZ
+    coneMesh.rotation.x = angleYZ
+    coneMesh.updateMatrix()
+    updateConicalSlice(canvas, angleYZ, translateZ)
+}
+
+function updateConicalSlice(canvas, angleYZ, translateZ) {
+    let ctx = canvas.getContext("2d")
+    updateSliceCanvas(canvas)
+
+    let squareLength = Math.min(canvas.width, canvas.height)
+    let startX = (canvas.width-squareLength) / 2
+    let startY = (canvas.height-squareLength) / 2
+
+    // if (angleYZ > Math.PI) {
+    //     angleYZ -= Math.PI
+    // } else if (angleYZ < -Math.PI) {
+    //     angleYZ += Math.PI
+    // }
+
+    let hyperbolaMin = (-2*Math.PI)-(Math.PI/6)
+    const hyperbolaRange = Math.PI/3
+    const maxAngle = 2*Math.PI
+
+    while (hyperbolaMin < maxAngle) {
+        let hyperbolaMax = hyperbolaMin + hyperbolaRange
+
+        if (angleYZ === hyperbolaMin || angleYZ === hyperbolaMax) {
+            console.log("parabola")
+            return
+        } else if (angleYZ > hyperbolaMin && angleYZ < hyperbolaMax) {
+            console.log("hyperbola")
+            return
+        } else {
+            hyperbolaMin += Math.PI
+        }
+    }
+
+    drawEllipse(canvas, angleYZ, translateZ)
+}
+
+function drawEllipse(canvas, angleYZ, translateZ) {
+    // the threejs cone positions array is split into 4 sections each having length coneSegments+1:
+    // tip positions > base positions > base center positions > base positions
+    let attribute = coneMesh.geometry.attributes.position
+
+    let tip = new THREE.Vector3()
+    tip.fromBufferAttribute(attribute, 0)
+    tip.applyMatrix4(coneMesh.matrix)
+
+    let baseCenter = new THREE.Vector3()
+    baseCenter.fromBufferAttribute(attribute, (coneSegments*2)+2)
+    baseCenter.applyMatrix4(coneMesh.matrix)
+
+    let baseNeg = new THREE.Vector3(coneNegZBase[0], coneNegZBase[1], coneNegZBase[2])
+    baseNeg.applyMatrix4(coneMesh.matrix)
+
+    let basePos = new THREE.Vector3(conePosZBase[0], conePosZBase[1], conePosZBase[2])
+    basePos.applyMatrix4(coneMesh.matrix)
+
+    let y1 = undefined
+    if (tip.z > 0 && baseNeg.z < 0 || tip.z < 0 && baseNeg.z > 0) {
+        y1 = yInterceptOnPlane(tip, baseNeg)
+    }
+
+    let y2 = undefined
+    if (tip.z > 0 && basePos.z < 0 || tip.z < 0 && basePos.z > 0) {
+        y2 = yInterceptOnPlane(tip, basePos)
+    }
+
+    // no intersection
+    if (!y1 && !y2) {
+        return
+    }
+
+    let eccentricity = Math.abs(Math.cos(angleYZ)/Math.cos(Math.PI/6))
+    if (y1 && y2) {
+        drawSolidEllipse(canvas, y1, y2, eccentricity)
+        return
+    }
+
+    y1 = projectedYInterceptOnPlane(tip, baseNeg)
+    y2 = projectedYInterceptOnPlane(tip, basePos)
+    drawSolidEllipse(canvas, y1, y2, eccentricity)
+
+    let baseCutY = yInterceptOnPlane(basePos, baseNeg)
+    let isUp = Math.cos(angleYZ) < 0
+    drawBaseCutoff(canvas, baseCutY, isUp)
+}
+
+function yInterceptOnPlane(start, end) {
+    let zDistance = Math.abs(start.z - end.z)
+    let t = Math.abs(start.z) / zDistance
+    return Util.lerp(start.y, end.y, t)
+}
+
+// If the line between start and end doesn't intersect the plane, see where it would eventually
+// intersect if the line continued
+function projectedYInterceptOnPlane(start, end) {
+    let line = new THREE.Vector3()
+    line.subVectors(start, end)
+    let t = -(start.z / line.z)
+    return start.y + (line.y*t)
+}
+
+function drawSolidEllipse(canvas, y1, y2, eccentricity) {
+    let squareLength = Math.min(canvas.width, canvas.height)
+    let canvasRatio = squareLength/planeWidth
+    let canvasY1 = y1*canvasRatio
+    let canvasY2 = y2*canvasRatio
+
+    let a = Math.abs(canvasY1-canvasY2)/2
+    let c = a*eccentricity
+    let b = Math.sqrt(Math.abs(c*c-a*a))
+
+    let ctx = canvas.getContext("2d")
+    ctx.fillStyle=coneColor
+    ctx.beginPath();
+    ctx.ellipse(canvas.width/2, (canvas.height/2) - ((canvasY1+canvasY2)/2), b, a, 0, 0, 2 * Math.PI);
+    ctx.fill();
+}
+
+function drawBaseCutoff(canvas, cutY, isUp) {
+    let squareLength = Math.min(canvas.width, canvas.height)
+    let canvasRatio = squareLength/planeWidth
+    let canvasCutY = (canvas.height/2) - (cutY*canvasRatio)
+
+    let ctx = canvas.getContext("2d")
+    ctx.fillStyle=planeColor
+    if (isUp) {
+        ctx.fillRect(0, 0, canvas.width, canvasCutY)
+    } else {
+        ctx.fillRect(0, canvasCutY, canvas.width, canvas.height)
+    }
 }
 
 function updateSliceCanvas(canvas) {

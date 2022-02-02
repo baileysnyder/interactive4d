@@ -277,17 +277,27 @@ let hypersphereMesh = undefined
 
 function removeAllFromScene(arr) {
     arr.forEach(e => {
-        scene.remove(e)
+        removeThreejsMesh(e)
     });
+}
+
+function removeThreejsMesh(mesh) {
+    if (!mesh || mesh === []) {
+        return
+    }
+
+    scene.remove(mesh)
+    mesh.geometry.dispose()
+    mesh.material.dispose()
 }
 
 function undoAllInits() {
     removeAllFromScene(sphereMeshes)
     removeAllFromScene(cylinderMeshes)
     removeAllFromScene(lineMeshes)
-    removeAllFromScene(lineMaterials)
-    scene.remove(convexMesh)
-    scene.remove(hypersphereMesh)
+    //removeAllFromScene(lineMaterials)
+    removeThreejsMesh(convexMesh)
+    removeThreejsMesh(hypersphereMesh)
 
     sphereMeshes = []
     cylinderGeometries = []
@@ -382,7 +392,7 @@ function initConvexEdges(canvasWidth, canvasHeight) {
 }
 
 function initHypersphere() {
-    const geometry = new THREE.SphereGeometry(hypersphereRadius, 64, 32)
+    const geometry = new THREE.SphereGeometry(hypersphereRadius, 48, 24)
     const material = new THREE.MeshStandardMaterial()
 
     const mesh = new THREE.Mesh(geometry, material)

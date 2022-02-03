@@ -4,24 +4,27 @@
             <canvas class="main-canvas" ref="canvas"></canvas>
             <div class="three-overlay">
                 <div class="top-right sticky-box">
-                    <button @click="initSphere">Sphere</button>
-                    <button @click="initCone">Cone</button>
+                    <!-- <button @click="initSphere">Sphere</button>
+                    <button @click="initCone">Cone</button> -->
                 </div>
                 <div class="bottom-right sticky-box">
                     <div class="slider">
                         <label for="angleXZ">XZ</label>
-                        <input id="angleXZ" v-model="angleXZ" type="range" min="-6.28" max="6.28" value="0" step="0.001">
-                        <input v-model="angleXZ" class="slider-text" type="text" size="4">
+                        <input id="angleXZ" v-model="angleDegXZ" type="range" min="-360" max="360" value="0" step="1">
+                        <input v-model="angleDegXZ" class="slider-text" type="text" size="4">
+                        <span class="unit-text">°</span>
                     </div>
                     <div class="slider">
                         <label for="angleYZ">YZ</label>
-                        <input id="angleYZ" v-model="angleYZ" type="range" min="-6.28" max="6.28" value="0" step="0.001">
-                        <input v-model="angleYZ" class="slider-text" type="text" size="4">
+                        <input id="angleYZ" v-model="angleDegYZ" type="range" min="-360" max="360" value="0" step="1">
+                        <input v-model="angleDegYZ" class="slider-text" type="text" size="4">
+                        <span class="unit-text">°</span>
                     </div>
                     <div class="slider">
                         <label for="translateZ">Z</label>
                         <input id="translateZ" v-model="translateZ" type="range" min="-2" max="2" value="0" step="0.01">
                         <input v-model="translateZ" class="slider-text" type="text" size="4">
+                        <span class="unit-text invisible">°</span>
                     </div>
                 </div>
             </div>
@@ -49,6 +52,8 @@ export default {
         return {
             angleXZ: 0.0,
             angleYZ: 0.0,
+            angleDegXZ: 0,
+            angleDegYZ: 0,
             translateZ: 0.0,
             canvas: undefined,
             sliceCanvas: undefined,
@@ -77,10 +82,12 @@ export default {
 
             this.updateSliceCanvas(width, height)
         },
-        angleXZ: function() {
+        angleDegXZ: function() {
+            this.angleXZ = this.angleDegXZ*(Math.PI/180)
             this.objectNeedsUpdate = true
         },
-        angleYZ: function() {
+        angleDegYZ: function() {
+            this.angleYZ = this.angleDegYZ*(Math.PI/180)
             this.objectNeedsUpdate = true
         },
         translateZ: function() {
@@ -163,7 +170,7 @@ export default {
 
         this.initThree()
         initPlane()
-        this.initSphere()
+        this.initCone()
         this.animate(0)
     }
 }
@@ -183,6 +190,8 @@ const coneHeight = sphereRadius*Math.tan(Math.PI/3)
 
 const coneNegZBase = [0, -coneHeight/2, -sphereRadius]
 const conePosZBase = [0, -coneHeight/2, sphereRadius]
+
+const parabolaThreshold = 0.001
 
 function undoAllInits() {
     removeThreejsMesh(sphereMesh)
@@ -273,7 +282,19 @@ function updateCone(canvas, angleXZ, angleYZ, translateZ) {
 }
 
 function updateConicalSlice(canvas, angleYZ, translateZ) {
-    updateSliceCanvas(canvas)  
+    updateSliceCanvas(canvas)
+
+    // the threejs cone positions array is split into 4 sections each having length coneSegments+1:
+    // tip positions > base positions > base center positions > base positions
+    let tip = new THREE.Vector3()
+    tip.fromBufferAttribute(coneMesh.geometry.attributes.position, 0)
+    tip.applyMatrix4(coneMesh.matrix)
+
+    let baseNeg = new THREE.Vector3(coneNegZBase[0], coneNegZBase[1], coneNegZBase[2])
+    baseNeg.applyMatrix4(coneMesh.matrix)
+
+    let basePos = new THREE.Vector3(conePosZBase[0], conePosZBase[1], conePosZBase[2])
+    basePos.applyMatrix4(coneMesh.matrix)
 
     let hyperbolaMin = (-2*Math.PI)-(Math.PI/6)
     const hyperbolaRange = Math.PI/3
@@ -282,38 +303,77 @@ function updateConicalSlice(canvas, angleYZ, translateZ) {
     while (hyperbolaMin < maxAngle) {
         let hyperbolaMax = hyperbolaMin + hyperbolaRange
 
-        if (angleYZ === hyperbolaMin || angleYZ === hyperbolaMax) {
-            console.log("parabola")
+        if (inThreshold(angleYZ, hyperbolaMin, parabolaThreshold) || inThreshold(angleYZ, hyperbolaMax, parabolaThreshold)) {
+            updateParabola(canvas, angleYZ, tip, baseNeg, basePos)
             return
         } else if (angleYZ > hyperbolaMin && angleYZ < hyperbolaMax) {
-            drawHyperbola(canvas, angleYZ, translateZ)
+            updateHyperbola(canvas, angleYZ, tip, baseNeg, basePos)
             return
         } else {
             hyperbolaMin += Math.PI
         }
     }
 
-    drawEllipse(canvas, angleYZ, translateZ)
+    updateEllipse(canvas, angleYZ, tip, baseNeg, basePos)
 }
 
-function drawHyperbola(canvas, angleYZ, translateZ) {
-    let tip = new THREE.Vector3()
-    tip.fromBufferAttribute(coneMesh.geometry.attributes.position, 0)
-    tip.applyMatrix4(coneMesh.matrix)
+function inThreshold(val, checkVal, threshold) {
+    let min = checkVal - threshold
+    let max = checkVal + threshold
+    return val > min && val < max
+}
 
-    if (tip.z === 0) {
-        // degenerative
-        let points = [
-
-        ]
+function updateParabola(canvas, angleYZ, tip, baseNeg, basePos) {
+    if (basePos.z === 0 || baseNeg.z === 0) {
+        // slice is a straight line, which would be invisible in 2D
         return
     }
 
-    let baseNeg = new THREE.Vector3(coneNegZBase[0], coneNegZBase[1], coneNegZBase[2])
-    baseNeg.applyMatrix4(coneMesh.matrix)
+    let yInt = undefined
+    if (tip.z > 0 && baseNeg.z < 0 || tip.z < 0 && baseNeg.z > 0) {
+        yInt = yInterceptOnPlane(tip, baseNeg)
+    } else if (tip.z > 0 && basePos.z < 0 || tip.z < 0 && basePos.z > 0) {
+        yInt = yInterceptOnPlane(tip, basePos)
+    }
 
-    let basePos = new THREE.Vector3(conePosZBase[0], conePosZBase[1], conePosZBase[2])
-    basePos.applyMatrix4(coneMesh.matrix)
+    if (!yInt) {
+        return
+    }
+
+    let baseCutY = yInterceptOnPlane(basePos, baseNeg)
+    let x = getXOfBaseIntersect(baseCutY)
+    let y = Math.abs(yInt-baseCutY)
+    let a = x*x/(4*y)
+    let points = getParabola(a, y)
+
+    let isUp = Math.cos(angleYZ) < 0
+    translateGraph(points, yInt, isUp)
+    drawPoints(canvas, points)
+}
+
+function getParabola(a, maxY) {
+    let points1 = []
+    let points2 = []
+    const minY = 0.0001
+
+    for (let y = maxY; y > minY ; y/=1.5) {
+        let x = Math.sqrt(4*a*y)
+        points1.push([-x, y])
+        points2.push([x, y])
+    }
+
+    points1.push([0, 0])
+    // store points left to right so it's easier to draw
+    return points1.concat(points2.reverse())
+}
+
+function updateHyperbola(canvas, angleYZ, tip, baseNeg, basePos) {
+    // degenerative
+    if (tip.z === 0) {
+        let points = getDegenerativeHyperbola(tip, basePos, baseNeg)
+        drawPoints(canvas, points)
+        return
+    }
 
     let y1 = undefined
     let y2 = undefined
@@ -323,6 +383,10 @@ function drawHyperbola(canvas, angleYZ, translateZ) {
     } else if (tip.z > 0 && basePos.z < 0 || tip.z < 0 && basePos.z > 0) {
         y1 = yInterceptOnPlane(tip, basePos)
         y2 = projectedYInterceptOnPlane(baseNeg, tip)
+    }
+
+    if (!y1 || !y2) {
+        return
     }
 
     let a = Math.abs((y2-y1)/2)
@@ -335,28 +399,42 @@ function drawHyperbola(canvas, angleYZ, translateZ) {
     let yOrigin = y1 + ((y2-y1)/2)
     let points = getHyperbola(a, b, Math.abs(yOrigin - baseCutY))
     let isUp = Math.cos(angleYZ) < 0
-    translateHyperbola(points, yOrigin, isUp)
+    translateGraph(points, yOrigin, isUp)
     drawPoints(canvas, points)
 }
 
-// store points left to right so it's easier to draw
+function getDegenerativeHyperbola(tip, basePos, baseNeg) {
+    if (basePos.y === baseNeg.y) {
+        return [
+            [-sphereRadius, basePos.y],
+            [0, tip.y],
+            [sphereRadius, basePos.y]
+        ]
+    }
+    // assuming base circle is intersecting
+    let baseCutY = yInterceptOnPlane(basePos, baseNeg)
+    let xDist = getXOfBaseIntersect(baseCutY)
+
+    return [
+        [-xDist, baseCutY],
+        [0, tip.y],
+        [xDist, baseCutY]
+    ]
+}
+
+function getXOfBaseIntersect(baseCutY) {
+    let baseCenter = new THREE.Vector3()
+    baseCenter.fromBufferAttribute(coneMesh.geometry.attributes.position, (coneSegments*2)+2)
+    baseCenter.applyMatrix4(coneMesh.matrix)
+
+    let yDiff = baseCutY-baseCenter.y
+    let zDistAlongBase2 = yDiff*yDiff + baseCenter.z*baseCenter.z
+    return Math.sqrt(sphereRadius*sphereRadius - zDistAlongBase2)
+}
+
 function getHyperbola(a, b, maxY) {
     let a2 = a*a
     let b2 = b*b
-    // const ySubdivisions = 32
-    // let points = []
-
-    // let deltaY = (maxY-a) / (ySubdivisions-1)
-
-    // // midpoint
-    // points[ySubdivisions-1] = [0, a]
-
-    // for (let i = 1; i < ySubdivisions; i++) {
-    //     let y = a + (deltaY*i)
-    //     let x = Math.sqrt(Math.abs(b2*(1-((y*y)/a2))))
-    //     points[ySubdivisions-i-1] = [-x, y]
-    //     points[ySubdivisions+i-1] = [x, y]
-    // }
 
     let points1 = []
     let points2 = []
@@ -371,10 +449,11 @@ function getHyperbola(a, b, maxY) {
     }
 
     points1.push([0, a])
+    // store points left to right so it's easier to draw
     return points1.concat(points2.reverse())
 }
 
-function translateHyperbola(points, y0, isUp) {
+function translateGraph(points, y0, isUp) {
     let sign = isUp ? 1 : -1
 
     for (let i = 0; i < points.length; i++) {
@@ -401,19 +480,7 @@ function drawPoints(canvas, points) {
     ctx.fill()
 }
 
-function drawEllipse(canvas, angleYZ, translateZ) {
-    // the threejs cone positions array is split into 4 sections each having length coneSegments+1:
-    // tip positions > base positions > base center positions > base positions
-    let tip = new THREE.Vector3()
-    tip.fromBufferAttribute(coneMesh.geometry.attributes.position, 0)
-    tip.applyMatrix4(coneMesh.matrix)
-
-    let baseNeg = new THREE.Vector3(coneNegZBase[0], coneNegZBase[1], coneNegZBase[2])
-    baseNeg.applyMatrix4(coneMesh.matrix)
-
-    let basePos = new THREE.Vector3(conePosZBase[0], conePosZBase[1], conePosZBase[2])
-    basePos.applyMatrix4(coneMesh.matrix)
-
+function updateEllipse(canvas, angleYZ, tip, baseNeg, basePos) {
     let y1 = undefined
     if (tip.z > 0 && baseNeg.z < 0 || tip.z < 0 && baseNeg.z > 0) {
         y1 = yInterceptOnPlane(tip, baseNeg)
@@ -424,7 +491,6 @@ function drawEllipse(canvas, angleYZ, translateZ) {
         y2 = yInterceptOnPlane(tip, basePos)
     }
 
-    // no intersection
     if (!y1 && !y2) {
         return
     }
@@ -495,7 +561,6 @@ function updateSliceCanvas(canvas) {
     ctx.fillStyle=planeColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height)
 }
-
 </script>
 
 <style>
@@ -549,5 +614,13 @@ function updateSliceCanvas(canvas) {
     border-radius: 4px;
     border: none;
     text-align: center;
+}
+
+.unit-text {
+    color: lightgray
+}
+
+.invisible {
+    color: transparent;
 }
 </style>

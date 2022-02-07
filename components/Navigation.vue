@@ -4,7 +4,7 @@
       <NuxtLink to="/2d-flatland" class="navlink">2D FLATLAND</NuxtLink>
       <NuxtLink to="/3d-to-2d" class="navlink">3D OBJECTS IN 2D</NuxtLink>
       <NuxtLink to="/" class="navlink">4D OBJECTS IN 3D</NuxtLink>
-      <NuxtLink to="/" class="navlink">4D EXPLORATION</NuxtLink>
+      <NuxtLink to="/4d-cone" class="navlink">4D CONE</NuxtLink>
   </div>
 </template>
 

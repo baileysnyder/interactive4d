@@ -3,7 +3,8 @@
     <div v-show="componentToDisplay === 'Placeholder'" class="placeholder resizable" :style="{'width': canvasSize.width + 'px'}"></div>
     <FirstPerson2D v-show="componentToDisplay === 'FirstPerson2D'" :canvasSize="canvasSize"/>
     <Slices2D v-show="componentToDisplay === 'Slices2D'" :canvasSize="canvasSize"/>
-    <ThreeJs v-show="componentToDisplay === 'ThreeJs'" ref="threejs" class="resizable" :canvasSize="canvasSize" :style="{'width': canvasSize.width + 'px'}" />
+    <ThreeJs v-show="componentToDisplay === 'ThreeJs'" class="resizable" :canvasSize="canvasSize" :style="{'width': canvasSize.width + 'px'}" />
+    <Cone v-show="componentToDisplay === 'Cone'" class="resizable" :canvasSize="canvasSize" :style="{'width': canvasSize.width + 'px'}" />
 </div>
 </template>
 
@@ -11,12 +12,14 @@
 import ThreeJs from './ThreeJs'
 import FirstPerson2D from './FirstPerson2D'
 import Slices2D from './Slices2D'
+import Cone from './Cone'
 
 export default {
     components: {
         FirstPerson2D,
         ThreeJs,
-        Slices2D
+        Slices2D,
+        Cone
     },
     data() {
         return {

@@ -4,26 +4,25 @@
         <canvas ref="canvas"></canvas>
         <div class="three-overlay">
             <div class="top-right sticky-box">
-                <button @click="initProjectionHypercube">Projection</button>
-                <button @click="initConvexHypercube">Isometric</button>
-                <button @click="initSphere">Sphere</button>
+                <button @click="initProjectionCone">Projection</button>
+                <button @click="initSliceCone">Slice</button>
             </div>
             <div class="bottom-right sticky-box">
                 <div class="slider">
                     <label for="angleXW">XW</label>
-                    <input id="angleXW" v-model="angleDegXW" type="range" min="-90" max="90" value="0" step="1">
+                    <input id="angleXW" v-model="angleDegXW" type="range" min="-180" max="180" value="0" step="1">
                     <input v-model="angleDegXW" class="slider-text" type="text" size="4">
                     <span class="unit-text">°</span>
                 </div>
                 <div class="slider">
                     <label for="angleYW">YW</label>
-                    <input id="angleYW" v-model="angleDegYW" type="range" min="-90" max="90" value="0" step="1">
+                    <input id="angleYW" v-model="angleDegYW" type="range" min="-180" max="180" value="0" step="1">
                     <input v-model="angleDegYW" class="slider-text" type="text" size="4">
                     <span class="unit-text">°</span>
                 </div>
                 <div class="slider">
                     <label for="angleZW">ZW</label>
-                    <input id="angleZW" v-model="angleDegZW" type="range" min="-90" max="90" value="0" step="1">
+                    <input id="angleZW" v-model="angleDegZW" type="range" min="-180" max="180" value="0" step="1">
                     <input v-model="angleDegZW" class="slider-text" type="text" size="4">
                     <span class="unit-text">°</span>
                 </div>
@@ -42,9 +41,6 @@
 <script>
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js';
-import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js';
-import { Line2 } from 'three/examples/jsm/lines/Line2.js';
 import * as Util from '../../scripts/util';
 
 let camera;
@@ -67,9 +63,8 @@ export default {
             translateW: 0.0,
             displayObject: undefined,
             displayObjects: {
-                convexHypercube: 0,
-                projectionHypercube: 1,
-                hypersphere: 2,
+                projectionCone: 0,
+                sliceCone: 1,
             },
             objectNeedsUpdate: false
         }
@@ -85,12 +80,6 @@ export default {
             camera.aspect = width / height
             camera.updateProjectionMatrix()
             renderer.setSize(width, height)
-
-            if (lineMaterials && lineMaterials.length > 0) {
-                for (let i = 0; i < lineMaterials.length; i++) {
-                    lineMaterials[i].resolution.set(width, height)                   
-                }
-            }
         },
         angleDegXW: function() {
             this.angleXW = this.angleDegXW*(Math.PI/180)
@@ -141,152 +130,94 @@ export default {
             if (delta > interval) {
                 if (this.objectNeedsUpdate) {
                     switch (this.displayObject) {
-                        case (this.displayObjects.convexHypercube):
-                            updateTesseractIso(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
+                        case (this.displayObjects.projectionCone):
+                            updateProjectionCone(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
                             break
-                        case (this.displayObjects.projectionHypercube):
-                            updateTesseractProjection(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
-                            break
-                        case (this.displayObjects.hypersphere):
-                            updateHypersphere(parseFloat(this.translateW))
+                        case (this.displayObjects.sliceCone):
+                            updateSliceCone(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
                             break
                     }
                     this.objectNeedsUpdate = false
                 }
                
-                //renderer.clearDepth()
                 renderer.render(scene, camera)
-
                 delta = delta % interval;
             }
             requestAnimationFrame(this.animate);
         },
-        initConvexHypercube() {
+        initShape(initFunction, displayObjectId) {
             undoAllInits()
+            initFunction()
 
-            initConvexShape()
-            initConvexEdges(this.canvasSize.width, this.canvasSize.height)
-
-            this.displayObject = this.displayObjects.convexHypercube
+            this.displayObject = displayObjectId
             this.objectNeedsUpdate = true
         },
-        initProjectionHypercube() {
-            undoAllInits()
-
-            initSpheres()
-            initCylinders()
-
-            this.displayObject = this.displayObjects.projectionHypercube
-            this.objectNeedsUpdate = true
+        initProjectionCone() {
+            this.initShape(initProjectionCone, this.displayObjects.projectionCone)
         },
-        initSphere() {
-            undoAllInits()
-
-            initHypersphere()
-            this.translateW = 0
-
-            this.displayObject = this.displayObjects.hypersphere
-            this.objectNeedsUpdate = true
+        initSliceCone() {
+            this.initShape(initSliceCone, this.displayObjects.sliceCone)
         }
     },
     mounted() {
         this.initThree()
-        this.initConvexHypercube()
+        this.initProjectionCone()
         this.animate()
     }
 }
 
+function generateSpherePoints(n, multiplier) {
+	let goldenRatio = 1 + Math.sqrt(5) / 4
+	let angleIncrement = Math.PI * 2 * goldenRatio
 
+    let points = []
+	for (let i = 0; i < n; i++) {
+		let distance = i / n
+		let incline = Math.acos(1 - 2 * distance)
+		let azimuth = angleIncrement * i
 
-const cubePoints = [
-    [-1, -1, -1, -1], //0
-    [-1, -1,  1, -1], //1
-    [-1,  1,  1, -1], //2
-    [-1,  1, -1, -1], //3
-    [ 1, -1, -1, -1], //4
-    [ 1, -1,  1, -1], //5
-    [ 1,  1,  1, -1], //6
-    [ 1,  1, -1, -1], //7
-    [-1, -1, -1,  1], //8
-    [-1, -1,  1,  1], //9
-    [-1,  1,  1,  1], //10
-    [-1,  1, -1,  1], //11
-    [ 1, -1, -1,  1], //12
-    [ 1, -1,  1,  1], //13
-    [ 1,  1,  1,  1], //14
-    [ 1,  1, -1,  1], //15
-]
+		let x = Math.sin(incline) * Math.cos(azimuth) * multiplier
+		let y = Math.sin(incline) * Math.sin(azimuth) * multiplier
+		let z = Math.cos(incline) * multiplier
 
-const edgeIndices = [
-    // 3D cube
-    [0, 1], //0
-    [1, 2], //1
-    [2, 3], //2
-    [3, 0], //3
-    [4, 5], //4
-    [5, 6], //5
-    [6, 7], //6
-    [7, 4], //7
-    [3, 7], //8
-    [0, 4], //9
-    [2, 6], //10
-    [1, 5], //11
+		points.push([x, y, z, 0])
+    }
+    return points
+}
 
-    // cube connectors
-    [0, 8], //12
-    [1, 9], //13
-    [2, 10], //14
-    [3, 11], //15
-    [4, 12], //16
-    [5, 13], //17
-    [6, 14], //18
-    [7, 15], //19
- 
-    // tessy cube
-    [8, 9], //20
-    [9, 10], //21
-    [10, 11], //22
-    [11, 8], //23
-    [12, 13], //24
-    [13, 14], //25
-    [14, 15], //26
-    [15, 12], //27
-    [11, 15], //28
-    [8, 12], //29
-    [10, 14], //30
-    [9, 13], //31
-]
+function getConeEdges(n) {
+    let edges = []
+    for (let i = 1; i <= n; i++) {
+        edges.push([0, i])        
+    }
+    return edges
+}
 
-const edgeIndicesByCube = [
-    [0, 1, 2, 3, 9, 11, 10, 8, 4, 5, 6, 7], //outer
-    [0, 1, 2, 3, 12, 13, 14, 15, 20, 21, 22, 23], //left
-    [9, 7, 8, 3, 16, 19, 15, 12, 29, 27, 28, 23], //front
-    [0, 11, 4, 9, 12, 13, 17, 16, 20, 31, 24, 29], //bottom
-    [4, 5, 6, 7, 16, 17, 18, 19, 24, 25, 26, 27], //right
-    [11, 5, 10, 1, 13, 17, 18, 14, 31, 25, 30, 21], //back
-    [2, 8, 6, 10, 14, 15, 19, 18, 22, 28, 26, 30], //top
-    [20, 21, 22, 23, 29, 31, 30, 28, 24, 25, 26, 27], //inner
-]
-
-const projectionSphereRadius = 0.09
-const cylinderScaleFactor = 0.06
-const projectionDistance4D = 3
-const scaleFactor = 2
-const hypersphereRadius = 1.5
-
-const lineColor = '#62DDE5'
+const projectionPointRadius = 0.09
+const cylinderScaleFactor = 0.04
+const projectionDistance4D = 2
+const scaleFactor = 3
+const sphereRadius = 1
+const coneColor = '#F31414'
 const sphereColor = '#269E26'
+const planeColor = '#1B1B1B'
+const lineColor = '#62DDE5'
+
+const spherePointCount = 32
+let conePoints = [
+    [0, 0, 0, 1]
+]
+let spherePoints = generateSpherePoints(spherePointCount, sphereRadius)
+conePoints = conePoints.concat(spherePoints)
+
+const edgeIndices = getConeEdges(spherePointCount)
 
 let sphereMeshes = []
-let cylinderGeometries = []
 let cylinderMeshes = []
-let lineGeometries = []
-let lineMaterials = []
-let linePointArrays = []
-let lineMeshes = []
-let convexGeometry = undefined
-let convexMesh = undefined
-let hypersphereMesh = undefined
+let projectionSphereMesh = undefined
+let coneSliceMesh = undefined
+
+let projSpherePoints4D = []
 
 function removeAllFromScene(arr) {
     arr.forEach(e => {
@@ -307,28 +238,34 @@ function removeThreejsMesh(mesh) {
 function undoAllInits() {
     removeAllFromScene(sphereMeshes)
     removeAllFromScene(cylinderMeshes)
-    removeAllFromScene(lineMeshes)
-    //removeAllFromScene(lineMaterials)
-    removeThreejsMesh(convexMesh)
-    removeThreejsMesh(hypersphereMesh)
+    removeThreejsMesh(coneSliceMesh)
+    removeThreejsMesh(projectionSphereMesh)
 
     sphereMeshes = []
-    cylinderGeometries = []
     cylinderMeshes = []
-    lineMeshes = []
-    lineMaterials = []
-    lineGeometries = []
-    linePointArrays = []
-    convexGeometry = undefined
-    convexMesh = undefined
-    hypersphereMesh = undefined
+    coneSliceMesh = undefined
+    projectionSphereMesh = undefined
+}
+
+function initProjectionCone() {
+    initSpheres()
+    initCylinders()
+    //initProjectionSphere()
 }
 
 function initSpheres() {
-    for (let i = 0; i < cubePoints.length; i++){
-        const geometry = new THREE.SphereGeometry(projectionSphereRadius)
+    for (let i = 0; i < conePoints.length; i++){
+        let radius = projectionPointRadius/1.5
+        if (i === 0) {
+            radius = projectionPointRadius
+        }
+        const geometry = new THREE.SphereGeometry(radius)
         const material = new THREE.MeshStandardMaterial()
-        material.color = new THREE.Color(lineColor)
+        if (i === 0) {
+            material.color = new THREE.Color(lineColor)
+        } else {
+            material.color = new THREE.Color(sphereColor)
+        }
 
         const mesh = new THREE.Mesh(geometry, material)
 
@@ -341,10 +278,11 @@ function initCylinders() {
     for (let i = 0; i < edgeIndices.length; i++){
         const geometry = new THREE.CylinderGeometry(0.1, 0.1, 0.1, 16, 1, true)
         geometry.getAttribute('position').setUsage(THREE.DynamicDrawUsage)
-        cylinderGeometries.push(geometry)
 
         const material = new THREE.MeshStandardMaterial()
         material.color = new THREE.Color(lineColor)
+        //material.transparent = true
+        //material.opacity = 0.6
         const mesh = new THREE.Mesh(geometry, material)
 
         scene.add(mesh)
@@ -352,64 +290,42 @@ function initCylinders() {
     }
 }
 
-function initConvexShape() {
+function initSliceCone() {
     const geometry = new THREE.BufferGeometry()
     const positionAttribute = new THREE.BufferAttribute(new Float32Array(0), 3)
     positionAttribute.setUsage(THREE.DynamicDrawUsage)
     geometry.setAttribute('position', positionAttribute)
 
-    convexGeometry = geometry
-
     const material = new THREE.MeshStandardMaterial()
-    material.transparent = true
-    material.opacity = 0.97
-    material.color = new THREE.Color(0xFFEE56)
-    //material.side = THREE.DoubleSide
-    //material.blending = THREE.CustomBlending
-    //material.blendEquation = THREE.SubtractEquation
+    // material.transparent = true
+    // material.opacity = 0.97
+    material.color = new THREE.Color(0xF31414)
     const mesh = new THREE.Mesh(geometry, material)
+
     scene.add(mesh)
-    convexMesh = mesh
+    coneSliceMesh = mesh
 }
 
-function initConvexEdges(canvasWidth, canvasHeight) {
-    for (let i = 0; i < 20; i++) {
-        const geoPoints = new Float32Array(6)
-        for (let j = 0; j < geoPoints.length; j++) {
-            geoPoints[j] = 0
-        }
-        linePointArrays.push(geoPoints)
+function initProjectionSphere() {
+    const geometry = new THREE.SphereGeometry(sphereRadius)
+    geometry.getAttribute('position').setUsage(THREE.DynamicDrawUsage)
+    const material = new THREE.MeshStandardMaterial()
+    material.side = THREE.DoubleSide
+    //material.wireframe = true
+    material.transparent = true
+    material.opacity = 0.7
 
-        const geometry = new LineGeometry();
-		geometry.setPositions( geoPoints );
+    const mesh = new THREE.Mesh(geometry, material)
 
-        const material = new LineMaterial({
-            linewidth: 5.5,
-            color: 0xffffff,
-        })
-        material.resolution.set(canvasWidth, canvasHeight)
-
-        let line = new Line2( geometry, material );
-        scene.add( line );
-
-        lineGeometries.push(geometry)
-        lineMaterials.push(material)
-        lineMeshes.push(line)
+    scene.add(mesh)
+    projectionSphereMesh = mesh
+    let points = geometry.getAttribute("position").array
+    for (let i = 0; i < points.length; i+=3) {
+        projSpherePoints4D.push([points[i], points[i+1], points[i+2], 0])
     }
 }
 
-function initHypersphere() {
-    const geometry = new THREE.SphereGeometry(hypersphereRadius, 48, 24)
-    const material = new THREE.MeshStandardMaterial()
-    material.color = new THREE.Color(sphereColor)
-
-    const mesh = new THREE.Mesh(geometry, material)
-
-    scene.add(mesh)
-    hypersphereMesh = mesh
-}
-
-function rotateCube4D(angleXW, angleYW, angleZW) {
+function get4DRotationMatrix(angleXW, angleYW, angleZW) {
     const rotationXW = [
         [Math.cos(angleXW), 0, 0, Math.sin(angleXW)],
         [0, 1, 0, 0],
@@ -432,23 +348,25 @@ function rotateCube4D(angleXW, angleYW, angleZW) {
     ];
 
     let m = Util.multiplyMatrices(rotationXW, rotationYW)
-    m = Util.multiplyMatrices(m, rotationZW)
-    
-    let points4d = []
-    for (let i = 0; i < cubePoints.length; i++){
-        let v = Util.vectorToMatrix(cubePoints[i]);
+    return Util.multiplyMatrices(m, rotationZW)
+}
+
+function rotate4D(points, angleXW, angleYW, angleZW) {
+    let m = get4DRotationMatrix(angleXW, angleYW, angleZW)    
+
+    let rotated = []
+    for (let i = 0; i < points.length; i++){
+        let v = Util.vectorToMatrix(points[i]);
         v = Util.multiplyMatrices(m, v);
 
         // Turn matrices back to numbers
-        points4d.push([v[0][0], v[1][0], v[2][0], v[3][0]])
+        rotated.push([v[0][0], v[1][0], v[2][0], v[3][0]])
     }
 
-    return points4d
+    return rotated
 }
 
-
-function updateTesseractProjection(angleXW, angleYW, angleZW, translateW) {
-    let rotatedPoints = rotateCube4D(angleXW, angleYW, angleZW)
+function projectTo3D(rotatedPoints) {
     let finalPoints = []
     for (let i = 0; i < rotatedPoints.length; i++){
         let workingVector = Util.vectorToMatrix(rotatedPoints[i]);
@@ -475,8 +393,41 @@ function updateTesseractProjection(angleXW, angleYW, angleZW, translateW) {
         // Turn matrices back to numbers
         finalPoints[i] = [projected3d[0][0], projected3d[1][0], projected3d[2][0]]
     }
+    return finalPoints
+}
+
+
+function updateProjectionCone(angleXW, angleYW, angleZW, translateW) {
+    let rotatedPoints = rotate4D(conePoints, angleXW, angleYW, angleZW)
+    let finalPoints = projectTo3D(rotatedPoints)
+    //drawProjectionSphere(angleXW, angleYW, angleZW)
     drawPoints(finalPoints)
     drawCylinders(finalPoints)
+}
+
+function toMatrix4(m) {
+    let m4 = new THREE.Matrix4()
+    // m4.set(m[0][0], m[0][1], m[0][2], m[0][3],
+    // m[1][0], m[1][1], m[1][2], m[1][3],
+    // m[2][0], m[2][1], m[2][2], m[2][3],
+    // m[3][0], m[3][1], m[3][2], m[3][3])
+    m4.set(m[0][0], m[1][0], m[2][0], m[3][0],
+    m[0][1], m[1][1], m[2][1], m[3][1],
+    m[0][2], m[1][2], m[2][2], m[3][2],
+    m[0][3], m[1][3], m[2][3], m[3][3])
+    return m4
+}
+
+function drawProjectionSphere(angleXW, angleYW, angleZW) {
+    let rotatedPoints = rotate4D(projSpherePoints4D, angleXW, angleYW, angleZW)
+    let finalPoints = projectTo3D(rotatedPoints)
+
+    let a = projectionSphereMesh.geometry.getAttribute("position")
+    let meshPoints = a.array
+    for (let i = 0; i < meshPoints.length; i++) {
+        meshPoints[i] = finalPoints[Math.floor(i/3)][i%3]
+    }
+    a.needsUpdate = true
 }
 
 function drawPoints(points) {
@@ -558,8 +509,8 @@ function drawCylinders(points) {
         let m1 = Util.multiplyMatrices(translation1, scale)        
         let m2 = Util.multiplyMatrices(translation2, scale)
 
-        let vArray = cylinderGeometries[i].getAttribute('position').array
-        let nArray = cylinderGeometries[i].getAttribute('normal').array
+        let vArray = cylinderMeshes[i].geometry.getAttribute('position').array
+        let nArray = cylinderMeshes[i].geometry.getAttribute('normal').array
 
         let rotatedPoints = []
         for (let j = 0; j < baseCirclePoints.length; j++) {
@@ -591,37 +542,23 @@ function drawCylinders(points) {
             nArray[startIndex + (j*3) + 2] = nArray[j*3 + 2]
         }
 
-        cylinderGeometries[i].attributes.normal.needsUpdate = true
-        cylinderGeometries[i].attributes.position.needsUpdate = true
+        cylinderMeshes[i].geometry.attributes.normal.needsUpdate = true
+        cylinderMeshes[i].geometry.attributes.position.needsUpdate = true
     }
 }
 
-function drawEdges(points) {
-    for (let i = 0; i < lineGeometries.length; i++) {
-        const startIndex = edgeIndices[i][0]
-        const endIndex = edgeIndices[i][1]
+function updateSliceCone(angleXW, angleYW, angleZW, translateW){
+    // let rotatedPoints = rotateCube4D(angleXW, angleYW, angleZW)
+    // let points4d = []
+    // for (let i = 0; i < rotatedPoints.length; i++){
+    //     let workingVector = Util.vectorToMatrix(rotatedPoints[i]);
 
-        for (let j = 0; j < 3; j++) {
-            linePointArrays[i][j] = points[startIndex][j]
-            linePointArrays[i][j+3] = points[endIndex][j]
-        }
-
-        lineGeometries[i].attributes.position.needsUpdate = true
-    }
-}
-
-function updateTesseractIso(angleXW, angleYW, angleZW, translateW){
-    let rotatedPoints = rotateCube4D(angleXW, angleYW, angleZW)
-    let points4d = []
-    for (let i = 0; i < rotatedPoints.length; i++){
-        let workingVector = Util.vectorToMatrix(rotatedPoints[i]);
-
-        // Translate and turn matrices back to numbers
-        points4d.push([workingVector[0][0], workingVector[1][0], workingVector[2][0], workingVector[3][0] + translateW])
-    }
-    let intersectionPoints = get3DIntersectionPoints(points4d)
-    let faceGeometry = separatePointsByCube(intersectionPoints)
-    drawFaces(faceGeometry)
+    //     // Translate and turn matrices back to numbers
+    //     points4d.push([workingVector[0][0], workingVector[1][0], workingVector[2][0], workingVector[3][0] + translateW])
+    // }
+    // let intersectionPoints = get3DIntersectionPoints(points4d)
+    // let faceGeometry = separatePointsByCube(intersectionPoints)
+    // drawFaces(faceGeometry)
 }
 
 function get3DIntersectionPoint(greaterPoint, lesserPoint, wClip) {
@@ -797,15 +734,6 @@ function getFaceVertices(sortedPoints) {
         sortedPoints.splice(1, 1)
     }
     return trianglePoints
-}
-
-function updateHypersphere(translateW) {
-    let radius = Util.getSphereIntersectionRadius(hypersphereRadius, Math.abs(translateW))
-    let scale = radius / hypersphereRadius
-
-    hypersphereMesh.scale.x = scale;
-    hypersphereMesh.scale.y = scale;
-    hypersphereMesh.scale.z = scale;
 }
 
 </script>

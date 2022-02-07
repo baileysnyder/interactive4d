@@ -4,27 +4,32 @@
             <canvas class="main-canvas" ref="canvas"></canvas>
             <div class="three-overlay">
                 <div class="top-right sticky-box">
-                    <!-- <button @click="initSphere">Sphere</button>
-                    <button @click="initCone">Cone</button> -->
+                    <button @click="initSphere">Sphere</button>
+                    <button @click="initCone">Cone</button>
+                    <button @click="initSolidCube">Solid Cube</button>
+                    <button @click="initEdgeCube">Edge Cube</button>
                 </div>
                 <div class="bottom-right sticky-box">
-                    <div class="slider">
+                    <div class="slider-row">
+                        <button class="slider-button" @click="resetUI">Reset</button>
+                    </div>                    
+                    <div class="slider-row">
                         <label for="angleXZ">XZ</label>
                         <input id="angleXZ" v-model="angleDegXZ" type="range" min="-360" max="360" value="0" step="1">
-                        <input v-model="angleDegXZ" class="slider-text" type="text" size="4">
-                        <span class="unit-text">°</span>
+                        <!-- <input v-model="angleDegXZ" class="slider-text" type="text" size="4">
+                        <span class="unit-text">°</span> -->
                     </div>
-                    <div class="slider">
+                    <div class="slider-row">
                         <label for="angleYZ">YZ</label>
                         <input id="angleYZ" v-model="angleDegYZ" type="range" min="-360" max="360" value="0" step="1">
-                        <input v-model="angleDegYZ" class="slider-text" type="text" size="4">
-                        <span class="unit-text">°</span>
+                        <!-- <input v-model="angleDegYZ" class="slider-text" type="text" size="4">
+                        <span class="unit-text">°</span> -->
                     </div>
-                    <div class="slider">
+                    <div class="slider-row">
                         <label for="translateZ">Z</label>
-                        <input id="translateZ" v-model="translateZ" type="range" min="-2" max="2" value="0" step="0.01">
-                        <input v-model="translateZ" class="slider-text" type="text" size="4">
-                        <span class="unit-text invisible">°</span>
+                        <input id="translateZ" v-model="translateZ" type="range" min="-1.5" max="1.5" value="0" step="0.01">
+                        <!-- <input v-model="translateZ" class="slider-text" type="text" size="4">
+                        <span class="unit-text invisible">°</span> -->
                     </div>
                 </div>
             </div>
@@ -61,9 +66,10 @@ export default {
             displayObject: undefined,
             displayObjects: {
                 sphere: 0,
-                cube: 1,
-                cone: 2,
-                projCube: 3,
+                solidCube: 1,
+                edgeCube: 2,
+                cone: 3,
+                projCube: 4,
             },
         }
     },
@@ -101,10 +107,11 @@ export default {
             scene = new THREE.Scene()
 
             renderer = new THREE.WebGLRenderer({
-                canvas: this.canvas
+                canvas: this.canvas,
             })
             renderer.setSize(width, height)
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+            //renderer.sortObjects = false
 
             camera = new THREE.PerspectiveCamera(80, width/height, 0.1, 100)
             camera.position.set(0, 0, 4)
@@ -127,10 +134,13 @@ export default {
                 if (this.objectNeedsUpdate) {
                     switch (this.displayObject) {
                         case (this.displayObjects.sphere):
-                            updateSphere(this.sliceCanvas, parseFloat(this.translateZ))
+                            updateSphere(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
                             break
-                        case (this.displayObjects.cube):
+                        case (this.displayObjects.solidCube):
+                            updateSolidCube(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
                             break
+                        case (this.displayObjects.edgeCube):
+                            updateEdgeCube(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
                         case (this.displayObjects.projCube):
                             break
                         case (this.displayObjects.cone):
@@ -148,20 +158,30 @@ export default {
             this.sliceCanvas.width = width
             this.sliceCanvas.height = totalHeight*sliceCanvasPercentH
         },
+        initShape(initFunction, displayObjectId) {
+            undoAllInits()
+            initFunction()
+
+            this.displayObject = displayObjectId
+            this.objectNeedsUpdate = true
+        },
         initSphere() {
-            undoAllInits()
-            initSphere()
-
-            this.displayObject = this.displayObjects.sphere
-            this.objectNeedsUpdate = true
+            this.initShape(initSphere, this.displayObjects.sphere)
         },
-        initCone(){
-            undoAllInits()
-            initCone()
-
-            this.displayObject = this.displayObjects.cone
-            this.objectNeedsUpdate = true
+        initSolidCube() {
+            this.initShape(initSolidCube, this.displayObjects.solidCube)
         },
+        initEdgeCube() {
+            this.initShape(initEdgeCube, this.displayObjects.edgeCube)
+        },
+        initCone() {
+            this.initShape(initCone, this.displayObjects.cone)
+        },
+        resetUI() {
+            this.angleXZ = this.angleDegXZ = 0
+            this.angleYZ = this.angleDegYZ = 0
+            this.translateZ = 0
+        }
     },
     mounted() {
         this.canvas = this.$refs.canvas
@@ -170,42 +190,75 @@ export default {
 
         this.initThree()
         initPlane()
-        this.initCone()
+        this.initSphere()
         this.animate(0)
     }
 }
 
 const planeColor = '#1B1B1B'
 const sphereColor = '#14F314'
+const cubeColor = '#FFEE56'
 const coneColor = '#F31414'
 
 let sphereMesh = undefined
 let planeMesh = undefined
+let solidCubeMesh = undefined
 let coneMesh = undefined
-let coneGeometry = undefined
+let edgeCubeMesh = undefined
+
 const sphereRadius = 1
 const planeWidth = 4
 const coneSegments = 32
 const coneHeight = sphereRadius*Math.tan(Math.PI/3)
+const cubeLength = sphereRadius*1.5
 
 const coneNegZBase = [0, -coneHeight/2, -sphereRadius]
 const conePosZBase = [0, -coneHeight/2, sphereRadius]
 
 const parabolaThreshold = 0.001
 
+// based on threeJS cube vertex order
+const cubeEdgeIndices = [
+    [0, 1],
+    [1, 3],
+    [3, 2],
+    [2, 0],
+    [0, 5],
+    [5, 4],
+    [4, 1],
+    [5, 7],
+    [7, 6],
+    [6, 4],
+    [7, 2],
+    [6, 3],
+]
+
+// referring to index of edges in array above
+const highlightedEdges = [0, 1, 2, 3]
+
 function undoAllInits() {
     removeThreejsMesh(sphereMesh)
+    removeThreejsMesh(solidCubeMesh)
     removeThreejsMesh(coneMesh)
+    removeThreejsMesh(edgeCubeMesh)
 
     sphereMesh = undefined
+    solidCubeMesh = undefined
     coneMesh = undefined
+    edgeCubeMesh = undefined
 }
 
 function removeThreejsMesh(mesh) {
     if (mesh) {
         scene.remove(mesh)
         mesh.geometry.dispose()
-        mesh.material.dispose()
+        if (mesh.material.length) {
+            for (const m of mesh.material) {
+                m.dispose()
+            }
+        } else {
+            mesh.material.dispose()
+        }       
     }
 }
 
@@ -218,6 +271,7 @@ function initPlane() {
     material.opacity = 0.8
 
     const mesh = new THREE.Mesh(geometry, material)
+    mesh.renderOrder = 2
 
     scene.add(mesh)
     planeMesh = mesh
@@ -236,9 +290,39 @@ function initSphere() {
     sphereMesh = mesh
 }
 
+function initSolidCube() {
+    const geometry = new THREE.BoxGeometry(cubeLength, cubeLength, cubeLength)
+    const material = new THREE.MeshStandardMaterial()
+    material.color = new THREE.Color(cubeColor)
+
+    const mesh = new THREE.Mesh(geometry, material)
+
+    scene.add(mesh)
+    solidCubeMesh = mesh
+}
+
+function initEdgeCube() {
+    const geometry = new THREE.BoxGeometry(cubeLength, cubeLength, cubeLength)
+
+    const materials = [
+        new THREE.MeshStandardMaterial({color: 0xFFEE56, side: THREE.DoubleSide}),
+        new THREE.MeshStandardMaterial({color: 0xFFFFFF, side: THREE.DoubleSide, transparent: true, opacity: 0.6}),
+        new THREE.MeshStandardMaterial({color: 0xFFFFFF, side: THREE.DoubleSide, transparent: true, opacity: 0.6}),
+        new THREE.MeshStandardMaterial({color: 0xFFFFFF, side: THREE.DoubleSide, transparent: true, opacity: 0.6}),
+        new THREE.MeshStandardMaterial({color: 0xFFFFFF, side: THREE.DoubleSide, transparent: true, opacity: 0.6}),
+        new THREE.MeshStandardMaterial({color: 0xFFFFFF, side: THREE.DoubleSide, transparent: true, opacity: 0.6}),
+    ];
+
+    const mesh = new THREE.Mesh(geometry, materials)
+    mesh.renderOrder = 1
+
+    scene.add(mesh)
+    edgeCubeMesh = mesh
+}
+
 function initCone() {
     // assuming equilateral
-    coneGeometry = new THREE.ConeGeometry(sphereRadius, sphereRadius*Math.tan(Math.PI/3), coneSegments)
+    const geometry = new THREE.ConeGeometry(sphereRadius, sphereRadius*Math.tan(Math.PI/3), coneSegments)
     const material = new THREE.MeshStandardMaterial()
     material.color = new THREE.Color(coneColor)
     //material.wireframe = true
@@ -246,31 +330,176 @@ function initCone() {
     //material.opacity = 0.8
     //material.side = THREE.DoubleSide
 
-    const mesh = new THREE.Mesh(coneGeometry, material)
+    const mesh = new THREE.Mesh(geometry, material)
 
     scene.add(mesh)
     coneMesh = mesh
 }
 
-function updateSphere(canvas, translateZ) {
+function updateSphere(canvas, angleXZ, angleYZ, translateZ) {
     sphereMesh.position.z = translateZ
-    updateCircleSlice(canvas, translateZ)
+    sphereMesh.rotation.y = angleXZ
+    sphereMesh.rotation.x = angleYZ
+    drawCircleSlice(canvas, translateZ)
 }
 
-function updateCircleSlice(canvas, translateZ) {
+function drawCircleSlice(canvas, translateZ) {
     let ctx = canvas.getContext("2d")
-    updateSliceCanvas(canvas)
+    drawSliceCanvas(canvas)
 
     let squareLength = Math.min(canvas.width, canvas.height)
 
     let radius = Util.getSphereIntersectionRadius(sphereRadius, translateZ)
-
     let canvasRadius = (radius/planeWidth)*squareLength
 
     ctx.beginPath()
     ctx.arc(canvas.width/2, canvas.height/2, canvasRadius, 0, 2*Math.PI)
     ctx.fillStyle=sphereColor;
     ctx.fill()
+}
+
+function updateSolidCube(canvas, angleXZ, angleYZ, translateZ) {
+    solidCubeMesh.position.z = translateZ
+    solidCubeMesh.rotation.y = angleXZ
+    solidCubeMesh.rotation.x = angleYZ
+    solidCubeMesh.updateMatrix()
+
+    drawSliceCanvas(canvas)
+    let points2D = getCubeSlice(solidCubeMesh)
+    drawSolidCubeSlice(canvas, points2D)
+}
+
+function getCubeSlice(cubeMesh) {
+    let points3D = []
+    for (let i = 0; i < 8; i++) {
+        let v = new THREE.Vector3()
+        v.fromBufferAttribute(cubeMesh.geometry.attributes.position, i)
+        v.applyMatrix4(cubeMesh.matrix)
+        points3D.push(v)
+    }
+
+    return get2DIntersectionPoints(points3D)
+}
+
+function get2DIntersectionPoints(points3D) {
+    let zClip = 0.0
+    let intersectionPoints = []
+    for (let i = 0; i < cubeEdgeIndices.length; i++) {
+        let p1 = points3D[cubeEdgeIndices[i][0]]
+        let p2 = points3D[cubeEdgeIndices[i][1]]
+        
+        if (p1.z >= zClip && p2.z < zClip) {
+            intersectionPoints.push(new IntersectionPoint(i, get2DIntersectionPoint(p1, p2, zClip)))
+        } else if (p2.z >= zClip && p1.z < zClip){
+            intersectionPoints.push(new IntersectionPoint(i, get2DIntersectionPoint(p2, p1, zClip)))
+        }
+    }
+    return intersectionPoints
+}
+
+function get2DIntersectionPoint(greaterPoint, lesserPoint, zClip) {
+    let zDistance = greaterPoint.z - lesserPoint.z
+    let t = (greaterPoint.z - zClip) / zDistance
+
+    return [Util.lerp(greaterPoint.x, lesserPoint.x, t),
+            Util.lerp(greaterPoint.y, lesserPoint.y, t)]
+}
+
+function drawSolidCubeSlice(canvas, points) {
+    if (points.length < 2) {
+        return
+    }
+    sortFacePoints(points)
+
+    let squareLength = Math.min(canvas.width, canvas.height)
+    let canvasRatio = squareLength/planeWidth
+
+    let ctx = canvas.getContext("2d")
+    ctx.fillStyle=cubeColor
+    ctx.beginPath();
+    let startX = (canvas.width/2) + (points[0].point[0]*canvasRatio)
+    let startY = (canvas.height/2) - (points[0].point[1]*canvasRatio)
+    ctx.moveTo(startX, startY)
+    for (let i = 1; i < points.length; i++) {
+        let canvasX = (canvas.width/2) + (points[i].point[0]*canvasRatio)
+        let canvasY = (canvas.height/2) - (points[i].point[1]*canvasRatio)
+        ctx.lineTo(canvasX, canvasY)       
+    }
+    ctx.lineTo(startX, startY)
+    ctx.fill()
+}
+
+function sortFacePoints(points) {
+    let theta0Vector = [1, 0]
+    let posAngleVector = [0, 1]
+
+    let faceCenter = Util.getCenterOfPoints(points.map(p => p.point))
+
+    for (let i = 0; i < points.length; i++) {
+        let v = Util.subtractVectors(points[i].point, faceCenter)
+        points[i].setAngle(Util.calcAngleBetweenVectors(theta0Vector, v, posAngleVector))
+    }
+
+    points.sort((a, b) => {
+        return a.angle - b.angle
+    })
+}
+
+function updateEdgeCube(canvas, angleXZ, angleYZ, translateZ) {
+    edgeCubeMesh.position.z = translateZ
+    edgeCubeMesh.rotation.y = angleXZ
+    edgeCubeMesh.rotation.x = angleYZ
+    edgeCubeMesh.updateMatrix()
+
+    drawSliceCanvas(canvas)
+    let points2D = getCubeSlice(edgeCubeMesh)
+    drawEdgeCubeSlice(canvas, points2D)
+}
+
+class IntersectionPoint {
+    constructor(edgeIndex, point) {
+        this.edgeIndex = edgeIndex
+        this.point = point
+    }
+
+    setAngle(angle) {
+        this.angle = angle
+    }
+}
+
+function drawEdgeCubeSlice(canvas, points) {
+    if (points.length < 2) {
+        return
+    }
+    sortFacePoints(points)
+
+    let squareLength = Math.min(canvas.width, canvas.height)
+    let canvasRatio = squareLength/planeWidth
+    let wCenter = (canvas.width/2)
+    let hCenter = (canvas.height/2)
+
+    let ctx = canvas.getContext("2d")
+    ctx.lineWidth = 5
+    ctx.lineCap = "round"
+    for (let i = 0; i < points.length; i++) {
+        ctx.beginPath()
+
+        let startX = wCenter + (points[i].point[0]*canvasRatio)
+        let startY = hCenter - (points[i].point[1]*canvasRatio)
+        ctx.moveTo(startX, startY)
+
+        let nextIndex = i < points.length-1 ? i+1 : 0
+        let endX = wCenter + (points[nextIndex].point[0]*canvasRatio)
+        let endY = hCenter - (points[nextIndex].point[1]*canvasRatio)
+        ctx.lineTo(endX, endY)
+
+        if (points[i].edgeIndex < 4 && points[nextIndex].edgeIndex < 4) {
+            ctx.strokeStyle=cubeColor           
+        } else {
+            ctx.strokeStyle="gray"
+        }
+        ctx.stroke()
+    }
 }
 
 function updateCone(canvas, angleXZ, angleYZ, translateZ) {
@@ -282,7 +511,7 @@ function updateCone(canvas, angleXZ, angleYZ, translateZ) {
 }
 
 function updateConicalSlice(canvas, angleYZ, translateZ) {
-    updateSliceCanvas(canvas)
+    drawSliceCanvas(canvas)
 
     // the threejs cone positions array is split into 4 sections each having length coneSegments+1:
     // tip positions > base positions > base center positions > base positions
@@ -556,7 +785,7 @@ function drawBaseCutoff(canvas, cutY, isUp) {
     }
 }
 
-function updateSliceCanvas(canvas) {
+function drawSliceCanvas(canvas) {
     let ctx = canvas.getContext("2d")
     ctx.fillStyle=planeColor;
     ctx.fillRect(0, 0, canvas.width, canvas.height)
@@ -606,7 +835,7 @@ function updateSliceCanvas(canvas) {
     pointer-events: auto;
 }
 
-.slider {
+.slider-row {
     text-align: right;
 }
 
@@ -622,5 +851,9 @@ function updateSliceCanvas(canvas) {
 
 .invisible {
     color: transparent;
+}
+
+.slider-button {
+    margin-bottom: 3px;
 }
 </style>

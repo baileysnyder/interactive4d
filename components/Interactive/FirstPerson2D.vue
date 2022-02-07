@@ -250,8 +250,8 @@ function initShapes() {
         [50, 52],
         [20, 52],
     ]
-    const sqaureColor = createColor(255, 238, 86)
-    squareLines = createLines(squarePoints, sqaureColor, calcMinColor(sqaureColor, minColorRatio))
+    const squareColor = createColor(255, 238, 86)
+    squareLines = createLines(squarePoints, squareColor, calcMinColor(squareColor, minColorRatio))
     squareCollider = {
         minX: squarePoints[0][0]-collisionWidth,
         maxX: squarePoints[1][0]+collisionWidth,

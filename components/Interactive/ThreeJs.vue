@@ -11,23 +11,27 @@
             <div class="bottom-right sticky-box">
                 <div class="slider">
                     <label for="angleXW">XW</label>
-                    <input id="angleXW" v-model="angleXW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
-                    <input class="slider-text" type="text" size="4">
+                    <input id="angleXW" v-model="angleDegXW" type="range" min="-90" max="90" value="0" step="1">
+                    <input v-model="angleDegXW" class="slider-text" type="text" size="4">
+                    <span class="unit-text">°</span>
                 </div>
                 <div class="slider">
                     <label for="angleYW">YW</label>
-                    <input id="angleYW" v-model="angleYW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
-                    <input class="slider-text" type="text" size="4">
+                    <input id="angleYW" v-model="angleDegYW" type="range" min="-90" max="90" value="0" step="1">
+                    <input v-model="angleDegYW" class="slider-text" type="text" size="4">
+                    <span class="unit-text">°</span>
                 </div>
                 <div class="slider">
                     <label for="angleZW">ZW</label>
-                    <input id="angleZW" v-model="angleZW" type="range" min="-3.14" max="3.14" value="0" step="0.001">
-                    <input class="slider-text" type="text" size="4">
+                    <input id="angleZW" v-model="angleDegZW" type="range" min="-90" max="90" value="0" step="1">
+                    <input v-model="angleDegZW" class="slider-text" type="text" size="4">
+                    <span class="unit-text">°</span>
                 </div>
                 <div class="slider">
                     <label for="translateW">W</label>
                     <input id="translateW" v-model="translateW" type="range" min="-2" max="2" value="0" step="0.01">
-                    <input class="slider-text" type="text" size="4">
+                    <input class="slider-text" v-model="translateW" type="text" size="4">
+                    <span class="unit-text invisible">°</span>
                 </div>
             </div>
         </div>
@@ -57,6 +61,9 @@ export default {
             angleXW: 0.0,
             angleYW: 0.0,
             angleZW: 0.0,
+            angleDegXW: 0,
+            angleDegYW: 0,
+            angleDegZW: 0,
             translateW: 0.0,
             displayObject: undefined,
             displayObjects: {
@@ -85,13 +92,16 @@ export default {
                 }
             }
         },
-        angleXW: function() {
+        angleDegXW: function() {
+            this.angleXW = this.angleDegXW*(Math.PI/180)
             this.objectNeedsUpdate = true
         },
-        angleYW: function() {
+        angleDegYW: function() {
+            this.angleYW = this.angleDegYW*(Math.PI/180)
             this.objectNeedsUpdate = true
         },
-        angleZW: function() {
+        angleDegZW: function() {
+            this.angleZW = this.angleDegZW*(Math.PI/180)
             this.objectNeedsUpdate = true
         },
         translateW: function() {
@@ -366,7 +376,7 @@ function initConvexShape() {
 }
 
 function initConvexEdges(canvasWidth, canvasHeight) {
-    for (let i = 0; i < 18; i++) {
+    for (let i = 0; i < 20; i++) {
         const geoPoints = new Float32Array(6)
         for (let j = 0; j < geoPoints.length; j++) {
             geoPoints[j] = 0
@@ -611,12 +621,12 @@ function updateTesseractIso(angleXW, angleYW, angleZW, translateW){
         // Translate and turn matrices back to numbers
         points4d.push([workingVector[0][0], workingVector[1][0], workingVector[2][0], workingVector[3][0] + translateW])
     }
-    let intersectionPoints = getIntersectionPoints(points4d)
+    let intersectionPoints = get3DIntersectionPoints(points4d)
     let faceGeometry = separatePointsByCube(intersectionPoints)
     drawFaces(faceGeometry)
 }
 
-function getIntersectionPoint(greaterPoint, lesserPoint, wClip) {
+function get3DIntersectionPoint(greaterPoint, lesserPoint, wClip) {
     let wDistance = greaterPoint[3] - lesserPoint[3]
     let t = (greaterPoint[3] - wClip) / wDistance
 
@@ -639,26 +649,17 @@ class IntersectionPoint {
     }
 }
 
-function getCenterOfPoints(points) {
-    let centerPoint = [0, 0, 0]
-    for (let i = 0; i < points.length; i++) {
-        Util.addVectorInplace(centerPoint, points[i])
-    }
-    Util.scaleVectorInplace(centerPoint, 1/points.length)
-    return centerPoint
-}
-
-function getIntersectionPoints(points4d) {
+function get3DIntersectionPoints(points4D) {
     let wClip = 0.0
     let intersectionPoints = {} // edge index is key, point is value
     for (let i = 0; i < edgeIndices.length; i++) {
-        let p1 = points4d[edgeIndices[i][0]]
-        let p2 = points4d[edgeIndices[i][1]]
+        let p1 = points4D[edgeIndices[i][0]]
+        let p2 = points4D[edgeIndices[i][1]]
         
         if (p1[3] >= wClip && p2[3] < wClip) {
-            intersectionPoints[i] = getIntersectionPoint(p1, p2, wClip)
+            intersectionPoints[i] = get3DIntersectionPoint(p1, p2, wClip)
         } else if (p2[3] >= wClip && p1[3] < wClip){
-            intersectionPoints[i] = getIntersectionPoint(p2, p1, wClip)
+            intersectionPoints[i] = get3DIntersectionPoint(p2, p1, wClip)
         }
     }
     return intersectionPoints
@@ -666,7 +667,7 @@ function getIntersectionPoints(points4d) {
 
 function separatePointsByCube(intersectionPoints) {
     let arr = Object.values(intersectionPoints)
-    let centerPoint = getCenterOfPoints(arr)
+    let centerPoint = Util.getCenterOfPoints(arr)
 
     // Each tesseract cube will make up 0 or 1 faces of the final 3D object
     let pointsByCube = []
@@ -688,41 +689,7 @@ function separatePointsByCube(intersectionPoints) {
     return new FaceGeometry(centerPoint, pointsByCube)
 }
 
-// posAngleVector should be perpendicular to u
-function calcAngleBetweenVectors(u, v, posAngleVector) {
-    let dot = Util.dotProduct(u, v)
-    let uMag = Util.getVectorMagnitude(u)
-    let vMag = Util.getVectorMagnitude(v)
 
-    let cosTheta = dot / (uMag * vMag)
-    let angle = Math.acos(cosTheta)
-
-    if (Util.dotProduct(v, posAngleVector) < 0) {
-        angle = (2*Math.PI) - angle
-    }
-    return angle
-}
-
-function swap(arr, x, y) {
-    let temp = arr[x];
-    arr[x] = arr[y];
-    arr[y] = temp;
-}
-
-function bubbleSortBoth(compareArray, otherArray) {
-    if (compareArray.length !== otherArray.length) {
-        throw new Error('Compare and other array must be same length')
-    }
-
-    for (let i = 0; i < compareArray.length-1; i++) {
-        for (let j = 0; j < compareArray.length-i-1; j++) {
-            if (compareArray[j] > compareArray[j+1]) {
-                swap(compareArray,j,j+1);
-                swap(otherArray,j,j+1);
-            }
-        }
-    }
-}
 
 function drawFaces(faceGeometry) {
     function sortFacePoints(facePoints, normal) {
@@ -731,15 +698,15 @@ function drawFaces(faceGeometry) {
         let posAngleVector = Util.crossProduct(normal, theta0Vector)
         Util.normalizeVector(posAngleVector)
 
-        let faceCenter = getCenterOfPoints(facePoints.map(ip => ip.point))
+        let faceCenter = Util.getCenterOfPoints(facePoints.map(ip => ip.point))
 
         let angles = []
         for (let i = 0; i < facePoints.length; i++) {
             let v = Util.subtractVectors(facePoints[i].point, faceCenter)
-            angles.push(calcAngleBetweenVectors(theta0Vector, v, posAngleVector)) 
+            angles.push(Util.calcAngleBetweenVectors(theta0Vector, v, posAngleVector)) 
         }
 
-        bubbleSortBoth(angles, facePoints)
+        Util.bubbleSortParallel(angles, facePoints)
     }
 
     let edgePointPairs = []
@@ -761,7 +728,7 @@ function drawFaces(faceGeometry) {
                 edgePointPairs[sortedFacePoints[endIndex].edgeIndex].push(sortedFacePoints[i].edgeIndex)
             }
 
-            for (let j = 0; j < 3; j++) {         
+            for (let j = 0; j < 3; j++) {
                 linePointArrays[edgeIndex][j] = sortedFacePoints[i].point[j] * scale
                 linePointArrays[edgeIndex][j+3] = sortedFacePoints[endIndex].point[j] * scale
             }
@@ -816,7 +783,6 @@ function drawFaces(faceGeometry) {
 
     convexGeometry.setAttribute('position', positionAttribute)
     convexGeometry.setAttribute('normal', normalAttribute)
-    //convexGeometry.computeVertexNormals()
 
     for (let i = edgeIndex; i < lineMeshes.length; i++) {
         lineMeshes[i].visible = false        
@@ -886,5 +852,9 @@ function updateHypersphere(translateW) {
     border-radius: 4px;
     border: none;
     text-align: center;
+}
+
+.invisible {
+    color: transparent;
 }
 </style>

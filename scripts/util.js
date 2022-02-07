@@ -1,3 +1,5 @@
+import { Vector3 } from "three"
+
 export function subtractVectors(vDommy, vSub){
     if (vDommy.length !== vSub.length) {
         throw new Error('Vector dimensions must match')
@@ -177,4 +179,71 @@ export function getAngleBetween(v1, v2) {
 
 export function clamp(num, min, max){
     return Math.min(Math.max(num, min), max);
+}
+
+export function printThreeVertices(geometry) {
+    let arr = geometry.getAttribute('position').array
+    let vectors = []
+    for (let i = 0; i < arr.length; i+=3) {
+        let v = new Vector3(arr[i], arr[i+1], arr[i+2])
+        vectors.push(v)
+    }
+    console.log(vectors)
+}
+
+export function getCenterOfPoints(points) {
+    if (!points[0]) {
+        return []
+    }
+    
+    let centerPoint = []
+    for (let i = 0; i < points[0].length; i++) {
+        centerPoint.push(0)
+    }
+    
+    for (let i = 0; i < points.length; i++) {
+        addVectorInplace(centerPoint, points[i])
+    }
+    scaleVectorInplace(centerPoint, 1/points.length)
+    return centerPoint
+}
+
+export function bubbleSortParallel(compareArray, ...otherArrays) {
+    for (const arr of otherArrays) {
+        if (arr.length !== compareArray.length) {
+            throw new Error('Compare and other array must be same length')
+        }
+    }
+
+    for (let i = 0; i < compareArray.length-1; i++) {
+        for (let j = 0; j < compareArray.length-i-1; j++) {
+            if (compareArray[j] > compareArray[j+1]) {
+                swap(compareArray,j,j+1);
+                for (const arr of otherArrays) {
+                    swap(arr,j,j+1);
+                }               
+            }
+        }
+    }
+}
+
+function swap(arr, x, y) {
+    let temp = arr[x];
+    arr[x] = arr[y];
+    arr[y] = temp;
+}
+
+// posAngleVector should be perpendicular to u
+export function calcAngleBetweenVectors(u, v, posAngleVector) {
+    let dot = dotProduct(u, v)
+    let uMag = getVectorMagnitude(u)
+    let vMag = getVectorMagnitude(v)
+
+    let cosTheta = dot / (uMag * vMag)
+    let angle = Math.acos(cosTheta)
+
+    if (dotProduct(v, posAngleVector) < 0) {
+        angle = (2*Math.PI) - angle
+    }
+    return angle
 }

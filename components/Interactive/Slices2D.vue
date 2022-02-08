@@ -87,6 +87,7 @@ export default {
             renderer.setSize(width, mainCanvasHeight)
 
             this.updateSliceCanvas(width, height)
+            this.updateDisplay()
         },
         angleDegXZ: function() {
             this.angleXZ = this.angleDegXZ*(Math.PI/180)
@@ -128,25 +129,28 @@ export default {
             const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
             scene.add(ambientLight)
         },
+        updateDisplay() {
+            switch (this.displayObject) {
+                case (this.displayObjects.sphere):
+                    updateSphere(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
+                    break
+                case (this.displayObjects.solidCube):
+                    updateSolidCube(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
+                    break
+                case (this.displayObjects.edgeCube):
+                    updateEdgeCube(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
+                case (this.displayObjects.projCube):
+                    break
+                case (this.displayObjects.cone):
+                    updateCone(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
+                    break
+            }
+        },
         animate(timestamp) {
             let delta = timestamp - previousTimestamp
             if (delta >= interval) {
                 if (this.objectNeedsUpdate) {
-                    switch (this.displayObject) {
-                        case (this.displayObjects.sphere):
-                            updateSphere(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
-                            break
-                        case (this.displayObjects.solidCube):
-                            updateSolidCube(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
-                            break
-                        case (this.displayObjects.edgeCube):
-                            updateEdgeCube(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
-                        case (this.displayObjects.projCube):
-                            break
-                        case (this.displayObjects.cone):
-                            updateCone(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
-                            break
-                    }
+                    this.updateDisplay()
                     this.objectNeedsUpdate = false
                 }
                 renderer.render(scene, camera)

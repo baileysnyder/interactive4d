@@ -5,7 +5,7 @@
         <div class="three-overlay">
             <div class="top-right sticky-box">
                 <button @click="initProjectionHypercube">Projection</button>
-                <button @click="initConvexHypercube">Isometric</button>
+                <button @click="initConvexHypercube">Slice</button>
                 <button @click="initSphere">Sphere</button>
             </div>
             <div class="bottom-right sticky-box">
@@ -142,7 +142,7 @@ export default {
                 if (this.objectNeedsUpdate) {
                     switch (this.displayObject) {
                         case (this.displayObjects.convexHypercube):
-                            updateTesseractIso(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
+                            updateTesseractSlice(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
                             break
                         case (this.displayObjects.projectionHypercube):
                             updateTesseractProjection(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
@@ -153,40 +153,32 @@ export default {
                     }
                     this.objectNeedsUpdate = false
                 }
-               
-                //renderer.clearDepth()
-                renderer.render(scene, camera)
 
+                renderer.render(scene, camera)
                 delta = delta % interval;
             }
             requestAnimationFrame(this.animate);
         },
-        initConvexHypercube() {
-            undoAllInits()
+        initShape(initFunction, displayObjectId) {
+            undoInits()
+            initFunction()
 
-            initConvexShape()
-            initConvexEdges(this.canvasSize.width, this.canvasSize.height)
-
-            this.displayObject = this.displayObjects.convexHypercube
+            this.displayObject = displayObjectId
             this.objectNeedsUpdate = true
+        },
+        initConvexHypercube() {
+            let width = this.canvasSize.width
+            let height = this.canvasSize.height
+            let initWithParam = () => {
+                initConvexHypercube(width, height)
+            }
+            this.initShape(initWithParam, this.displayObjects.convexHypercube)
         },
         initProjectionHypercube() {
-            undoAllInits()
-
-            initSpheres()
-            initCylinders()
-
-            this.displayObject = this.displayObjects.projectionHypercube
-            this.objectNeedsUpdate = true
+            this.initShape(initProjectionHypercube, this.displayObjects.projectionHypercube)
         },
         initSphere() {
-            undoAllInits()
-
-            initHypersphere()
-            this.translateW = 0
-
-            this.displayObject = this.displayObjects.hypersphere
-            this.objectNeedsUpdate = true
+            this.initShape(initHypersphere, this.displayObjects.hypersphere)
         }
     },
     mounted() {
@@ -275,10 +267,10 @@ const scaleFactor = 2
 const hypersphereRadius = 1.5
 
 const lineColor = '#62DDE5'
+const pointColor = '#D2F3F5'
 const sphereColor = '#269E26'
 
 let sphereMeshes = []
-let cylinderGeometries = []
 let cylinderMeshes = []
 let lineGeometries = []
 let lineMaterials = []
@@ -288,47 +280,30 @@ let convexGeometry = undefined
 let convexMesh = undefined
 let hypersphereMesh = undefined
 
-function removeAllFromScene(arr) {
-    arr.forEach(e => {
-        removeThreejsMesh(e)
-    });
-}
-
-function removeThreejsMesh(mesh) {
-    if (!mesh || mesh === []) {
-        return
-    }
-
-    scene.remove(mesh)
-    mesh.geometry.dispose()
-    mesh.material.dispose()
-}
-
-function undoAllInits() {
-    removeAllFromScene(sphereMeshes)
-    removeAllFromScene(cylinderMeshes)
-    removeAllFromScene(lineMeshes)
-    //removeAllFromScene(lineMaterials)
-    removeThreejsMesh(convexMesh)
-    removeThreejsMesh(hypersphereMesh)
+function undoInits() {
+    Util.removeThreeJsObjects(scene, sphereMeshes, cylinderMeshes, lineMeshes, convexMesh, hypersphereMesh)
 
     sphereMeshes = []
-    cylinderGeometries = []
     cylinderMeshes = []
-    lineMeshes = []
-    lineMaterials = []
     lineGeometries = []
+    lineMaterials = []
     linePointArrays = []
+    lineMeshes = []
     convexGeometry = undefined
     convexMesh = undefined
     hypersphereMesh = undefined
+}
+
+function initProjectionHypercube() {
+    initSpheres()
+    initCylinders()
 }
 
 function initSpheres() {
     for (let i = 0; i < cubePoints.length; i++){
         const geometry = new THREE.SphereGeometry(projectionSphereRadius)
         const material = new THREE.MeshStandardMaterial()
-        material.color = new THREE.Color(lineColor)
+        material.color = new THREE.Color(pointColor)
 
         const mesh = new THREE.Mesh(geometry, material)
 
@@ -341,7 +316,6 @@ function initCylinders() {
     for (let i = 0; i < edgeIndices.length; i++){
         const geometry = new THREE.CylinderGeometry(0.1, 0.1, 0.1, 16, 1, true)
         geometry.getAttribute('position').setUsage(THREE.DynamicDrawUsage)
-        cylinderGeometries.push(geometry)
 
         const material = new THREE.MeshStandardMaterial()
         material.color = new THREE.Color(lineColor)
@@ -350,6 +324,11 @@ function initCylinders() {
         scene.add(mesh)
         cylinderMeshes.push(mesh)
     }
+}
+
+function initConvexHypercube(width, height) {
+    initConvexShape()
+    initConvexEdges(width, height)
 }
 
 function initConvexShape() {
@@ -409,191 +388,12 @@ function initHypersphere() {
     hypersphereMesh = mesh
 }
 
-function rotateCube4D(angleXW, angleYW, angleZW) {
-    const rotationXW = [
-        [Math.cos(angleXW), 0, 0, Math.sin(angleXW)],
-        [0, 1, 0, 0],
-        [0, 0, 1, 0],
-        [-Math.sin(angleXW), 0, 0, Math.cos(angleXW)]
-    ];
-
-    const rotationYW = [
-        [1, 0, 0, 0],
-        [0, Math.cos(angleYW), 0, -1*Math.sin(angleYW)],
-        [0, 0, 1, 0],
-        [0, Math.sin(angleYW), 0, Math.cos(angleYW)]
-    ];
-
-    const rotationZW = [
-        [1, 0, 0, 0],
-        [0, 1, 0, 0],
-        [0, 0, Math.cos(angleZW), -1*Math.sin(angleZW)],
-        [0, 0, Math.sin(angleZW), Math.cos(angleZW)]
-    ];
-
-    let m = Util.multiplyMatrices(rotationXW, rotationYW)
-    m = Util.multiplyMatrices(m, rotationZW)
-    
-    let points4d = []
-    for (let i = 0; i < cubePoints.length; i++){
-        let v = Util.vectorToMatrix(cubePoints[i]);
-        v = Util.multiplyMatrices(m, v);
-
-        // Turn matrices back to numbers
-        points4d.push([v[0][0], v[1][0], v[2][0], v[3][0]])
-    }
-
-    return points4d
-}
-
 
 function updateTesseractProjection(angleXW, angleYW, angleZW, translateW) {
-    let rotatedPoints = rotateCube4D(angleXW, angleYW, angleZW)
-    let finalPoints = []
-    for (let i = 0; i < rotatedPoints.length; i++){
-        let workingVector = Util.vectorToMatrix(rotatedPoints[i]);
-
-        let w = 1 / (projectionDistance4D - workingVector[3][0]);
-        const projectionMatrix = [
-            [w, 0, 0, 0],
-            [0, w, 0, 0],
-            [0, 0, w, 0]
-        ];
-
-        const scale = [
-            [scaleFactor, 0, 0, 0],
-            [0, scaleFactor, 0, 0],
-            [0, 0, scaleFactor, 0],
-            [0, 0, 0, scaleFactor]
-        ];
-
-        workingVector = Util.multiplyMatrices(scale, workingVector)
-
-        // From 4D to 3D
-        let projected3d = Util.multiplyMatrices(projectionMatrix, workingVector)
-
-        // Turn matrices back to numbers
-        finalPoints[i] = [projected3d[0][0], projected3d[1][0], projected3d[2][0]]
-    }
-    drawPoints(finalPoints)
-    drawCylinders(finalPoints)
-}
-
-function drawPoints(points) {
-    for (let i = 0; i < sphereMeshes.length; i++){
-        if (i < points.length) {
-            sphereMeshes[i].visible = true
-            sphereMeshes[i].position.set(points[i][0], points[i][1], points[i][2])
-        } else {
-            sphereMeshes[i].visible = false
-        }
-    }
-}
-
-// pre-calculated from unit circle
-// Needs to be defined on the two axes orthogonal to the cylinder height
-const baseCirclePoints = [
-    [0, 0, 1],
-    [0, 0.3826834323650898, 0.9238795325112867],
-    [0, 0.7071067811865476, 0.7071067811865476],
-    [0, 0.9238795325112867, 0.38268343236508984],
-    [0, 1, 0],
-    [0, 0.9238795325112867, -0.3826834323650897],
-    [0, 0.7071067811865476, -0.7071067811865475],
-    [0, 0.3826834323650899, -0.9238795325112867],
-    [0, 0, -1],
-    [0, -0.38268343236508967, -0.9238795325112868],
-    [0, -0.7071067811865475, -0.7071067811865477],
-    [0, -0.9238795325112865, -0.38268343236509034],
-    [0, -1, 0],
-    [0, -0.9238795325112866, 0.38268343236509],
-    [0, -0.7071067811865477, 0.7071067811865474],
-    [0, -0.3826834323650904, 0.9238795325112865],
-    [0, 0, 1],
-]
-
-function drawCylinders(points) {
-    for (let i = 0; i < edgeIndices.length; i++) {
-        let endpoint1 = points[edgeIndices[i][0]]
-        let endpoint2 = points[edgeIndices[i][1]]
-
-        // This axis used for cylinder height
-        let xAxis = Util.subtractVectors(endpoint2, endpoint1)
-        Util.normalizeVector(xAxis)
-
-        let yAxis = Util.getArbitraryPerpendicularVector3D(xAxis)
-        Util.normalizeVector(yAxis)
-
-        let zAxis = Util.crossProduct(xAxis, yAxis)
-        Util.normalizeVector(zAxis)
-
-        let rotation = [
-            [xAxis[0], yAxis[0], zAxis[0], 0],
-            [xAxis[1], yAxis[1], zAxis[1], 0],
-            [xAxis[2], yAxis[2], zAxis[2], 0],
-            [0, 0, 0, 1]
-        ]
-
-        let translation1 = [
-            [1, 0, 0, endpoint1[0]],
-            [0, 1, 0, endpoint1[1]],
-            [0, 0, 1, endpoint1[2]],
-            [0, 0, 0, 1],
-        ]
-
-        let translation2 = [
-            [1, 0, 0, endpoint2[0]],
-            [0, 1, 0, endpoint2[1]],
-            [0, 0, 1, endpoint2[2]],
-            [0, 0, 0, 1],
-        ]
-
-        let scale = [
-            [cylinderScaleFactor, 0, 0, 0],
-            [0, cylinderScaleFactor, 0, 0],
-            [0, 0, cylinderScaleFactor, 0],
-            [0, 0, 0, 1],
-        ]
-
-        let m1 = Util.multiplyMatrices(translation1, scale)        
-        let m2 = Util.multiplyMatrices(translation2, scale)
-
-        let vArray = cylinderGeometries[i].getAttribute('position').array
-        let nArray = cylinderGeometries[i].getAttribute('normal').array
-
-        let rotatedPoints = []
-        for (let j = 0; j < baseCirclePoints.length; j++) {
-            let r = Util.vectorToMatrix([...baseCirclePoints[j], 1])
-            r = Util.multiplyMatrices(rotation, r)
-            rotatedPoints.push(r)
-
-            let v = Util.multiplyMatrices(m1, r)
-            vArray[j*3] = v[0][0]
-            vArray[j*3 + 1] = v[1][0]
-            vArray[j*3 + 2] = v[2][0]
-
-            let n = [r[0][0], r[1][0], r[2][0]]
-            Util.normalizeVector(n)
-            nArray[j*3] = n[0]
-            nArray[j*3 + 1] = n[1]
-            nArray[j*3 + 2] = n[2]
-        }
-
-        let startIndex =  (vArray.length / 2)
-        for (let j = 0; j < baseCirclePoints.length; j++) {
-            let v = Util.multiplyMatrices(m2, rotatedPoints[j])
-            vArray[startIndex + (j*3)] = v[0][0]
-            vArray[startIndex + (j*3) + 1] = v[1][0]
-            vArray[startIndex + (j*3) + 2] = v[2][0]
-
-            nArray[startIndex + (j*3)] = nArray[j*3]
-            nArray[startIndex + (j*3) + 1] = nArray[j*3 + 1]
-            nArray[startIndex + (j*3) + 2] = nArray[j*3 + 2]
-        }
-
-        cylinderGeometries[i].attributes.normal.needsUpdate = true
-        cylinderGeometries[i].attributes.position.needsUpdate = true
-    }
+    let rotatedPoints = Util.rotate4D(cubePoints, angleXW, angleYW, angleZW)
+    let finalPoints = Util.project4DTo3D(rotatedPoints, projectionDistance4D, scaleFactor)
+    Util.drawSpherePoints(finalPoints, sphereMeshes)
+    Util.drawCylinders(finalPoints, cylinderMeshes, edgeIndices, cylinderScaleFactor)
 }
 
 function drawEdges(points) {
@@ -610,8 +410,8 @@ function drawEdges(points) {
     }
 }
 
-function updateTesseractIso(angleXW, angleYW, angleZW, translateW){
-    let rotatedPoints = rotateCube4D(angleXW, angleYW, angleZW)
+function updateTesseractSlice(angleXW, angleYW, angleZW, translateW){
+    let rotatedPoints = Util.rotate4D(cubePoints,angleXW, angleYW, angleZW)
     let points4d = []
     for (let i = 0; i < rotatedPoints.length; i++){
         let workingVector = Util.vectorToMatrix(rotatedPoints[i]);
@@ -686,7 +486,6 @@ function separatePointsByCube(intersectionPoints) {
 
     return new FaceGeometry(centerPoint, pointsByCube)
 }
-
 
 
 function drawFaces(faceGeometry) {
@@ -807,7 +606,6 @@ function updateHypersphere(translateW) {
     hypersphereMesh.scale.y = scale;
     hypersphereMesh.scale.z = scale;
 }
-
 </script>
 
 <style scoped>

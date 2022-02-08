@@ -247,3 +247,219 @@ export function calcAngleBetweenVectors(u, v, posAngleVector) {
     }
     return angle
 }
+
+function removeThreejsMesh(scene, mesh) {
+    if (!mesh || mesh === []) {
+        return
+    }
+
+    scene.remove(mesh)
+    mesh.geometry.dispose()
+    mesh.material.dispose()
+}
+
+export function removeThreeJsObjects(scene, ...arr) {
+    for (const o of arr) {
+        if (Object.prototype.toString.call(o) === '[object Array]') {
+            for (const m of o) {
+                removeThreejsMesh(scene, m)
+            }
+        } else {
+            removeThreejsMesh(scene, o)
+        }
+    }
+}
+
+
+// 4D transformations //
+
+function get4DRotationMatrix(angleXW, angleYW, angleZW) {
+    const rotationXW = [
+        [Math.cos(angleXW), 0, 0, Math.sin(angleXW)],
+        [0, 1, 0, 0],
+        [0, 0, 1, 0],
+        [-Math.sin(angleXW), 0, 0, Math.cos(angleXW)]
+    ];
+
+    const rotationYW = [
+        [1, 0, 0, 0],
+        [0, Math.cos(angleYW), 0, -1*Math.sin(angleYW)],
+        [0, 0, 1, 0],
+        [0, Math.sin(angleYW), 0, Math.cos(angleYW)]
+    ];
+
+    const rotationZW = [
+        [1, 0, 0, 0],
+        [0, 1, 0, 0],
+        [0, 0, Math.cos(angleZW), -1*Math.sin(angleZW)],
+        [0, 0, Math.sin(angleZW), Math.cos(angleZW)]
+    ];
+
+    let m = multiplyMatrices(rotationXW, rotationYW)
+    return multiplyMatrices(m, rotationZW)
+}
+
+export function rotate4D(points, angleXW, angleYW, angleZW) {
+    let m = get4DRotationMatrix(angleXW, angleYW, angleZW)    
+
+    let rotated = []
+    for (let i = 0; i < points.length; i++){
+        let v = vectorToMatrix(points[i]);
+        v = multiplyMatrices(m, v);
+
+        // Turn matrices back to numbers
+        rotated.push([v[0][0], v[1][0], v[2][0], v[3][0]])
+    }
+
+    return rotated
+}
+
+export function project4DTo3D(rotatedPoints, projectionDistance, scaleFactor) {
+    const scale = [
+        [scaleFactor, 0, 0, 0],
+        [0, scaleFactor, 0, 0],
+        [0, 0, scaleFactor, 0],
+        [0, 0, 0, scaleFactor]
+    ];
+
+    let finalPoints = []
+    for (let i = 0; i < rotatedPoints.length; i++){
+        let workingVector = vectorToMatrix(rotatedPoints[i]);
+
+        let w = 1 / (projectionDistance - workingVector[3][0]);
+        const projectionMatrix = [
+            [w, 0, 0, 0],
+            [0, w, 0, 0],
+            [0, 0, w, 0]
+        ];
+
+        workingVector = multiplyMatrices(scale, workingVector)
+
+        // From 4D to 3D
+        let projected3d = multiplyMatrices(projectionMatrix, workingVector)
+
+        // Turn matrices back to numbers
+        finalPoints[i] = [projected3d[0][0], projected3d[1][0], projected3d[2][0]]
+    }
+    return finalPoints
+}
+
+
+// drawing ThreeJS objects //
+
+export function drawSpherePoints(points, sphereMeshes) {
+    for (let i = 0; i < sphereMeshes.length; i++){
+        if (i < points.length) {
+            sphereMeshes[i].visible = true
+            sphereMeshes[i].position.set(points[i][0], points[i][1], points[i][2])
+        } else {
+            sphereMeshes[i].visible = false
+        }
+    }
+}
+
+// pre-calculated from unit circle
+// Needs to be defined on the two axes orthogonal to the cylinder height
+const baseCirclePoints = [
+    [0, 0, 1],
+    [0, 0.3826834323650898, 0.9238795325112867],
+    [0, 0.7071067811865476, 0.7071067811865476],
+    [0, 0.9238795325112867, 0.38268343236508984],
+    [0, 1, 0],
+    [0, 0.9238795325112867, -0.3826834323650897],
+    [0, 0.7071067811865476, -0.7071067811865475],
+    [0, 0.3826834323650899, -0.9238795325112867],
+    [0, 0, -1],
+    [0, -0.38268343236508967, -0.9238795325112868],
+    [0, -0.7071067811865475, -0.7071067811865477],
+    [0, -0.9238795325112865, -0.38268343236509034],
+    [0, -1, 0],
+    [0, -0.9238795325112866, 0.38268343236509],
+    [0, -0.7071067811865477, 0.7071067811865474],
+    [0, -0.3826834323650904, 0.9238795325112865],
+    [0, 0, 1],
+]
+
+export function drawCylinders(points, meshes, edgeIndices, scaleFactor) {
+    for (let i = 0; i < edgeIndices.length; i++) {
+        let endpoint1 = points[edgeIndices[i][0]]
+        let endpoint2 = points[edgeIndices[i][1]]
+
+        // This axis used for cylinder height
+        let xAxis = subtractVectors(endpoint2, endpoint1)
+        normalizeVector(xAxis)
+
+        let yAxis = getArbitraryPerpendicularVector3D(xAxis)
+        normalizeVector(yAxis)
+
+        let zAxis = crossProduct(xAxis, yAxis)
+        normalizeVector(zAxis)
+
+        let rotation = [
+            [xAxis[0], yAxis[0], zAxis[0], 0],
+            [xAxis[1], yAxis[1], zAxis[1], 0],
+            [xAxis[2], yAxis[2], zAxis[2], 0],
+            [0, 0, 0, 1]
+        ]
+
+        let translation1 = [
+            [1, 0, 0, endpoint1[0]],
+            [0, 1, 0, endpoint1[1]],
+            [0, 0, 1, endpoint1[2]],
+            [0, 0, 0, 1],
+        ]
+
+        let translation2 = [
+            [1, 0, 0, endpoint2[0]],
+            [0, 1, 0, endpoint2[1]],
+            [0, 0, 1, endpoint2[2]],
+            [0, 0, 0, 1],
+        ]
+
+        let scale = [
+            [scaleFactor, 0, 0, 0],
+            [0, scaleFactor, 0, 0],
+            [0, 0, scaleFactor, 0],
+            [0, 0, 0, 1],
+        ]
+
+        let m1 = multiplyMatrices(translation1, scale)        
+        let m2 = multiplyMatrices(translation2, scale)
+
+        let vArray = meshes[i].geometry.getAttribute('position').array
+        let nArray = meshes[i].geometry.getAttribute('normal').array
+
+        let rotatedPoints = []
+        for (let j = 0; j < baseCirclePoints.length; j++) {
+            let r = vectorToMatrix([...baseCirclePoints[j], 1])
+            r = multiplyMatrices(rotation, r)
+            rotatedPoints.push(r)
+
+            let v = multiplyMatrices(m1, r)
+            vArray[j*3] = v[0][0]
+            vArray[j*3 + 1] = v[1][0]
+            vArray[j*3 + 2] = v[2][0]
+
+            let n = [r[0][0], r[1][0], r[2][0]]
+            normalizeVector(n)
+            nArray[j*3] = n[0]
+            nArray[j*3 + 1] = n[1]
+            nArray[j*3 + 2] = n[2]
+        }
+
+        let startIndex =  (vArray.length / 2)
+        for (let j = 0; j < baseCirclePoints.length; j++) {
+            let v = multiplyMatrices(m2, rotatedPoints[j])
+            vArray[startIndex + (j*3)] = v[0][0]
+            vArray[startIndex + (j*3) + 1] = v[1][0]
+            vArray[startIndex + (j*3) + 2] = v[2][0]
+
+            nArray[startIndex + (j*3)] = nArray[j*3]
+            nArray[startIndex + (j*3) + 1] = nArray[j*3 + 1]
+            nArray[startIndex + (j*3) + 2] = nArray[j*3 + 2]
+        }
+
+        meshes[i].geometry.attributes.normal.needsUpdate = true
+        meshes[i].geometry.attributes.position.needsUpdate = true
+    }
+}

@@ -1,10 +1,12 @@
 <template>
 <div>
-    <div v-show="componentToDisplay === 'Placeholder'" class="placeholder resizable" :style="{'width': canvasSize.width + 'px'}"></div>
-    <FirstPerson2D v-show="componentToDisplay === 'FirstPerson2D'" :canvasSize="canvasSize"/>
-    <Slices2D v-show="componentToDisplay === 'Slices2D'" :canvasSize="canvasSize"/>
-    <ThreeJs v-show="componentToDisplay === 'ThreeJs'" class="resizable" :canvasSize="canvasSize" :style="{'width': canvasSize.width + 'px'}" />
-    <Cone v-show="componentToDisplay === 'Cone'" class="resizable" :canvasSize="canvasSize" :style="{'width': canvasSize.width + 'px'}" />
+    <div v-show="componentToDisplay === undefined" class="placeholder resizable" :style="{'width': canvasSize.width + 'px'}"></div>
+    <!-- <FirstPerson2D :is="componentToDisplay" :canvasSize="canvasSize"/>
+    <Slices2D :is="componentToDisplay" :canvasSize="canvasSize"/>
+    <ThreeJs :is="componentToDisplay" class="resizable" :canvasSize="canvasSize" :style="{'width': canvasSize.width + 'px'}" /> -->
+    <keep-alive>
+    <component :is="componentToDisplay" class="resizable" :canvasSize="canvasSize" :style="{'width': canvasSize.width + 'px'}" />
+    </keep-alive>
 </div>
 </template>
 
@@ -23,7 +25,7 @@ export default {
     },
     data() {
         return {
-            componentToDisplay: 'Placeholder'
+            componentToDisplay: undefined
         }
     },
     props: {

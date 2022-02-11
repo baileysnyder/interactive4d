@@ -67,7 +67,9 @@ export default {
                 }
                 previousTimestamp = timestamp
             }
-            requestAnimationFrame(this.animate);
+            if (!this._inactive) {
+                requestAnimationFrame(this.animate)
+            }
         },
         updateCanvases(width, height) {
             this.canvas.width = width
@@ -120,7 +122,10 @@ export default {
             e.preventDefault()
         }, {passive: false})
 
-        this.animate(0)
+        //this.animate(0)
+    },
+    activated() {
+        requestAnimationFrame(this.animate)
     }
 }
 
@@ -161,7 +166,7 @@ class Line {
     }
 
     getAngle() {
-        if (!this.angle) {
+        if (this.angle == null) {
             let v = this.getVector()
             this.angle = Math.atan2(v[1], v[0])
         }
@@ -169,7 +174,7 @@ class Line {
     }
 
     getMagnitude() {
-        if (!this.magnitude) {
+        if (this.magnitude == null) {
             let v = this.getVector()
             this.magnitude = Util.getVectorMagnitude(v)
         }
@@ -178,14 +183,14 @@ class Line {
 
     // arbitrarily using p2-p1 instead of p1-p2. Need to keep in mind when using.
     getVector() {
-        if (!this.vector) {
+        if (this.vector == null) {
             this.vector = Util.subtractVectors(this.p2, this.p1)
         }
         return this.vector
     }
 
     getPerpendicularVector() {
-        if (!this.perpendicularVector) {
+        if (this.perpendicularVector == null) {
             this.perpendicularVector = [this.getVector()[1], -this.getVector()[0]]
         }
         return this.perpendicularVector

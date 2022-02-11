@@ -20,6 +20,11 @@ export function getVectorMagnitude(v) {
     return Math.sqrt(mag)
 }
 
+export function distanceBetweenPoints(p1, p2) {
+    let v = subtractVectors(p1, p2)
+    return getVectorMagnitude(v)
+}
+
 export function normalizeVector(v) {
     let mag = getVectorMagnitude(v)
 
@@ -112,8 +117,8 @@ export function lerp(a, b, t) {
 }
 
 export function multiplyMatrices(a, b) {
-   if (!Array.isArray(a) || !Array.isArray(b) || !a.length || !b.length) {
-      throw new Error('arguments should be in 2-dimensional array format');
+   if (!Array.isArray(a) || !Array.isArray(b)) {
+      throw new Error('arguments should be arrays');
    }
    let x = a.length,
    z = a[0].length,
@@ -135,6 +140,25 @@ export function multiplyMatrices(a, b) {
       }
    }
    return product;
+}
+
+export function multiplyMatrixVector(m, v) {
+    if (!Array.isArray(m) || !Array.isArray(v)) {
+      throw new Error('arguments should be arrays')
+    }
+    if (m[0].length !== v.length) {
+        throw new Error('number of columns in the matrix should be the same as the number values in the vector')
+    }
+
+    let newV = []
+    for (let i = 0; i < m.length; i++) {
+        let val = 0
+        for (let j = 0; j < v.length; j++) {
+            val += m[i][j]*v[j]
+        }
+        newV.push(val)
+    }
+    return newV
 }
 
 export function vectorToMatrix(vec){
@@ -192,7 +216,7 @@ export function printThreeVertices(geometry) {
 }
 
 export function getCenterOfPoints(points) {
-    if (!points[0]) {
+    if (points[0] == null) {
         return []
     }
     
@@ -268,6 +292,17 @@ export function removeThreeJsObjects(scene, ...arr) {
             removeThreejsMesh(scene, o)
         }
     }
+}
+
+export function triangulateSortedFace(sortedPoints) {
+    let  trianglePoints = []
+    for (let i = 1; i < sortedPoints.length-1; i++) {
+        trianglePoints.push(...sortedPoints[0])
+        trianglePoints.push(...sortedPoints[i])
+        trianglePoints.push(...sortedPoints[i+1])
+    }
+
+    return trianglePoints
 }
 
 

@@ -5,7 +5,12 @@
     <div id="main-content" :style="{'width': mainWidth + 'px', 'height': mainHeight + 'px'}">
           <div class="wrapper" ref="wrapper">
             <Interactive ref="interactive" class="resizable-box interactive-box" :canvasSize="{width: interactiveWidth, height: interactiveHeight}" :style="{'width': interactiveWidth + 'px'}" />
-            <div @mousedown="onMousedownHandler" class="handler" ></div>
+            <div @mousedown="onMousedownHandler" class="handler" >
+                <svg class="handler-grip">
+                    <rect x="21%" y="0" width="18%" height="100%" rx="4px" fill="rgb(56, 56, 56)" />
+                    <rect x="61%" y="0" width="18%" height="100%" rx="4px" fill="rgb(56, 56, 56)" />
+                </svg>
+            </div>
             <nuxt ref="article" class="resizable-box article-box"/>
         </div>
     </div>
@@ -18,7 +23,7 @@
 import Navigation from '../components/Navigation'
 import Interactive from '../components/Interactive/Interactive'
 
-const navigationWidth = 170
+const navigationWidth = 180
 const headerFooterHeight = 200
 const minInteractiveWidth = 0.2
 
@@ -122,7 +127,8 @@ h2 {
     display: inline-block;
     vertical-align: top;
     position: fixed;
-    padding-left: 10px;
+    padding-left: 6px;
+    margin-top: 16px;
 }
 
 .wrapper {
@@ -153,13 +159,21 @@ h2 {
   padding: 0;
   cursor: ew-resize;
   flex: 0 0 auto;
+
+  display: flex;
+  align-items: center;
 }
 
-.handler::before {
+/* .handler::before {
   content: '';
   display: block;
   height: 100%;
   margin: 0 auto;
+} */
+
+.handler-grip {
+    width: 100%;
+    height: 4%;
 }
 
 </style>

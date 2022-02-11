@@ -16,20 +16,20 @@
                     <div class="slider-row">
                         <label for="angleXZ">XZ</label>
                         <input id="angleXZ" v-model="angleDegXZ" type="range" min="-360" max="360" value="0" step="1">
-                        <!-- <input v-model="angleDegXZ" class="slider-text" type="text" size="4">
-                        <span class="unit-text">°</span> -->
+                        <input v-model="angleDegXZ" class="slider-text" type="text" size="4">
+                        <span class="unit-text">°</span>
                     </div>
                     <div class="slider-row">
                         <label for="angleYZ">YZ</label>
                         <input id="angleYZ" v-model="angleDegYZ" type="range" min="-360" max="360" value="0" step="1">
-                        <!-- <input v-model="angleDegYZ" class="slider-text" type="text" size="4">
-                        <span class="unit-text">°</span> -->
+                        <input v-model="angleDegYZ" class="slider-text" type="text" size="4">
+                        <span class="unit-text">°</span>
                     </div>
                     <div class="slider-row">
                         <label for="translateZ">Z</label>
                         <input id="translateZ" v-model="translateZ" type="range" min="-1.5" max="1.5" value="0" step="0.01">
-                        <!-- <input v-model="translateZ" class="slider-text" type="text" size="4">
-                        <span class="unit-text invisible">°</span> -->
+                        <input v-model="translateZ" class="slider-text" type="text" size="4">
+                        <span class="unit-text invisible">°</span>
                     </div>
                 </div>
             </div>
@@ -41,7 +41,8 @@
 <script>
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
-import * as Util from '../../scripts/util';
+import * as Util from '../../scripts/util'
+import * as Cone from '../../scripts/cone'
 
 let previousTimestamp = 0;
 let interval = 1000/60;
@@ -156,7 +157,9 @@ export default {
                 renderer.render(scene, camera)
                 previousTimestamp = timestamp
             }
-            requestAnimationFrame(this.animate);
+            if (!this._inactive) {
+                requestAnimationFrame(this.animate)
+            }
         },
         updateSliceCanvas(width, totalHeight) {
             this.sliceCanvas.width = width
@@ -195,7 +198,9 @@ export default {
         this.initThree()
         initPlane()
         this.initSphere()
-        this.animate(0)
+    },
+    activated() {
+        requestAnimationFrame(this.animate)
     }
 }
 
@@ -215,11 +220,6 @@ const planeWidth = 4
 const coneSegments = 32
 const coneHeight = sphereRadius*Math.tan(Math.PI/3)
 const cubeLength = sphereRadius*1.5
-
-const coneNegZBase = [0, -coneHeight/2, -sphereRadius]
-const conePosZBase = [0, -coneHeight/2, sphereRadius]
-
-const parabolaThreshold = 0.001
 
 // based on threeJS cube vertex order
 const cubeEdgeIndices = [
@@ -508,193 +508,33 @@ function drawEdgeCubeSlice(canvas, points) {
 
 function updateCone(canvas, angleXZ, angleYZ, translateZ) {
     coneMesh.position.z = translateZ
-    //coneMesh.rotation.y = angleXZ
+    coneMesh.rotation.y = angleXZ
     coneMesh.rotation.x = angleYZ
-    coneMesh.updateMatrix()
-    updateConicalSlice(canvas, angleYZ, translateZ)
-}
+    //coneMesh.updateMatrix()
 
-function updateConicalSlice(canvas, angleYZ, translateZ) {
     drawSliceCanvas(canvas)
 
-    // the threejs cone positions array is split into 4 sections each having length coneSegments+1:
-    // tip positions > base positions > base center positions > base positions
-    let tip = new THREE.Vector3()
-    tip.fromBufferAttribute(coneMesh.geometry.attributes.position, 0)
-    tip.applyMatrix4(coneMesh.matrix)
-
-    let baseNeg = new THREE.Vector3(coneNegZBase[0], coneNegZBase[1], coneNegZBase[2])
-    baseNeg.applyMatrix4(coneMesh.matrix)
-
-    let basePos = new THREE.Vector3(conePosZBase[0], conePosZBase[1], conePosZBase[2])
-    basePos.applyMatrix4(coneMesh.matrix)
-
-    let hyperbolaMin = (-2*Math.PI)-(Math.PI/6)
-    const hyperbolaRange = Math.PI/3
-    const maxAngle = 2*Math.PI
-
-    while (hyperbolaMin < maxAngle) {
-        let hyperbolaMax = hyperbolaMin + hyperbolaRange
-
-        if (inThreshold(angleYZ, hyperbolaMin, parabolaThreshold) || inThreshold(angleYZ, hyperbolaMax, parabolaThreshold)) {
-            updateParabola(canvas, angleYZ, tip, baseNeg, basePos)
-            return
-        } else if (angleYZ > hyperbolaMin && angleYZ < hyperbolaMax) {
-            updateHyperbola(canvas, angleYZ, tip, baseNeg, basePos)
-            return
-        } else {
-            hyperbolaMin += Math.PI
-        }
-    }
-
-    updateEllipse(canvas, angleYZ, tip, baseNeg, basePos)
-}
-
-function inThreshold(val, checkVal, threshold) {
-    let min = checkVal - threshold
-    let max = checkVal + threshold
-    return val > min && val < max
-}
-
-function updateParabola(canvas, angleYZ, tip, baseNeg, basePos) {
-    if (basePos.z === 0 || baseNeg.z === 0) {
-        // slice is a straight line, which would be invisible in 2D
-        return
-    }
-
-    let yInt = undefined
-    if (tip.z > 0 && baseNeg.z < 0 || tip.z < 0 && baseNeg.z > 0) {
-        yInt = yInterceptOnPlane(tip, baseNeg)
-    } else if (tip.z > 0 && basePos.z < 0 || tip.z < 0 && basePos.z > 0) {
-        yInt = yInterceptOnPlane(tip, basePos)
-    }
-
-    if (!yInt) {
-        return
-    }
-
-    let baseCutY = yInterceptOnPlane(basePos, baseNeg)
-    let x = getXOfBaseIntersect(baseCutY)
-    let y = Math.abs(yInt-baseCutY)
-    let a = x*x/(4*y)
-    let points = getParabola(a, y)
-
-    let isUp = Math.cos(angleYZ) < 0
-    translateGraph(points, yInt, isUp)
-    drawPoints(canvas, points)
-}
-
-function getParabola(a, maxY) {
-    let points1 = []
-    let points2 = []
-    const minY = 0.0001
-
-    for (let y = maxY; y > minY ; y/=1.5) {
-        let x = Math.sqrt(4*a*y)
-        points1.push([-x, y])
-        points2.push([x, y])
-    }
-
-    points1.push([0, 0])
-    // store points left to right so it's easier to draw
-    return points1.concat(points2.reverse())
-}
-
-function updateHyperbola(canvas, angleYZ, tip, baseNeg, basePos) {
-    // degenerative
-    if (tip.z === 0) {
-        let points = getDegenerativeHyperbola(tip, basePos, baseNeg)
-        drawPoints(canvas, points)
-        return
-    }
-
-    let y1 = undefined
-    let y2 = undefined
-    if (tip.z > 0 && baseNeg.z < 0 || tip.z < 0 && baseNeg.z > 0) {
-        y1 = yInterceptOnPlane(tip, baseNeg)
-        y2 = projectedYInterceptOnPlane(basePos, tip)
-    } else if (tip.z > 0 && basePos.z < 0 || tip.z < 0 && basePos.z > 0) {
-        y1 = yInterceptOnPlane(tip, basePos)
-        y2 = projectedYInterceptOnPlane(baseNeg, tip)
-    }
-
-    if (!y1 || !y2) {
-        return
-    }
-
-    let a = Math.abs((y2-y1)/2)
-    let eccentricity = Math.abs(Math.cos(angleYZ)/Math.cos(Math.PI/6))
-    let c = a*eccentricity
-    let b = Math.sqrt(Math.abs(c*c-a*a))
-
-    let baseCutY = yInterceptOnPlane(basePos, baseNeg)
-
-    let yOrigin = y1 + ((y2-y1)/2)
-    let points = getHyperbola(a, b, Math.abs(yOrigin - baseCutY))
-    let isUp = Math.cos(angleYZ) < 0
-    translateGraph(points, yOrigin, isUp)
-    drawPoints(canvas, points)
-}
-
-function getDegenerativeHyperbola(tip, basePos, baseNeg) {
-    if (basePos.y === baseNeg.y) {
-        return [
-            [-sphereRadius, basePos.y],
-            [0, tip.y],
-            [sphereRadius, basePos.y]
-        ]
-    }
-    // assuming base circle is intersecting
-    let baseCutY = yInterceptOnPlane(basePos, baseNeg)
-    let xDist = getXOfBaseIntersect(baseCutY)
-
-    return [
-        [-xDist, baseCutY],
-        [0, tip.y],
-        [xDist, baseCutY]
-    ]
-}
-
-function getXOfBaseIntersect(baseCutY) {
-    let baseCenter = new THREE.Vector3()
-    baseCenter.fromBufferAttribute(coneMesh.geometry.attributes.position, (coneSegments*2)+2)
-    baseCenter.applyMatrix4(coneMesh.matrix)
-
-    let yDiff = baseCutY-baseCenter.y
-    let zDistAlongBase2 = yDiff*yDiff + baseCenter.z*baseCenter.z
-    return Math.sqrt(sphereRadius*sphereRadius - zDistAlongBase2)
-}
-
-function getHyperbola(a, b, maxY) {
-    let a2 = a*a
-    let b2 = b*b
-
-    let points1 = []
-    let points2 = []
-    let distance = maxY-a
-    const minY = 0.0001
-
-    for (let d = distance; d > minY ; d/=1.5) {
-        let y = a + d
-        let x = Math.sqrt(Math.abs(b2*(1-((y*y)/a2))))
-        points1.push([-x, y])
-        points2.push([x, y])
-    }
-
-    points1.push([0, a])
-    // store points left to right so it's easier to draw
-    return points1.concat(points2.reverse())
-}
-
-function translateGraph(points, y0, isUp) {
-    let sign = isUp ? 1 : -1
-
-    for (let i = 0; i < points.length; i++) {
-        points[i][1] = y0 + (sign*points[i][1])       
+    let transformedCone = new Cone.Cone(coneHeight, sphereRadius, angleYZ, translateZ)
+    switch (Cone.getSliceType(angleYZ)) {
+        case (Cone.sliceType.parabola):
+            drawPoints(canvas, Cone.coneToParabola(angleYZ, transformedCone).points)
+            break
+        case (Cone.sliceType.hyperbola):
+            drawPoints(canvas, Cone.coneToHyperbola(angleYZ, transformedCone).points)
+            break
+        case (Cone.sliceType.ellipse):
+            let ellipse = Cone.coneToEllipse(angleYZ, transformedCone)
+            drawSolidEllipse(canvas, ellipse)
+            drawBaseCutoff(canvas, ellipse)
+            break
     }
 }
 
 function drawPoints(canvas, points) {
+    if (points === undefined || points.length === 0) {
+        return
+    }
+    
     let squareLength = Math.min(canvas.width, canvas.height)
     let canvasRatio = squareLength/planeWidth
 
@@ -713,59 +553,18 @@ function drawPoints(canvas, points) {
     ctx.fill()
 }
 
-function updateEllipse(canvas, angleYZ, tip, baseNeg, basePos) {
-    let y1 = undefined
-    if (tip.z > 0 && baseNeg.z < 0 || tip.z < 0 && baseNeg.z > 0) {
-        y1 = yInterceptOnPlane(tip, baseNeg)
-    }
-
-    let y2 = undefined
-    if (tip.z > 0 && basePos.z < 0 || tip.z < 0 && basePos.z > 0) {
-        y2 = yInterceptOnPlane(tip, basePos)
-    }
-
-    if (!y1 && !y2) {
+function drawSolidEllipse(canvas, ellipse) {
+    if (ellipse === undefined) {
         return
     }
 
-    let eccentricity = Math.abs(Math.cos(angleYZ)/Math.cos(Math.PI/6))
-    if (y1 && y2) {
-        drawSolidEllipse(canvas, y1, y2, eccentricity)
-        return
-    }
-
-    y1 = projectedYInterceptOnPlane(tip, baseNeg)
-    y2 = projectedYInterceptOnPlane(tip, basePos)
-    drawSolidEllipse(canvas, y1, y2, eccentricity)
-
-    let baseCutY = yInterceptOnPlane(basePos, baseNeg)
-    let isUp = Math.cos(angleYZ) < 0
-    drawBaseCutoff(canvas, baseCutY, isUp)
-}
-
-function yInterceptOnPlane(start, end) {
-    let zDistance = Math.abs(start.z - end.z)
-    let t = Math.abs(start.z) / zDistance
-    return Util.lerp(start.y, end.y, t)
-}
-
-// If the line between start and end doesn't intersect the plane, see where it would eventually
-// intersect if the line continued
-function projectedYInterceptOnPlane(start, end) {
-    let line = new THREE.Vector3()
-    line.subVectors(start, end)
-    let t = -(start.z / line.z)
-    return start.y + (line.y*t)
-}
-
-function drawSolidEllipse(canvas, y1, y2, eccentricity) {
     let squareLength = Math.min(canvas.width, canvas.height)
     let canvasRatio = squareLength/planeWidth
-    let canvasY1 = y1*canvasRatio
-    let canvasY2 = y2*canvasRatio
+    let canvasY1 = ellipse.y1*canvasRatio
+    let canvasY2 = ellipse.y2*canvasRatio
 
     let a = Math.abs(canvasY1-canvasY2)/2
-    let c = a*eccentricity
+    let c = a*ellipse.eccentricity
     let b = Math.sqrt(Math.abs(c*c-a*a))
 
     let ctx = canvas.getContext("2d")
@@ -775,14 +574,18 @@ function drawSolidEllipse(canvas, y1, y2, eccentricity) {
     ctx.fill();
 }
 
-function drawBaseCutoff(canvas, cutY, isUp) {
+function drawBaseCutoff(canvas, ellipse) {
+    if (ellipse === undefined || ellipse.baseCutY === undefined) {
+        return
+    }
+
     let squareLength = Math.min(canvas.width, canvas.height)
     let canvasRatio = squareLength/planeWidth
-    let canvasCutY = (canvas.height/2) - (cutY*canvasRatio)
+    let canvasCutY = (canvas.height/2) - (ellipse.baseCutY*canvasRatio)
 
     let ctx = canvas.getContext("2d")
     ctx.fillStyle=planeColor
-    if (isUp) {
+    if (ellipse.isBaseCutUp) {
         ctx.fillRect(0, 0, canvas.width, canvasCutY)
     } else {
         ctx.fillRect(0, canvasCutY, canvas.width, canvas.height)

@@ -71,7 +71,7 @@ export default {
                 projectionHypercube: 1,
                 hypersphere: 2,
             },
-            objectNeedsUpdate: false
+            objectNeedsUpdate: false,
         }
     },
     props: {
@@ -157,7 +157,9 @@ export default {
                 renderer.render(scene, camera)
                 delta = delta % interval;
             }
-            requestAnimationFrame(this.animate);
+            if (!this._inactive) {
+                requestAnimationFrame(this.animate)
+            }
         },
         initShape(initFunction, displayObjectId) {
             undoInits()
@@ -184,7 +186,10 @@ export default {
     mounted() {
         this.initThree()
         this.initConvexHypercube()
-        this.animate()
+        //this.animate()
+    },
+    activated() {
+        requestAnimationFrame(this.animate)
     }
 }
 
@@ -565,7 +570,7 @@ function drawFaces(faceGeometry) {
         sortFacePoints(pointsByFace[i], normal)
 
         drawEdgesForFace(pointsByFace[i])
-        let faceVertices = getFaceVertices(pointsByFace[i].map(ip => ip.point))
+        let faceVertices = Util.triangulateSortedFace(pointsByFace[i].map(ip => ip.point))
 
         positions.push(...faceVertices)
         for (let k = 0; k < faceVertices.length/3; k++) {
@@ -586,17 +591,6 @@ function drawFaces(faceGeometry) {
     }
 }
 
-function getFaceVertices(sortedPoints) {
-    let  trianglePoints = []
-    while (sortedPoints.length > 2) {
-        trianglePoints.push(...sortedPoints[0])
-        trianglePoints.push(...sortedPoints[1])
-        trianglePoints.push(...sortedPoints[2])
-        
-        sortedPoints.splice(1, 1)
-    }
-    return trianglePoints
-}
 
 function updateHypersphere(translateW) {
     let radius = Util.getSphereIntersectionRadius(hypersphereRadius, Math.abs(translateW))

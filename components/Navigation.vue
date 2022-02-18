@@ -1,46 +1,21 @@
 <template>
   <div id="wrapper">
-      <div>
-        <svg class="nav-circle">
-          <circle v-show="$route.path === '/'" cx="50%" cy="50%" r="45%" fill="lightgray" />
-          <circle v-show="$route.path !== '/'" cx="50%" cy="50%" r="20%" fill="gray" />
-        </svg>
-        <NuxtLink to="/" class="navlink">HOME</NuxtLink>
-      </div>
-      <div>
-        <svg class="nav-circle">
-          <circle v-show="$route.path === '/2d-flatland'" cx="50%" cy="50%" r="45%" fill="lightgray" />
-          <circle v-show="$route.path !== '/2d-flatland'" cx="50%" cy="50%" r="20%" fill="gray" />
-        </svg>
-        <NuxtLink to="/2d-flatland" class="navlink">2D FLATLAND</NuxtLink>
-      </div>
-      <div>
-        <svg class="nav-circle">
-          <circle v-show="$route.path === '/3d-to-2d'" cx="50%" cy="50%" r="45%" fill="lightgray" />
-          <circle v-show="$route.path !== '/3d-to-2d'" cx="50%" cy="50%" r="20%" fill="gray" />
-        </svg>
-        <NuxtLink to="/3d-to-2d" class="navlink">3D OBJECTS IN 2D</NuxtLink>
-      </div>
-      <div>
-        <svg class="nav-circle">
-          <circle v-show="$route.path === '/4d-to-3d'" cx="50%" cy="50%" r="45%" fill="lightgray" />
-          <circle v-show="$route.path !== '/4d-to-3d'" cx="50%" cy="50%" r="20%" fill="gray" />
-        </svg>
-        <NuxtLink to="/" class="navlink">4D OBJECTS IN 3D</NuxtLink>
-      </div>
-      <div>
-        <svg class="nav-circle">
-          <circle v-show="$route.path === '/4d-cone'" cx="50%" cy="50%" r="45%" fill="lightgray" />
-          <circle v-show="$route.path !== '/4d-cone'" cx="50%" cy="50%" r="20%" fill="gray" />
-        </svg>
-        <NuxtLink to="/4d-cone" class="navlink">4D CONE</NuxtLink>
-      </div>
+    <NavigationLink :linkText="'INTRODUCTION'" :routePath="'/'" />
+    <NavigationLink :linkText="'THINKING IN DIMENSIONS'" :routePath="'/'" />
+    <NavigationLink :linkText="'2D UNIVERSE'" :routePath="'/2d-universe'" />    
+    <NavigationLink :linkText="'3D SLICES'" :routePath="'/3d-to-2d'" />
+    <NavigationLink :linkText="'3D PROJECTIONS'" :routePath="'/3d-to-2d'" />
+    <NavigationLink :linkText="'4D SPHERES AND CUBES'" :routePath="'/'" />
+    <NavigationLink :linkText="'4D CONES AND MORE'" :routePath="'/'" />
   </div>
 </template>
 
 <script>
+import NavigationLink from './NavigationLink'
 export default {
-
+  components: {
+    NavigationLink,
+  }
 }
 </script>
 

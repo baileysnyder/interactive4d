@@ -8,10 +8,11 @@
 </template>
 
 <script>
+
 export default {
   beforeCreate() {
     let emit = {
-      componentToDisplay: "Cone"
+      componentToDisplay: "ThreeJs"
     }
 
     $nuxt.$emit('load-interactive', emit)

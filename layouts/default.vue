@@ -1,7 +1,6 @@
 <template>
 <div ref="topContainer">
     <h1>Interactive 4D Visualizer</h1>
-    <h2>From Flatland to the Fourth Dimension</h2>
     <div id="main-content" :style="{'width': mainWidth + 'px', 'height': mainHeight + 'px'}">
           <div class="wrapper" ref="wrapper">
             <Interactive ref="interactive" class="resizable-box interactive-box" :canvasSize="{width: interactiveWidth, height: interactiveHeight}" :style="{'width': interactiveWidth + 'px'}" />
@@ -23,8 +22,8 @@
 import Navigation from '../components/Navigation'
 import Interactive from '../components/Interactive/Interactive'
 
-const navigationWidth = 180
-const headerFooterHeight = 200
+const navigationWidth = 250
+const headerFooterHeight = 150
 const minInteractiveWidth = 0.2
 
 export default {
@@ -108,13 +107,10 @@ let preventEvent = function(e) {
 
 <style scoped>
 h1 {
-    margin-bottom: 0;
+    margin-bottom: 8px;
+    margin-left: 8px;
 }
 
-h2 {
-    margin-top: 0;
-    font-style: italic;
-}
 
 #main-content {
     display: inline-block;
@@ -191,6 +187,34 @@ body {
 }
 
 .article-box p {
-    margin: 20px;
+    margin-left: 20px;
+    margin-right: 20px;
+    margin-bottom: 10px;
+    margin-top: 10px;
+}
+
+.article-box .main-content {
+  overflow-y: auto;
+}
+
+/* Works on Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: lightgray gray;
+}
+
+/* Works on Chrome, Edge, and Safari */
+*::-webkit-scrollbar {
+  width: 14px;
+}
+
+*::-webkit-scrollbar-track {
+  background: transparent;
+  border-radius: 20px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background-color: gray;
+  border-radius: 20px;
 }
 </style>

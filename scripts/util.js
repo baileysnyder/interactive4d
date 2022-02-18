@@ -1,5 +1,27 @@
 import { Vector3 } from "three"
 
+export const scenes = {
+    three: {
+        sliceHypercube: 0,
+        projHypercube: 1,
+        sliceHypersphere: 2,
+        projHypersphere: 3,
+        sliceCone: 4,
+        projCone: 5,
+    },
+    firstperson2d: {
+        firstperson2d: 6
+    },
+    threeandcanvas: {
+        sphere: 7,
+        solidCube: 8,
+        edgeCube: 9,
+        cone: 10,
+        projSphere: 11,
+        projCube: 12,
+    }
+}
+
 export function subtractVectors(vDommy, vSub){
     if (vDommy.length !== vSub.length) {
         throw new Error('Vector dimensions must match')
@@ -303,6 +325,40 @@ export function triangulateSortedFace(sortedPoints) {
     }
 
     return trianglePoints
+}
+
+export function generate3DSphereIn4D(radius, segmentsW, segmentsH, w) {
+    let points = []
+    points.push([0, 1, 0, w])
+    for (let m = 1; m < segmentsH; m++) {
+        for (let n = 0; n < segmentsW; n++) {
+            let x = Math.sin(Math.PI * m/segmentsH) * Math.cos(2 * Math.PI * n/segmentsW)
+            let z = Math.sin(Math.PI * m/segmentsH) * Math.sin(2 * Math.PI * n/segmentsW)
+            let y = Math.cos(Math.PI * m/segmentsH)
+            points.push([x*radius, y*radius, z*radius, w])
+        }
+    }
+    points.push([0, -1, 0, w])
+    return points
+}
+
+export function generateSpreadSpherePoints(n, multiplier) {
+	let goldenRatio = 1 + Math.sqrt(5) / 4
+	let angleIncrement = Math.PI * 2 * goldenRatio
+
+    let points = []
+	for (let i = 0; i < n; i++) {
+		let distance = i / n
+		let incline = Math.acos(1 - 2 * distance)
+		let azimuth = angleIncrement * i
+
+		let x = Math.sin(incline) * Math.cos(azimuth) * multiplier
+		let y = Math.sin(incline) * Math.sin(azimuth) * multiplier
+		let z = Math.cos(incline) * multiplier
+
+		points.push([x, y, z, 0])
+    }
+    return points
 }
 
 

@@ -1,10 +1,10 @@
 <template>
   <div>
-    <h2 class="article-header">2D Universe</h2>
+    <h2 class="article-header">4D Cones and More</h2>
     <div class="main-content">
       <p>Place</p>
       <p>Holder</p>
-      <LoadSceneButton :sceneID="scenes.firstperson2d.firstperson2d" :text="'Load Scene'" :imgName="'proj_cube.png'"></LoadSceneButton>
+      <LoadSceneButton :sceneID="scenes.three.projHypercube" :text="'4D Cube Projection'" :imgName="'proj_cube.png'"></LoadSceneButton>
     </div>
   </div>
 </template>
@@ -26,7 +26,7 @@ export default {
   },
   beforeCreate() {
     if (!activeScene) {
-      activeScene = scenes.firstperson2d.firstperson2d
+      activeScene = scenes.three.projCone
     }
     this.$store.commit('updateScene', activeScene)
   },

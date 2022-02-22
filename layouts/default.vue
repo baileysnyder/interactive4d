@@ -1,6 +1,6 @@
 <template>
 <div ref="topContainer">
-    <h1>Interactive 4D Visualizer</h1>
+    <h1>INTERACTIVE 4D VISUALIZER</h1>
     <div id="main-content" :style="{'width': mainWidth + 'px', 'height': mainHeight + 'px'}">
           <div class="wrapper" ref="wrapper">
             <Interactive ref="interactive" class="resizable-box interactive-box" :canvasSize="{width: interactiveWidth, height: interactiveHeight}" :style="{'width': interactiveWidth + 'px'}" />
@@ -10,7 +10,17 @@
                     <rect x="61%" y="0" width="18%" height="100%" rx="4px" fill="rgb(56, 56, 56)" />
                 </svg>
             </div>
-            <nuxt ref="article" class="resizable-box article-box"/>
+            <div class="resizable-box article-box">
+                <nuxt class="article"/>
+                <div class="navbar">
+                    <NuxtLink :to="previousRoute" v-show="previousRoute !== ''">
+                        <button class="nav-button previous-button">← Prev</button>
+                    </NuxtLink>
+                    <NuxtLink :to="nextRoute" v-show="nextRoute !== ''">
+                        <button class="nav-button next-button">Next →</button>
+                    </NuxtLink>
+                </div>
+            </div>
         </div>
     </div>
     <Navigation ref="navigation" id="navigation"/>
@@ -21,6 +31,7 @@
 <script>
 import Navigation from '../components/Navigation'
 import Interactive from '../components/Interactive/Interactive'
+import {navPages} from '../scripts/util'
 
 const navigationWidth = 250
 const headerFooterHeight = 150
@@ -39,6 +50,22 @@ export default {
             isHandlerDragging: false,
             interactiveWidth: (window.innerWidth - navigationWidth) / 2,
             interactiveHeight: window.innerHeight - headerFooterHeight,
+        }
+    },
+    computed: {
+        previousRoute() {
+            for (let i = 0; i < navPages.length; i++) {
+                if (navPages[i].path === this.$route.path) {
+                    return i > 0 ? navPages[i-1] : ''
+                }
+            }
+        },
+        nextRoute() {
+            for (let i = 0; i < navPages.length; i++) {
+                if (navPages[i].path === this.$route.path) {
+                    return i < navPages.length-1 ? navPages[i+1] : ''
+                }
+            }
         }
     },
     mounted() {
@@ -95,7 +122,25 @@ export default {
 
             this.interactiveWidth = this.mainWidth / 2
             this.interactiveHeight = this.mainHeight
-        }
+        },
+        // initScene(sceneID) {
+        //     Util.emitScene(sceneID)
+        // },
+        // initSliceHypercube() {
+        //     Util.emitScene(Util.scenes.three.sliceHypercube)
+        // },
+        // initSliceHypersphere() {
+        //     Util.emitScene(Util.scenes.three.sliceHypersphere)
+        // },
+        // initProjHypersphere() {
+        //     Util.emitScene(Util.scenes.three.projHypersphere)
+        // },
+        // initProjCone() {
+        //     Util.emitScene(Util.scenes.three.projCone)
+        // },
+        // initSliceCone() {
+        //     Util.emitScene(Util.scenes.three.sliceCone)
+        // },
     }
 }
 
@@ -107,8 +152,9 @@ let preventEvent = function(e) {
 
 <style scoped>
 h1 {
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     margin-left: 8px;
+    font-style: italic;
 }
 
 
@@ -131,7 +177,7 @@ h1 {
   display:flex;
   height: 100%;
 
-  background: rgb(32, 32, 32);
+  background: rgb(36, 36, 36);
 }
 
 .resizable-box {
@@ -143,11 +189,48 @@ h1 {
 }
 
 .article-box {
+    flex: 1 1 auto;
+}
+
+.article {
+    height: 95%;
     display: flex;
     flex-flow: column;
-    flex: 1 1 auto;
-
     background: rgb(24, 24, 24);
+}
+
+.nav-button {
+    background: rgb(60, 60, 60);
+    color: rgb(232, 232, 232);
+    border: none;
+    border-radius: 5px;
+    padding-left: 8px;
+    padding-right: 8px;
+    height: 60%;
+    width: 80px;
+
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+}
+
+.nav-button:hover {
+  background: rgb(75, 75, 75);
+}
+
+.next-button {
+    float: right;
+    margin-right: 15px;
+}
+
+.previous-button {
+    float: left;
+    margin-left: 6px;
+}
+
+.navbar {
+    height: 5%;
+    background: rgb(32, 32, 32)
 }
 
 .handler {
@@ -177,23 +260,27 @@ h1 {
 <style>
 /* global styling */
 body {
-    background: rgb(44, 44, 44);
+    background: rgb(46, 46, 46);
     color: rgb(232, 232, 232);
-    font-family: 'IBM Plex Sans';
+    font-family: 'Open Sans';
+}
+
+h1, h2, .navlink, button {
+    font-family: 'Karla';
 }
 
 .article-header {
     text-align: center;
 }
 
-.article-box p {
+.article p {
     margin-left: 20px;
     margin-right: 20px;
     margin-bottom: 10px;
     margin-top: 10px;
 }
 
-.article-box .main-content {
+.article .main-content {
   overflow-y: auto;
 }
 

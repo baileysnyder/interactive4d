@@ -1,24 +1,31 @@
 <template>
     <div class="button-row">
-      <button class="load-button" @click="clickAction">
+      <button class="load-button" :class="{'active': isActive, 'inactive': !isActive}" @click="updateScene">
         <span class="button-text">{{text}}</span>
-        <img class="button-image" :src="'/_nuxt/assets/load-scene-images/' + imgName" />
+        <div class="img-box">
+          <img class="button-image" :src="require(`~/assets/load-scene-images/${imgName}`)">
+          <div class="button-image"></div>
+        </div>
       </button>
     </div>
-    <!-- <div class="button-box" @click="initSliceHypercube">
-      <div class="button-wrapper">
-        <img class="button-image2" src="~assets/load-scene-images/slice_cube.png">
-        <button class="button2">LOAD SLICE CUBE</button>
-      </div>
-    </div> -->
 </template>
 
 <script>
 export default {
     props: {
-        clickAction: Function,
+        sceneID: Number,
         text: String,
         imgName: String,
+    },
+    computed: {
+      isActive() {
+        return this.$store.state.sceneID === this.sceneID
+      }
+    },
+    methods: {
+      updateScene() {
+        this.$store.commit('updateScene', this.sceneID)
+      }
     }
 }
 </script>
@@ -27,17 +34,25 @@ export default {
 .load-button {
   width: 200px;
   text-align: center;
-  background: rgb(60, 60, 60);
-  color: white;
   border: none;
   border-radius: 10px;
 
-    display: flex;
+  display: flex;
   align-items: center;
 }
 
-.load-button:hover {
+.inactive {
+  background: rgb(60, 60, 60);
+  color: white;
+}
+
+.inactive:hover {
   background: rgb(75, 75, 75);
+}
+
+.active {
+  background: rgb(209, 209, 209);
+  color: rgb(30, 30, 30);
 }
 
 .button-row {
@@ -46,13 +61,21 @@ export default {
   margin: 8px;
 }
 
-.button-image {
+.img-box {
   border-radius: 8px;
-  width: 40%;
+  width: 76px;
+  height: 57px;
   float: right;
 
-  padding-top: 4px;
-  padding-bottom: 4px;
+  margin-top: 4px;
+  margin-bottom: 4px;
+  overflow: hidden;
+}
+
+.button-image {
+  width:100%;
+  height: 100%;
+  background: black;
 }
 
 .button-text {

@@ -6,31 +6,31 @@
             <div class="top-right sticky-box">
             </div>
             <div class="bottom-right sticky-box">
-                <div class="slider">
+                <div class="slider" v-show="slidersEnabled.XW">
                     <label for="angleXW">XW</label>
-                    <input id="angleXW" v-model="angleDegXW" type="range" min="-90" max="90" value="0" step="1">
+                    <input id="angleXW" v-model="angleDegXW" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
                     <input v-model="angleDegXW" class="slider-text" type="text" size="4">
                     <span class="unit-text">°</span>
                 </div>
-                <div class="slider">
+                <div class="slider" v-show="slidersEnabled.YW">
                     <label for="angleYW">YW</label>
-                    <input id="angleYW" v-model="angleDegYW" type="range" min="-90" max="90" value="0" step="1">
+                    <input id="angleYW" v-model="angleDegYW" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
                     <input v-model="angleDegYW" class="slider-text" type="text" size="4">
                     <span class="unit-text">°</span>
                 </div>
-                <div class="slider">
+                <div class="slider" v-show="slidersEnabled.ZW">
                     <label for="angleZW">ZW</label>
-                    <input id="angleZW" v-model="angleDegZW" type="range" min="-90" max="90" value="0" step="1">
+                    <input id="angleZW" v-model="angleDegZW" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
                     <input v-model="angleDegZW" class="slider-text" type="text" size="4">
                     <span class="unit-text">°</span>
                 </div>
-                <div class="slider">
+                <div class="slider" v-show="slidersEnabled.IN">
                     <label for="angleIN">IN/OUT</label>
-                    <input id="angleIN" v-model="angleDegIN" type="range" min="-360" max="360" value="0" step="1">
+                    <input id="angleIN" v-model="angleDegIN" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
                     <input v-model="angleDegIN" class="slider-text" type="text" size="4">
                     <span class="unit-text">°</span>
                 </div>
-                <div class="slider">
+                <div class="slider" v-show="slidersEnabled.W">
                     <label for="translateW">W</label>
                     <input id="translateW" v-model="translateW" type="range" min="-2" max="2" value="0" step="0.01">
                     <input class="slider-text" v-model="translateW" type="text" size="4">
@@ -49,6 +49,25 @@ import * as Util from '../../scripts/util'
 import * as Cone4D from '../../scripts/cone4D'
 import * as Cube4D from '../../scripts/cube4D'
 import * as Sphere4D from '../../scripts/sphere4D'
+
+class SliderState {
+    constructor(sceneID, vueContext) {
+        this.sceneID = sceneID
+        this.angleDegXW = vueContext.angleDegXW
+        this.angleDegYW = vueContext.angleDegYW
+        this.angleDegZW = vueContext.angleDegZW
+        this.angleDegIN = vueContext.angleDegIN
+        this.translateW = vueContext.translateW
+    }
+
+    extractValues(vueContext){
+        vueContext.angleDegXW = this.angleDegXW
+        vueContext.angleDegYW = this.angleDegYW
+        vueContext.angleDegZW = this.angleDegZW
+        vueContext.angleDegIN = this.angleDegIN
+        vueContext.translateW = this.translateW
+    }
+}
 
 let camera;
 let threeScene;
@@ -71,12 +90,23 @@ export default {
             angleDegIN: 0,
             translateW: 0.0,
             objectNeedsUpdate: false,
-            activeScene: undefined
+            slidersEnabled: {
+                XW: false,
+                YW: false,
+                ZW: false,
+                IN: false,
+                W: false
+            },
+            angleMax: 0,
         }
     },
     props: {
         canvasSize: Object,
-        scene: undefined
+    },
+    computed: {
+        scene() {
+            return this.$store.state.sceneID
+        }
     },
     watch: {
         canvasSize: function(newD, oldD) {
@@ -90,23 +120,43 @@ export default {
             Cube4D.updateLineResolution(width, height)
         },
         scene: function(newScene, oldScene) {
+            if (!this.isSceneInThree(oldScene)) {
+                return
+            }
+            this.$store.commit('updateSceneSlider', new SliderState(oldScene, this))
+            // Keep the same values between cube proj and slice so the user can compare them more easily
+            if (oldScene === Util.scenes.three.sliceHypercube) {
+                this.$store.commit('updateSceneSlider', new SliderState(Util.scenes.three.projHypercube, this))
+            } else if (oldScene === Util.scenes.three.projHypercube) {
+                this.$store.commit('updateSceneSlider', new SliderState(Util.scenes.three.sliceHypercube, this))
+            }
+
+            if (!this.isSceneInThree(newScene)) {
+                return
+            }
+            let newSliders = this.$store.state.sceneSliders[newScene]
+            if (newSliders !== undefined) {
+                newSliders.extractValues(this)
+            } else {
+                this.resetSliderValues()
+            }
             this.undoInits()
             this.initScene(newScene)
         },
         angleDegXW: function() {
-            this.angleXW = this.angleDegXW*(Math.PI/180)
+            this.angleXW = Util.degreeToRadian(this.angleDegXW)
             this.objectNeedsUpdate = true
         },
         angleDegYW: function() {
-            this.angleYW = this.angleDegYW*(Math.PI/180)
+            this.angleYW = Util.degreeToRadian(this.angleDegYW)
             this.objectNeedsUpdate = true
         },
         angleDegZW: function() {
-            this.angleZW = this.angleDegZW*(Math.PI/180)
+            this.angleZW = Util.degreeToRadian(this.angleDegZW)
             this.objectNeedsUpdate = true
         },
         angleDegIN: function() {
-            this.angleIN = this.angleDegIN*(Math.PI/180)
+            this.angleIN = Util.degreeToRadian(this.angleDegIN)
             this.objectNeedsUpdate = true
         },
         translateW: function() {
@@ -145,7 +195,7 @@ export default {
             delta += clock.getDelta();
             if (delta > interval) {
                 if (this.objectNeedsUpdate) {
-                    switch (this.activeScene) {
+                    switch (this.scene) {
                         case (Util.scenes.three.sliceHypercube):
                             Cube4D.updateHypercubeSlice(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
                             break
@@ -183,26 +233,68 @@ export default {
         initScene(sceneID) {
             switch(sceneID) {
                 case (Util.scenes.three.sliceHypercube):
+                    this.angleMax = 90
+                    this.toggleSliders('XW', 'YW', 'ZW', 'W')
                     Cube4D.initSliceHypercube(threeScene, this.canvasSize.width, this.canvasSize.height) 
                     break
                 case (Util.scenes.three.projHypercube):
+                    this.angleMax = 90
+                    this.toggleSliders('XW', 'YW', 'ZW')
                     Cube4D.initProjHypercube(threeScene)
                     break
                 case (Util.scenes.three.sliceHypersphere):
+                    this.angleMax = 0
+                    this.toggleSliders('W')
                     Sphere4D.initSliceHypersphere(threeScene)
                     break
                 case (Util.scenes.three.projHypersphere):
+                    this.angleMax = 180
+                    this.toggleSliders('XW', 'YW', 'ZW')
                     Sphere4D.initProjHypersphere(threeScene)
                     break
                 case (Util.scenes.three.projCone):
+                    this.angleMax = 360
+                    this.toggleSliders('XW', 'YW', 'ZW')
                     Cone4D.initProjCone(threeScene)
                     break
                 case (Util.scenes.three.sliceCone):
+                    this.angleMax = 360
+                    this.toggleSliders('IN', 'W')
                     Cone4D.initSliceCone(threeScene)
                     break
             }
-            this.activeScene = sceneID
             this.objectNeedsUpdate = true
+        },
+        toggleSliders(...sliderPropNames) {
+            for (const key in this.slidersEnabled) {
+                this.slidersEnabled[key] =  false
+            }
+
+            for (const s of sliderPropNames) {
+                if (Object.hasOwnProperty.call(this.slidersEnabled, s)) {
+                    this.slidersEnabled[s] = true                  
+                }
+                else {
+                    throw new Error('Invalid slider name ' + s)
+                }
+            }
+        },
+        resetSliderValues() {
+            this.angleDegXW = 0
+            this.angleDegYW = 0
+            this.angleDegZW = 0
+            this.angleDegIN = 0
+            this.translateW = 0
+        },
+        isSceneInThree(sceneID) {
+            for (const key in Util.scenes.three) {
+                if (Object.hasOwnProperty.call(Util.scenes.three, key)) {
+                    if (sceneID === Util.scenes.three[key]) {
+                        return true 
+                    }                
+                }
+            }
+            return false
         }
     },
     mounted() {

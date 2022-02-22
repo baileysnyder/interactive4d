@@ -1,20 +1,20 @@
 <template>
   <div id="wrapper">
-    <NavigationLink :linkText="'INTRODUCTION'" :routePath="'/'" />
-    <NavigationLink :linkText="'THINKING IN DIMENSIONS'" :routePath="'/'" />
-    <NavigationLink :linkText="'2D UNIVERSE'" :routePath="'/2d-universe'" />    
-    <NavigationLink :linkText="'3D SLICES'" :routePath="'/3d-to-2d'" />
-    <NavigationLink :linkText="'3D PROJECTIONS'" :routePath="'/3d-to-2d'" />
-    <NavigationLink :linkText="'4D SPHERES AND CUBES'" :routePath="'/'" />
-    <NavigationLink :linkText="'4D CONES AND MORE'" :routePath="'/'" />
+    <NavigationLink v-for="page in pages" v-bind:key="page.title" :linkText="page.title" :routePath="page.path" />
   </div>
 </template>
 
 <script>
 import NavigationLink from './NavigationLink'
+import {navPages} from '../scripts/util'
 export default {
   components: {
     NavigationLink,
+  },
+  data() {
+    return {
+      pages: navPages
+    }
   }
 }
 </script>

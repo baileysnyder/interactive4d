@@ -4,10 +4,6 @@
             <canvas class="main-canvas" ref="canvas"></canvas>
             <div class="three-overlay">
                 <div class="top-right sticky-box">
-                    <button @click="initSphere">Sphere</button>
-                    <button @click="initCone">Cone</button>
-                    <button @click="initSolidCube">Solid Cube</button>
-                    <button @click="initEdgeCube">Edge Cube</button>
                 </div>
                 <div class="bottom-right sticky-box">
                     <div class="slider-row">
@@ -64,21 +60,23 @@ export default {
             canvas: undefined,
             sliceCanvas: undefined,
             objectNeedsUpdate: false,
-            displayObject: undefined,
-            displayObjects: {
-                sphere: 0,
-                solidCube: 1,
-                edgeCube: 2,
-                cone: 3,
-                projCube: 4,
-            },
         }
     },
     props: {
         canvasSize: Object,
     },
+    computed: {
+        scene() {
+            return this.$store.state.sceneID
+        }
+    },
     watch: {
         canvasSize: function(newD, oldD) {
+            // This watcher is getting called when the page changes
+            // Only want to update the display if we're staying on the same page
+            if (newD.width === oldD.width && newD.height === oldD.height) {
+                return
+            }
             let width = newD.width
             let height = newD.height
 
@@ -89,6 +87,10 @@ export default {
 
             this.updateSliceCanvas(width, height)
             this.updateDisplay()
+        },
+        scene: function(newScene, oldScene) {
+            this.undoInits()
+            this.initScene(newScene)
         },
         angleDegXZ: function() {
             this.angleXZ = this.angleDegXZ*(Math.PI/180)
@@ -131,18 +133,18 @@ export default {
             scene.add(ambientLight)
         },
         updateDisplay() {
-            switch (this.displayObject) {
-                case (this.displayObjects.sphere):
+            switch (this.scene) {
+                case (Util.scenes.threeandcanvas.sphere):
                     updateSphere(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
                     break
-                case (this.displayObjects.solidCube):
+                case (Util.scenes.threeandcanvas.solidCube):
                     updateSolidCube(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
                     break
-                case (this.displayObjects.edgeCube):
+                case (Util.scenes.threeandcanvas.edgeCube):
                     updateEdgeCube(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
-                case (this.displayObjects.projCube):
+                case (Util.scenes.threeandcanvas.projCube):
                     break
-                case (this.displayObjects.cone):
+                case (Util.scenes.threeandcanvas.cone):
                     updateCone(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
                     break
             }
@@ -165,24 +167,26 @@ export default {
             this.sliceCanvas.width = width
             this.sliceCanvas.height = totalHeight*sliceCanvasPercentH
         },
-        initShape(initFunction, displayObjectId) {
+        undoInits() {
             undoAllInits()
-            initFunction()
-
-            this.displayObject = displayObjectId
+        },
+        initScene(sceneID) {
+            switch(sceneID) {
+                case (Util.scenes.threeandcanvas.sphere):
+                    initSphere()
+                    break
+                case (Util.scenes.threeandcanvas.solidCube):
+                    initSolidCube()
+                    break
+                case (Util.scenes.threeandcanvas.edgeCube):
+                    initEdgeCube()
+                case (Util.scenes.threeandcanvas.projCube):
+                    break
+                case (Util.scenes.threeandcanvas.cone):
+                    initCone()
+                    break
+            }
             this.objectNeedsUpdate = true
-        },
-        initSphere() {
-            this.initShape(initSphere, this.displayObjects.sphere)
-        },
-        initSolidCube() {
-            this.initShape(initSolidCube, this.displayObjects.solidCube)
-        },
-        initEdgeCube() {
-            this.initShape(initEdgeCube, this.displayObjects.edgeCube)
-        },
-        initCone() {
-            this.initShape(initCone, this.displayObjects.cone)
         },
         resetUI() {
             this.angleXZ = this.angleDegXZ = 0
@@ -197,7 +201,7 @@ export default {
 
         this.initThree()
         initPlane()
-        this.initSphere()
+        this.initScene(this.scene)
     },
     activated() {
         requestAnimationFrame(this.animate)

@@ -19,8 +19,12 @@ export default {
       { rel: 'icon', type: 'image/x-icon', href: '/favicon.ico' },
       {
         rel: 'stylesheet',
-        href: 'https://fonts.googleapis.com/css?family=IBM+Plex+Sans'
-      }
+        href: 'https://fonts.googleapis.com/css?family=Karla'
+      },
+      {
+        rel: 'stylesheet',
+        href: 'https://fonts.googleapis.com/css?family=Open+Sans'
+      },
     ]
   },
 

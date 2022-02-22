@@ -1,6 +1,6 @@
 <template>
   <div>
-    <h2 class="article-header">2D Universe</h2>
+    <h2 class="article-header">Thinking in Dimensions</h2>
     <div class="main-content">
       <p>Place</p>
       <p>Holder</p>
@@ -21,7 +21,7 @@ export default {
   },
   data() {
     return {
-      scenes: scenes,
+      scenes: scenes
     }
   },
   beforeCreate() {

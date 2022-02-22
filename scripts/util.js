@@ -22,6 +22,20 @@ export const scenes = {
     }
 }
 
+export const navPages = [
+    {title: 'INTRODUCTION', path: '/'},
+    {title: 'THINKING IN DIMENSIONS', path: '/dimensions'},
+    {title: '2D UNIVERSE', path: '/2d-universe'},
+    {title: '3D SLICES', path: '/3d-slices'},
+    {title: '3D PROJECTION', path: '/3d-projection'},
+    {title: '4D SPHERES AND CUBES', path: '/4d-spheres-cubes'},
+    {title: '4D CONES AND MORE', path: '/4d-cones'},
+]
+
+export function degreeToRadian(deg) {
+    return deg*(Math.PI/180)
+}
+
 export function subtractVectors(vDommy, vSub){
     if (vDommy.length !== vSub.length) {
         throw new Error('Vector dimensions must match')

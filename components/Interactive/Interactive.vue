@@ -2,7 +2,7 @@
 <div>
     <div v-show="componentToDisplay === undefined" class="placeholder resizable" :style="{'width': canvasSize.width + 'px'}"></div>
     <keep-alive>
-    <component :is="componentToDisplay" class="resizable" :scene="scene" :canvasSize="canvasSize" :style="{'width': canvasSize.width + 'px'}" />
+    <component :is="componentToDisplay" class="resizable" :canvasSize="canvasSize" :style="{'width': canvasSize.width + 'px'}" />
     </keep-alive>
 </div>
 </template>
@@ -22,23 +22,26 @@ export default {
     data() {
         return {
             componentToDisplay: undefined,
-            scene: undefined
         }
     },
     props: {
         canvasSize: Object,
     },
-    beforeCreate() {
-        this.$nuxt.$on('load-interactive', e => {
-            if (this.isSceneInComponent(e.scene, Util.scenes.three)) {
+    computed: {
+        scene() {
+            return this.$store.state.sceneID
+        }
+    },
+    watch: {
+        scene: function(newScene, oldScene) {
+            if (this.isSceneInComponent(newScene, Util.scenes.three)) {
                 this.componentToDisplay = "Three"
-            } else if (this.isSceneInComponent(e.scene, Util.scenes.firstperson2d)) {
+            } else if (this.isSceneInComponent(newScene, Util.scenes.firstperson2d)) {
                 this.componentToDisplay = "FirstPerson2D"
-            } else if (this.isSceneInComponent(e.scene, Util.scenes.threeandcanvas)) {
+            } else if (this.isSceneInComponent(newScene, Util.scenes.threeandcanvas)) {
                 this.componentToDisplay = "ThreeAndCanvas"
             }
-            this.scene = e.scene
-        })
+        }
     },
     methods: {
         isSceneInComponent(scene, sceneParent) {

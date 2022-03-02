@@ -1,28 +1,53 @@
 import * as Util from './util'
 import * as THREE from 'three'
 
-function generate4DSphere(radius, segmentsW, segmentsH, wSteps) {
-    let points = []
+function generate4DSphere(radius, maxSpherePoints, wSteps) {
+    const maxAngle = Math.PI*2
+    minPointColor = Util.createColor(250, 255, 255)
+    //maxPointColor = Util.createColor(16, 110, 120)
+    maxPointColor = Util.createColor(10, 136, 144)
+    
+    function addSphere(pointCount, innerRadius, w, rotationMatrix) {
+        let points = Util.generateSpreadSpherePoints(pointCount, innerRadius, w)
+        for (let i = 0; i < points.length; i++) {
+            let p = Util.multiplyMatrixVector(rotationMatrix, points[i])
+            hyperspherePoints.push(p)
+        }
+    }
+
     for (let i = 0; i < wSteps; i++) {
         let w = (i/wSteps) * radius
+        let angle = (i/wSteps)*maxAngle
+        let rotationMatrix = [
+            [Math.cos(angle), 0, Math.sin(angle), 0],
+            [0, 1, 0, 0],
+            [-Math.sin(angle), 0, Math.cos(angle), 0],
+            [0, 0, 0, 1]
+        ]
         let innerRadius = Util.getSphereIntersectionRadius(radius, w)
-        points = points.concat(Util.generate3DSphereIn4D(innerRadius, segmentsW, segmentsH, w))
-        points = points.concat(Util.generate3DSphereIn4D(innerRadius, segmentsW, segmentsH, -w))
-    }
-    points.push([0, 0, 0, -radius])
-    points.push([0, 0, 0, radius])
+        const pointCount = Math.floor((innerRadius/radius)*maxSpherePoints)
 
-    return points
+        addSphere(pointCount, innerRadius, w, rotationMatrix)
+        if (w !== 0) {
+            addSphere(pointCount, innerRadius, -w, rotationMatrix)
+        }
+    }
+    hyperspherePoints.push([0, 0, 0, -radius])
+    hyperspherePoints.push([0, 0, 0, radius])
 }
-const hyperspherePoints = generate4DSphere(1, 6, 4, 3)
+
+let hyperspherePoints = []
+let minPointColor
+let maxPointColor
+generate4DSphere(1, 13, 7)
 
 const projectionSphereRadius = 0.09
-const projectionDistance4D = 3
-const scaleFactor = 2
-const hypersphereRadius = 1.5
+const projectionDistance4D = 2
+const scaleFactor = 2.5
+const hypersphereRadius = 1.25
 
 const pointColor = '#D2F3F5'
-const sphereColor = '#269E26'
+const sphereColor = '#00aa19'
 
 let sphereMeshes = []
 let hypersphereMesh = undefined
@@ -36,9 +61,8 @@ export function undoInits(scene) {
 
 function initSpheres(scene, count) {
     for (let i = 0; i < count; i++){
-        const geometry = new THREE.SphereGeometry(projectionSphereRadius)
+        const geometry = new THREE.SphereGeometry(projectionSphereRadius, 20, 10)
         const material = new THREE.MeshStandardMaterial()
-        material.color = new THREE.Color(pointColor)
 
         const mesh = new THREE.Mesh(geometry, material)
 
@@ -76,5 +100,20 @@ export function updateSliceHypersphere(translateW) {
 export function updateProjHypersphere(angleXW, angleYW, angleZW) {
     let rotatedPoints = Util.rotate4D(hyperspherePoints, angleXW, angleYW, angleZW)
     let finalPoints = Util.project4DTo3D(rotatedPoints, projectionDistance4D, scaleFactor)
-    Util.drawSpherePoints(finalPoints, sphereMeshes)
+    drawSpherePoints(finalPoints, sphereMeshes)
+}
+
+function drawSpherePoints(points, sphereMeshes) {
+    for (let i = 0; i < sphereMeshes.length; i++){
+        if (i < points.length) {
+            let t = Util.getVectorMagnitude(points[i]) / 2
+            let color = Util.lerpColor(minPointColor, maxPointColor, t)
+            sphereMeshes[i].visible = true
+            sphereMeshes[i].position.set(points[i][0], points[i][1], points[i][2])
+            sphereMeshes[i].material.color = new THREE.Color(`rgb(${Math.floor(color.r)}, ${Math.floor(color.g)}, ${Math.floor(color.b)})`)
+            sphereMeshes[i].material.needsUpdate = true
+        } else {
+            sphereMeshes[i].visible = false
+        }
+    }
 }

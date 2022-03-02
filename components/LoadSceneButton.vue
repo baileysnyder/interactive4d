@@ -1,13 +1,11 @@
 <template>
-    <div class="button-row">
-      <button class="load-button" :class="{'active': isActive, 'inactive': !isActive}" @click="updateScene">
-        <span class="button-text">{{text}}</span>
-        <div class="img-box">
-          <img class="button-image" :src="require(`~/assets/load-scene-images/${imgName}`)">
-          <div class="button-image"></div>
-        </div>
-      </button>
+  <button class="load-button" :class="{'active': isActive, 'inactive': !isActive}" @click="updateScene">
+    <span class="button-text">{{text}}</span>
+    <div class="img-box">
+      <img class="button-image" :src="require(`~/assets/load-scene-images/${imgName}`)">
+      <div class="button-image"></div>
     </div>
+  </button>
 </template>
 
 <script>
@@ -53,12 +51,6 @@ export default {
 .active {
   background: rgb(209, 209, 209);
   color: rgb(30, 30, 30);
-}
-
-.button-row {
-  display: flex;
-  justify-content: center;
-  margin: 8px;
 }
 
 .img-box {

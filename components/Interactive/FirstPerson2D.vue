@@ -47,6 +47,9 @@ export default {
     },
     watch: {
         canvasSize: function(newD, oldD) {
+            if (newD.width === oldD.width && newD.height === oldD.height) {
+                return
+            }
             let width = newD.width
             let height = newD.height
 
@@ -208,7 +211,7 @@ const gameWidth = 200
 const gameHeight = 100
 
 const viewingAngle = Math.PI/2
-const viewDistance = 50
+const viewDistance = 40
 const projDistance = 0.5
 
 function createLines(points, maxColor, minColor) {
@@ -222,13 +225,9 @@ function createLines(points, maxColor, minColor) {
     return lines
 }
 
-function createColor(r, g, b) {
-    return {r, g, b}
-}
-
 const minColorRatio = 9
 function calcMinColor(color, ratio) {
-    return createColor(color.r/ratio, color.g/ratio, color.b/ratio)
+    return Util.createColor(color.r/ratio, color.g/ratio, color.b/ratio)
 }
 
 let squareLines
@@ -255,7 +254,7 @@ function initShapes() {
         [50, 52],
         [20, 52],
     ]
-    const squareColor = createColor(255, 238, 86)
+    const squareColor = Util.createColor(255, 238, 86)
     squareLines = createLines(squarePoints, squareColor, calcMinColor(squareColor, minColorRatio))
     squareCollider = {
         minX: squarePoints[0][0]-collisionWidth,
@@ -265,7 +264,7 @@ function initShapes() {
     }
 
     lineObject = new Line(60, 74, 90, 66)
-    const lineColor = createColor(20, 228, 243)
+    const lineColor = Util.createColor(20, 228, 243)
     lineObject.setColors(lineColor, calcMinColor(lineColor, minColorRatio))
     const lineCollisionWidth = 1.5
     lineColliderR = {
@@ -283,7 +282,7 @@ function initShapes() {
         [tStart[0]+tLineHalfLen, tStart[1] - Math.sqrt(tLineLen*tLineLen - tLineHalfLen*tLineHalfLen)], //pythagorean
         [tStart[0]+tLineLen, tStart[1]],
     ]
-    const triangleColor = createColor(243, 20, 20)
+    const triangleColor = Util.createColor(243, 20, 20)
     triangleLines = createLines(trianglePoints, triangleColor, calcMinColor(triangleColor, 7))
     triangleCollider = {
         minX: trianglePoints[0][0]-collisionWidth,
@@ -331,7 +330,7 @@ function initShapes() {
         circlePoints[i][0] = circlePoints[i][0]*circleRadius + circleCenter[0]
         circlePoints[i][1] = circlePoints[i][1]*circleRadius + circleCenter[1]
     }
-    const circleColor = createColor(20, 243, 20)
+    const circleColor = Util.createColor(20, 243, 20)
     circleLines = createLines(circlePoints, circleColor, calcMinColor(circleColor, minColorRatio))
 
     const wallPoints = [
@@ -340,7 +339,7 @@ function initShapes() {
         [gameWidth-1, gameHeight-1],
         [0, gameHeight-1]
     ]
-    const wallColor = createColor(100, 100, 100)
+    const wallColor = Util.createColor(100, 100, 100)
     wallLines = createLines(wallPoints, wallColor, calcMinColor(wallColor, minColorRatio))
 }
 
@@ -714,19 +713,13 @@ function project2Dto1D(vectorFromPlayer, angle, projPlaneHalfLength, canvasWidth
     return {canvasX, distance}
 }
 
-function lerpColor(c1, c2, t) {
-    let r = Util.lerp(c1.r, c2.r, t)
-    let g = Util.lerp(c1.g, c2.g, t)
-    let b = Util.lerp(c1.b, c2.b, t)
 
-    return createColor(r, g, b)
-}
 
 function distanceToColor(distance, maxColor, minColor) {
     let clampD = Util.clamp(distance, 0, viewDistance-projDistance)
     let t = clampD / (viewDistance-projDistance)
 
-    return lerpColor(maxColor, minColor, t)
+    return Util.lerpColor(maxColor, minColor, t)
 }
 
 function drawGradient(p1, p2, maxColor, minColor, canvas, imageData, canvasDistances) {
@@ -746,7 +739,7 @@ function drawGradient(p1, p2, maxColor, minColor, canvas, imageData, canvasDista
 
         canvasDistances[x] = distance
 
-        let c = lerpColor(gradientStart, gradientEnd, t)
+        let c = Util.lerpColor(gradientStart, gradientEnd, t)
         
         for (let y = 0; y < canvas.height; y++) {
             let index = 4*(canvas.width*y + x)

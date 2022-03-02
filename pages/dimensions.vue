@@ -4,20 +4,20 @@
     <div class="main-content">
       <p>Place</p>
       <p>Holder</p>
-      <LoadSceneButton :sceneID="scenes.firstperson2d.firstperson2d" :text="'Load Scene'" :imgName="'proj_cube.png'"></LoadSceneButton>
+      <SceneButtonSingle :sceneID="scenes.firstperson2d.firstperson2d" :text="'Load Scene'" :imgName="'proj_cube.png'"></SceneButtonSingle>
     </div>
   </div>
 </template>
 
 <script>
 import {scenes} from '../scripts/util'
-import LoadSceneButton from '../components/LoadSceneButton'
+import SceneButtonSingle from '../components/SceneButtonSingle'
 
 let activeScene = undefined
 
 export default {
   components: {
-    LoadSceneButton
+    SceneButtonSingle
   },
   data() {
     return {

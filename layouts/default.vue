@@ -69,6 +69,7 @@ export default {
         }
     },
     mounted() {
+        this.storeSizes(this.interactiveWidth, this.interactiveHeight)
         window.addEventListener('resize', this.onResize)
 
         const vueContext = this
@@ -107,6 +108,8 @@ export default {
 
             interactive.style.width = width + 'px'
             vueContext.interactiveWidth = width
+
+            vueContext.storeSizes(width, vueContext.mainHeight)           
         })
     },
     methods: {
@@ -123,31 +126,28 @@ export default {
             this.interactiveWidth = this.mainWidth / 2
             this.interactiveHeight = this.mainHeight
         },
-        // initScene(sceneID) {
-        //     Util.emitScene(sceneID)
-        // },
-        // initSliceHypercube() {
-        //     Util.emitScene(Util.scenes.three.sliceHypercube)
-        // },
-        // initSliceHypersphere() {
-        //     Util.emitScene(Util.scenes.three.sliceHypersphere)
-        // },
-        // initProjHypersphere() {
-        //     Util.emitScene(Util.scenes.three.projHypersphere)
-        // },
-        // initProjCone() {
-        //     Util.emitScene(Util.scenes.three.projCone)
-        // },
-        // initSliceCone() {
-        //     Util.emitScene(Util.scenes.three.sliceCone)
-        // },
+        storeSizes(canvasWidth, canvasHeight) {
+            let canvasSize = {
+                width: canvasWidth,
+                height: canvasHeight
+            }
+            this.$store.commit('setCanvasSize', canvasSize)
+
+
+            let articleWidth = this.mainWidth === canvasWidth ? canvasWidth : this.mainWidth - canvasWidth
+            let articleHeight = this.mainHeight === canvasHeight ? canvasHeight : this.mainHeight - canvasHeight
+            let articleSize = {
+                width: articleWidth,
+                height: articleHeight
+            }
+            this.$store.commit('setArticleSize', articleSize)
+        }
     }
 }
 
 let preventEvent = function(e) {
     e.preventDefault()
 }
-
 </script>
 
 <style scoped>

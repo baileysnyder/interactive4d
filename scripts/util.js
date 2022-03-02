@@ -343,7 +343,7 @@ export function triangulateSortedFace(sortedPoints) {
 
 export function generate3DSphereIn4D(radius, segmentsW, segmentsH, w) {
     let points = []
-    points.push([0, 1, 0, w])
+    points.push([0, radius, 0, w])
     for (let m = 1; m < segmentsH; m++) {
         for (let n = 0; n < segmentsW; n++) {
             let x = Math.sin(Math.PI * m/segmentsH) * Math.cos(2 * Math.PI * n/segmentsW)
@@ -352,11 +352,11 @@ export function generate3DSphereIn4D(radius, segmentsW, segmentsH, w) {
             points.push([x*radius, y*radius, z*radius, w])
         }
     }
-    points.push([0, -1, 0, w])
+    points.push([0, -radius, 0, w])
     return points
 }
 
-export function generateSpreadSpherePoints(n, multiplier) {
+export function generateSpreadSpherePoints(n, multiplier, w) {
 	let goldenRatio = 1 + Math.sqrt(5) / 4
 	let angleIncrement = Math.PI * 2 * goldenRatio
 
@@ -370,7 +370,7 @@ export function generateSpreadSpherePoints(n, multiplier) {
 		let y = Math.sin(incline) * Math.sin(azimuth) * multiplier
 		let z = Math.cos(incline) * multiplier
 
-		points.push([x, y, z, 0])
+		points.push([x, y, z, w])
     }
     return points
 }
@@ -567,4 +567,16 @@ export function drawCylinders(points, meshes, edgeIndices, scaleFactor) {
         meshes[i].geometry.attributes.normal.needsUpdate = true
         meshes[i].geometry.attributes.position.needsUpdate = true
     }
+}
+
+export function createColor(r, g, b) {
+    return {r, g, b}
+}
+
+export function lerpColor(c1, c2, t) {
+    let r = lerp(c1.r, c2.r, t)
+    let g = lerp(c1.g, c2.g, t)
+    let b = lerp(c1.b, c2.b, t)
+
+    return createColor(r, g, b)
 }

@@ -110,6 +110,9 @@ export default {
     },
     watch: {
         canvasSize: function(newD, oldD) {
+            if (newD.width === oldD.width && newD.height === oldD.height) {
+                return
+            }
             let width = newD.width
             let height = newD.height
 
@@ -177,7 +180,7 @@ export default {
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
             camera = new THREE.PerspectiveCamera(80, width/height, 0.1, 100)
-            camera.position.set(0, 0, 4)
+            camera.position.set(0, 0, 4.5)
             threeScene.add(camera)
 
             const controls = new OrbitControls(camera, renderer.domElement)

@@ -4,23 +4,23 @@
     <div class="main-content">
       <p>Place</p>
       <p>Holder</p>
-      <LoadSceneButton :sceneID="scenes.threeandcanvas.sphere" :text="'Sphere'" :imgName="'proj_cube.png'"></LoadSceneButton>
-      <LoadSceneButton :sceneID="scenes.threeandcanvas.solidCube" :text="'cube'" :imgName="'proj_cube.png'"></LoadSceneButton>
-      <LoadSceneButton :sceneID="scenes.threeandcanvas.edgeCube" :text="'cube edge'" :imgName="'proj_cube.png'"></LoadSceneButton>
-      <LoadSceneButton :sceneID="scenes.threeandcanvas.cone" :text="'cone'" :imgName="'proj_cube.png'"></LoadSceneButton>
+      <SceneButtonSingle :sceneID="scenes.threeandcanvas.sphere" :text="'Sphere'" :imgName="'proj_cube.png'"></SceneButtonSingle>
+      <SceneButtonSingle :sceneID="scenes.threeandcanvas.solidCube" :text="'cube'" :imgName="'proj_cube.png'"></SceneButtonSingle>
+      <SceneButtonSingle :sceneID="scenes.threeandcanvas.edgeCube" :text="'cube edge'" :imgName="'proj_cube.png'"></SceneButtonSingle>
+      <SceneButtonSingle :sceneID="scenes.threeandcanvas.cone" :text="'cone'" :imgName="'proj_cube.png'"></SceneButtonSingle>
     </div>
   </div>
 </template>
 
 <script>
 import {scenes} from '../scripts/util'
-import LoadSceneButton from '../components/LoadSceneButton'
+import SceneButtonSingle from '../components/SceneButtonSingle'
 
 let activeScene = undefined
 
 export default {
   components: {
-    LoadSceneButton
+    SceneButtonSingle
   },
   data() {
     return {

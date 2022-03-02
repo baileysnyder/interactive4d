@@ -21,7 +21,7 @@ const coneColor = '#F31414'
 const lineColor = '#62DDE5'
 const pointColor = '#D2F3F5'
 
-const coneRadius = 1
+const coneRadius = 1.1
 const coneHeight = coneRadius*Math.tan(Math.PI/3)
 const latheSegments = 32
 
@@ -65,7 +65,7 @@ function initSpheres(scene) {
             color = pointColor
         }
 
-        const geometry = new THREE.SphereGeometry(radius)
+        const geometry = new THREE.SphereGeometry(radius, 24, 12)
         const material = new THREE.MeshStandardMaterial()
         material.color = new THREE.Color(color)
 

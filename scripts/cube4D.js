@@ -106,7 +106,7 @@ export function undoInits(scene) {
 
 function initSpheres(scene, count) {
     for (let i = 0; i < count; i++){
-        const geometry = new THREE.SphereGeometry(projectionSphereRadius)
+        const geometry = new THREE.SphereGeometry(projectionSphereRadius, 24, 12)
         const material = new THREE.MeshStandardMaterial()
         material.color = new THREE.Color(pointColor)
 

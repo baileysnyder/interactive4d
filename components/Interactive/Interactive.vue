@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import * as Util from '../../scripts/util'
+import * as Constants from '../../scripts/constants'
 import Three from './Three'
 import FirstPerson2D from './FirstPerson2D'
 import ThreeAndCanvas from './ThreeAndCanvas'
@@ -34,11 +34,11 @@ export default {
     },
     watch: {
         scene: function(newScene, oldScene) {
-            if (this.isSceneInComponent(newScene, Util.scenes.three)) {
+            if (this.isSceneInComponent(newScene, Constants.scenes.three)) {
                 this.componentToDisplay = "Three"
-            } else if (this.isSceneInComponent(newScene, Util.scenes.firstperson2d)) {
+            } else if (this.isSceneInComponent(newScene, Constants.scenes.firstperson2d)) {
                 this.componentToDisplay = "FirstPerson2D"
-            } else if (this.isSceneInComponent(newScene, Util.scenes.threeandcanvas)) {
+            } else if (this.isSceneInComponent(newScene, Constants.scenes.threeandcanvas)) {
                 this.componentToDisplay = "ThreeAndCanvas"
             }
         }

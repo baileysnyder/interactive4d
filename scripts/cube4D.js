@@ -84,8 +84,6 @@ const pointColor = '#D2F3F5'
 
 let sphereMeshes = []
 let cylinderMeshes = []
-let lineGeometries = []
-let lineMaterials = []
 let linePointArrays = []
 let lineMeshes = []
 let convexGeometry = undefined
@@ -96,8 +94,6 @@ export function undoInits(scene) {
 
     sphereMeshes = []
     cylinderMeshes = []
-    lineGeometries = []
-    lineMaterials = []
     linePointArrays = []
     lineMeshes = []
     convexGeometry = undefined
@@ -181,16 +177,14 @@ function initConvexEdges(scene, canvasWidth, canvasHeight) {
         let line = new Line2( geometry, material );
         scene.add( line );
 
-        lineGeometries.push(geometry)
-        lineMaterials.push(material)
         lineMeshes.push(line)
     }
 }
 
 export function updateLineResolution(width, height) {
-    if (lineMaterials && lineMaterials.length > 0) {
-        for (let i = 0; i < lineMaterials.length; i++) {
-            lineMaterials[i].resolution.set(width, height)                   
+    if (lineMeshes && lineMeshes.length > 0) {
+        for (let i = 0; i < lineMeshes.length; i++) {
+            lineMeshes[i].material.resolution.set(width, height)                   
         }
     }
 }
@@ -203,7 +197,7 @@ export function updateHypercubeProjection(angleXW, angleYW, angleZW, translateW)
 }
 
 function drawEdges(points) {
-    for (let i = 0; i < lineGeometries.length; i++) {
+    for (let i = 0; i < lineMeshes.length; i++) {
         const startIndex = edgeIndices[i][0]
         const endIndex = edgeIndices[i][1]
 
@@ -212,7 +206,7 @@ function drawEdges(points) {
             linePointArrays[i][j+3] = points[endIndex][j]
         }
 
-        lineGeometries[i].attributes.position.needsUpdate = true
+        lineMeshes[i].geometry.attributes.position.needsUpdate = true
     }
 }
 
@@ -295,23 +289,6 @@ function separatePointsByCube(intersectionPoints) {
 
 
 function drawFaces(faceGeometry) {
-    function sortFacePoints(facePoints, normal) {
-        let theta0Vector = Util.getArbitraryPerpendicularVector3D(normal)
-        Util.normalizeVector(theta0Vector)
-        let posAngleVector = Util.crossProduct(normal, theta0Vector)
-        Util.normalizeVector(posAngleVector)
-
-        let faceCenter = Util.getCenterOfPoints(facePoints.map(ip => ip.point))
-
-        let angles = []
-        for (let i = 0; i < facePoints.length; i++) {
-            let v = Util.subtractVectors(facePoints[i].point, faceCenter)
-            angles.push(Util.calcAngleBetweenVectors(theta0Vector, v, posAngleVector)) 
-        }
-
-        Util.bubbleSortParallel(angles, facePoints)
-    }
-
     let edgePointPairs = []
     for (let i = 0; i < edgeIndices.length; i++) {
         edgePointPairs.push([])
@@ -336,8 +313,8 @@ function drawFaces(faceGeometry) {
                 linePointArrays[edgeIndex][j+3] = sortedFacePoints[endIndex].point[j] * scale
             }
             lineMeshes[edgeIndex].visible = true
-            lineGeometries[edgeIndex].setPositions(linePointArrays[edgeIndex])
-            lineGeometries[edgeIndex].attributes.position.needsUpdate = true
+            lineMeshes[edgeIndex].geometry.setPositions(linePointArrays[edgeIndex])
+            lineMeshes[edgeIndex].geometry.attributes.position.needsUpdate = true
             edgeIndex++
         }
     }
@@ -351,24 +328,9 @@ function drawFaces(faceGeometry) {
             console.error('Cannot make a face with less than 3 points')
             continue
         }
-        
-        // Choose 3 random points from face to calculate a normal vector direction
-        let p1 = pointsByFace[i][0].point
-        let p2 = pointsByFace[i][1].point
-        let p3 = pointsByFace[i][2].point
-
-        let normal = Util.crossProduct(Util.subtractVectors(p2, p1), Util.subtractVectors(p3, p1))
-        Util.normalizeVector(normal)
-
-        // Check if normal is flipped
-        let p1FromOrigin = Util.subtractVectors(p1, faceGeometry.origin)
-        Util.normalizeVector(p1FromOrigin)
-
-        if (Util.dotProduct(p1FromOrigin, normal) < 0) {
-            Util.scaleVectorInplace(normal, -1)
-        }
-
-        sortFacePoints(pointsByFace[i], normal)
+        let points = pointsByFace[i].map(ip => ip.point)
+        let normal = Util.getFaceNormal(points, faceGeometry.origin)        
+        Util.sortFacePoints(points, normal, pointsByFace[i])
 
         drawEdgesForFace(pointsByFace[i])
         let faceVertices = Util.triangulateSortedFace(pointsByFace[i].map(ip => ip.point))

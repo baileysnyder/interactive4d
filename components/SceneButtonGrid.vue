@@ -32,7 +32,7 @@ export default {
     },
     computed: {
         divWidth() {
-            return this.$store.state.articleSize.width
+            return this.$store.state.articleSize.w
         }
     },
     watch: {
@@ -51,7 +51,7 @@ export default {
         }
     },
     mounted() {
-        this.calcDimensions(this.$store.state.articleSize.width)
+        this.calcDimensions(this.$store.state.articleSize.w)
     }
 }
 </script>

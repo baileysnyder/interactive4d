@@ -31,7 +31,7 @@
 <script>
 import Navigation from '../components/Navigation'
 import Interactive from '../components/Interactive/Interactive'
-import {navPages} from '../scripts/util'
+import {navPages} from '../scripts/constants'
 
 const navigationWidth = 250
 const headerFooterHeight = 150
@@ -128,8 +128,8 @@ export default {
         },
         storeSizes(canvasWidth, canvasHeight) {
             let canvasSize = {
-                width: canvasWidth,
-                height: canvasHeight
+                w: canvasWidth,
+                h: canvasHeight
             }
             this.$store.commit('setCanvasSize', canvasSize)
 
@@ -137,8 +137,8 @@ export default {
             let articleWidth = this.mainWidth === canvasWidth ? canvasWidth : this.mainWidth - canvasWidth
             let articleHeight = this.mainHeight === canvasHeight ? canvasHeight : this.mainHeight - canvasHeight
             let articleSize = {
-                width: articleWidth,
-                height: articleHeight
+                w: articleWidth,
+                h: articleHeight
             }
             this.$store.commit('setArticleSize', articleSize)
         }
@@ -212,6 +212,7 @@ h1 {
     position: relative;
     top: 50%;
     transform: translateY(-50%);
+    box-shadow: 2px 2px 3px rgb(0 0 0 / 50%);
 }
 
 .nav-button:hover {
@@ -282,8 +283,22 @@ h1, h2, .navlink, button {
 
 .article .main-content {
   overflow-y: auto;
+    padding-bottom: 50px;
 }
 
+.img16by9 {
+    margin: auto;
+    display: block;
+    margin-top: 12px;
+    margin-bottom: 26px;
+    width: 70%;
+    max-width: 400px;
+    border: solid 2px rgb(100, 100, 100);
+    border-radius: 8px;
+    /* box-shadow: 4px 4px 5px rgb(0 0 0 / 50%); */
+}
+
+/* Scrollbar */
 /* Works on Firefox */
 * {
   scrollbar-width: thin;

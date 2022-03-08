@@ -38,6 +38,7 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as Util from '../../scripts/util'
+import * as Constants from '../../scripts/constants'
 import * as Cone from '../../scripts/cone'
 
 let previousTimestamp = 0;
@@ -134,17 +135,17 @@ export default {
         },
         updateDisplay() {
             switch (this.scene) {
-                case (Util.scenes.threeandcanvas.sphere):
+                case (Constants.scenes.threeandcanvas.sphere):
                     updateSphere(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
                     break
-                case (Util.scenes.threeandcanvas.solidCube):
+                case (Constants.scenes.threeandcanvas.solidCube):
                     updateSolidCube(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
                     break
-                case (Util.scenes.threeandcanvas.edgeCube):
+                case (Constants.scenes.threeandcanvas.edgeCube):
                     updateEdgeCube(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
-                case (Util.scenes.threeandcanvas.projCube):
+                case (Constants.scenes.threeandcanvas.projCube):
                     break
-                case (Util.scenes.threeandcanvas.cone):
+                case (Constants.scenes.threeandcanvas.cone):
                     updateCone(this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
                     break
             }
@@ -172,17 +173,17 @@ export default {
         },
         initScene(sceneID) {
             switch(sceneID) {
-                case (Util.scenes.threeandcanvas.sphere):
+                case (Constants.scenes.threeandcanvas.sphere):
                     initSphere()
                     break
-                case (Util.scenes.threeandcanvas.solidCube):
+                case (Constants.scenes.threeandcanvas.solidCube):
                     initSolidCube()
                     break
-                case (Util.scenes.threeandcanvas.edgeCube):
+                case (Constants.scenes.threeandcanvas.edgeCube):
                     initEdgeCube()
-                case (Util.scenes.threeandcanvas.projCube):
+                case (Constants.scenes.threeandcanvas.projCube):
                     break
-                case (Util.scenes.threeandcanvas.cone):
+                case (Constants.scenes.threeandcanvas.cone):
                     initCone()
                     break
             }

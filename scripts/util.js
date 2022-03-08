@@ -1,4 +1,4 @@
-import { Vector3 } from "three"
+import * as THREE from "three"
 
 export const scenes = {
     three: {
@@ -8,29 +8,35 @@ export const scenes = {
         projHypersphere: 3,
         sliceCone: 4,
         projCone: 5,
+        axesWithCube: 6,
+        axis1D: 7,
+        axis2D: 8,
+        axis3D: 9,
     },
     firstperson2d: {
-        firstperson2d: 6
+        firstperson2d: 100
     },
     threeandcanvas: {
-        sphere: 7,
-        solidCube: 8,
-        edgeCube: 9,
-        cone: 10,
-        projSphere: 11,
-        projCube: 12,
+        sphere: 200,
+        solidCube: 201,
+        edgeCube: 202,
+        cone: 203,
+        projSphere: 204,
+        projCube: 205,
     }
 }
 
-export const navPages = [
-    {title: 'INTRODUCTION', path: '/'},
-    {title: 'THINKING IN DIMENSIONS', path: '/dimensions'},
-    {title: '2D UNIVERSE', path: '/2d-universe'},
-    {title: '3D SLICES', path: '/3d-slices'},
-    {title: '3D PROJECTION', path: '/3d-projection'},
-    {title: '4D SPHERES AND CUBES', path: '/4d-spheres-cubes'},
-    {title: '4D CONES AND MORE', path: '/4d-cones'},
-]
+export function createColor(r, g, b) {
+    return {r, g, b}
+}
+
+export function lerpColor(c1, c2, t) {
+    let r = lerp(c1.r, c2.r, t)
+    let g = lerp(c1.g, c2.g, t)
+    let b = lerp(c1.b, c2.b, t)
+
+    return createColor(r, g, b)
+}
 
 export function degreeToRadian(deg) {
     return deg*(Math.PI/180)
@@ -245,7 +251,7 @@ export function printThreeVertices(geometry) {
     let arr = geometry.getAttribute('position').array
     let vectors = []
     for (let i = 0; i < arr.length; i+=3) {
-        let v = new Vector3(arr[i], arr[i+1], arr[i+2])
+        let v = new THREE.Vector3(arr[i], arr[i+1], arr[i+2])
         vectors.push(v)
     }
     console.log(vectors)
@@ -266,6 +272,48 @@ export function getCenterOfPoints(points) {
     }
     scaleVectorInplace(centerPoint, 1/points.length)
     return centerPoint
+}
+
+export function getFaceNormal(points, origin) {
+    if (points == null || points.length < 3) {
+        console.error('Cannot calculate a normal with less than 3 points')
+        return
+    }
+
+    // Choose 3 random points from face to calculate a normal vector direction
+    let p1 = points[0]
+    let p2 = points[1]
+    let p3 = points[2]
+
+    let normal = crossProduct(subtractVectors(p2, p1), subtractVectors(p3, p1))
+    normalizeVector(normal)
+
+    // Check if normal is flipped
+    let p1FromOrigin = subtractVectors(p1, origin)
+    normalizeVector(p1FromOrigin)
+
+    if (dotProduct(p1FromOrigin, normal) < 0) {
+        scaleVectorInplace(normal, -1)
+    }
+
+    return normal
+}
+
+export function sortFacePoints(points, normal, arrToSort) {
+    let theta0Vector = getArbitraryPerpendicularVector3D(normal)
+    normalizeVector(theta0Vector)
+    let posAngleVector = crossProduct(normal, theta0Vector)
+    normalizeVector(posAngleVector)
+
+    let faceCenter = getCenterOfPoints(points)
+
+    let angles = []
+    for (let i = 0; i < points.length; i++) {
+        let v = subtractVectors(points[i], faceCenter)
+        angles.push(calcAngleBetweenVectors(theta0Vector, v, posAngleVector)) 
+    }
+
+    bubbleSortParallel(angles, arrToSort)
 }
 
 export function bubbleSortParallel(compareArray, ...otherArrays) {
@@ -375,10 +423,74 @@ export function generateSpreadSpherePoints(n, multiplier, w) {
     return points
 }
 
+export function rotMat3DPlanes4D(angleYZ, angleXZ, angleXY) {
+    const rotationYZ = [
+        [1, 0, 0, 0],
+        [0, Math.cos(angleYZ), -Math.sin(angleYZ), 0],
+        [0, Math.sin(angleYZ), Math.cos(angleYZ), 0],
+        [0, 0, 0, 1]
+    ];
+
+    const rotationXZ = [
+        [Math.cos(angleXZ), 0, Math.sin(angleXZ), 0],
+        [0, 1, 0, 0],
+        [-Math.sin(angleXZ), 0, Math.cos(angleXZ), 0],
+        [0, 0, 0, 1]
+    ];    
+    
+    const rotationXY = [
+        [Math.cos(angleXY), -Math.sin(angleXY), 0, 0],
+        [Math.sin(angleXY), Math.cos(angleXY), 0, 0],
+        [0, 0, 1, 0],
+        [0, 0, 0, 1]
+    ];
+
+    let m = multiplyMatrices(rotationXY, rotationXZ)
+    return multiplyMatrices(m, rotationYZ)
+}
+
+export function scaleMatXYZ4D(scale) {
+    return [
+        [scale, 0, 0, 0],
+        [0, scale, 0, 0],
+        [0, 0, scale, 0],
+        [0, 0, 0, 1]
+    ]
+}
+
+export function transMatXYZ4D(vec3D) {
+    return [
+        [1, 0, 0, vec3D[0]],
+        [0, 1, 0, vec3D[1]],
+        [0, 0, 1, vec3D[2]],
+        [0, 0, 0, 1],
+    ]
+}
+
+// returns 4d matrix
+export function getTransformMatXYZ4D(scale, translate, rotYZ, rotXZ, rotXY) {
+    const s = scaleMatXYZ4D(scale)
+    const t = transMatXYZ4D(translate)
+    const r = rotMat3DPlanes4D(rotYZ, rotXZ, rotXY)
+
+    let m = multiplyMatrices(t, s)
+    return multiplyMatrices(m, r)
+}
+
+// returns 3d points
+export function applyMatXYZ4D(points3D, mat4D) {
+    let applied3D = []
+    for (let i = 0; i < points3D.length; i++) {
+        let p = multiplyMatrixVector(mat4D, [...points3D[i], 1])
+        applied3D.push([p[0], p[1], p[2]])
+    }
+    return applied3D
+}
+
 
 // 4D transformations //
 
-function get4DRotationMatrix(angleXW, angleYW, angleZW) {
+function rotMat4DPlanes4D(angleXW, angleYW, angleZW) {
     const rotationXW = [
         [Math.cos(angleXW), 0, 0, Math.sin(angleXW)],
         [0, 1, 0, 0],
@@ -388,7 +500,7 @@ function get4DRotationMatrix(angleXW, angleYW, angleZW) {
 
     const rotationYW = [
         [1, 0, 0, 0],
-        [0, Math.cos(angleYW), 0, -1*Math.sin(angleYW)],
+        [0, Math.cos(angleYW), 0, -Math.sin(angleYW)],
         [0, 0, 1, 0],
         [0, Math.sin(angleYW), 0, Math.cos(angleYW)]
     ];
@@ -396,7 +508,7 @@ function get4DRotationMatrix(angleXW, angleYW, angleZW) {
     const rotationZW = [
         [1, 0, 0, 0],
         [0, 1, 0, 0],
-        [0, 0, Math.cos(angleZW), -1*Math.sin(angleZW)],
+        [0, 0, Math.cos(angleZW), -Math.sin(angleZW)],
         [0, 0, Math.sin(angleZW), Math.cos(angleZW)]
     ];
 
@@ -405,7 +517,7 @@ function get4DRotationMatrix(angleXW, angleYW, angleZW) {
 }
 
 export function rotate4D(points, angleXW, angleYW, angleZW) {
-    let m = get4DRotationMatrix(angleXW, angleYW, angleZW)    
+    let m = rotMat4DPlanes4D(angleXW, angleYW, angleZW)    
 
     let rotated = []
     for (let i = 0; i < points.length; i++){
@@ -463,6 +575,19 @@ export function drawSpherePoints(points, sphereMeshes) {
     }
 }
 
+export function debugSpheres(scene, points) {
+    for (let i = 0; i < points.length; i++) {
+        const geometry = new THREE.SphereGeometry(0.1, 24, 12)
+        const material = new THREE.MeshStandardMaterial()
+        material.color = new THREE.Color(0xff0000)
+
+        const mesh = new THREE.Mesh(geometry, material)
+        mesh.position.set(points[i][0], points[i][1], points[i][2])
+        scene.add(mesh)
+        
+    }
+}
+
 // pre-calculated from unit circle
 // Needs to be defined on the two axes orthogonal to the cylinder height
 const baseCirclePoints = [
@@ -507,26 +632,10 @@ export function drawCylinders(points, meshes, edgeIndices, scaleFactor) {
             [0, 0, 0, 1]
         ]
 
-        let translation1 = [
-            [1, 0, 0, endpoint1[0]],
-            [0, 1, 0, endpoint1[1]],
-            [0, 0, 1, endpoint1[2]],
-            [0, 0, 0, 1],
-        ]
+        let translation1 = transMatXYZ4D(endpoint1)
+        let translation2 = transMatXYZ4D(endpoint2)
 
-        let translation2 = [
-            [1, 0, 0, endpoint2[0]],
-            [0, 1, 0, endpoint2[1]],
-            [0, 0, 1, endpoint2[2]],
-            [0, 0, 0, 1],
-        ]
-
-        let scale = [
-            [scaleFactor, 0, 0, 0],
-            [0, scaleFactor, 0, 0],
-            [0, 0, scaleFactor, 0],
-            [0, 0, 0, 1],
-        ]
+        let scale = scaleMatXYZ4D(scaleFactor)
 
         let m1 = multiplyMatrices(translation1, scale)        
         let m2 = multiplyMatrices(translation2, scale)
@@ -567,16 +676,4 @@ export function drawCylinders(points, meshes, edgeIndices, scaleFactor) {
         meshes[i].geometry.attributes.normal.needsUpdate = true
         meshes[i].geometry.attributes.position.needsUpdate = true
     }
-}
-
-export function createColor(r, g, b) {
-    return {r, g, b}
-}
-
-export function lerpColor(c1, c2, t) {
-    let r = lerp(c1.r, c2.r, t)
-    let g = lerp(c1.g, c2.g, t)
-    let b = lerp(c1.b, c2.b, t)
-
-    return createColor(r, g, b)
 }

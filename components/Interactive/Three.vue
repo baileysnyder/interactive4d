@@ -46,9 +46,11 @@
 import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as Util from '../../scripts/util'
+import * as Constants from '../../scripts/constants'
 import * as Cone4D from '../../scripts/cone4D'
 import * as Cube4D from '../../scripts/cube4D'
 import * as Sphere4D from '../../scripts/sphere4D'
+import * as Axes from '../../scripts/axes'
 
 class SliderState {
     constructor(sceneID, vueContext) {
@@ -72,6 +74,7 @@ class SliderState {
 let camera;
 let threeScene;
 let renderer;
+let controls;
 
 let clock = new THREE.Clock();
 let delta = 0;
@@ -121,6 +124,7 @@ export default {
             renderer.setSize(width, height)
 
             Cube4D.updateLineResolution(width, height)
+            Axes.updateLineResolution(width, height)
         },
         scene: function(newScene, oldScene) {
             if (!this.isSceneInThree(oldScene)) {
@@ -128,10 +132,10 @@ export default {
             }
             this.$store.commit('updateSceneSlider', new SliderState(oldScene, this))
             // Keep the same values between cube proj and slice so the user can compare them more easily
-            if (oldScene === Util.scenes.three.sliceHypercube) {
-                this.$store.commit('updateSceneSlider', new SliderState(Util.scenes.three.projHypercube, this))
-            } else if (oldScene === Util.scenes.three.projHypercube) {
-                this.$store.commit('updateSceneSlider', new SliderState(Util.scenes.three.sliceHypercube, this))
+            if (oldScene === Constants.scenes.three.sliceHypercube) {
+                this.$store.commit('updateSceneSlider', new SliderState(Constants.scenes.three.projHypercube, this))
+            } else if (oldScene === Constants.scenes.three.projHypercube) {
+                this.$store.commit('updateSceneSlider', new SliderState(Constants.scenes.three.sliceHypercube, this))
             }
 
             if (!this.isSceneInThree(newScene)) {
@@ -180,10 +184,10 @@ export default {
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
             camera = new THREE.PerspectiveCamera(80, width/height, 0.1, 100)
-            camera.position.set(0, 0, 4.5)
+            camera.position.set(0, 0, 6)
             threeScene.add(camera)
 
-            const controls = new OrbitControls(camera, renderer.domElement)
+            controls = new OrbitControls(camera, renderer.domElement)
             controls.enablePan = false;
             controls.update();
 
@@ -199,22 +203,22 @@ export default {
             if (delta > interval) {
                 if (this.objectNeedsUpdate) {
                     switch (this.scene) {
-                        case (Util.scenes.three.sliceHypercube):
+                        case (Constants.scenes.three.sliceHypercube):
                             Cube4D.updateHypercubeSlice(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
                             break
-                        case (Util.scenes.three.projHypercube):
+                        case (Constants.scenes.three.projHypercube):
                             Cube4D.updateHypercubeProjection(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
                             break
-                        case (Util.scenes.three.sliceHypersphere):
+                        case (Constants.scenes.three.sliceHypersphere):
                             Sphere4D.updateSliceHypersphere(parseFloat(this.translateW))
                             break
-                        case (Util.scenes.three.projHypersphere):
+                        case (Constants.scenes.three.projHypersphere):
                             Sphere4D.updateProjHypersphere(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW))
                             break
-                        case (Util.scenes.three.projCone):
+                        case (Constants.scenes.three.projCone):
                             Cone4D.updateProjectionCone(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
                             break
-                        case (Util.scenes.three.sliceCone):
+                        case (Constants.scenes.three.sliceCone):
                             Cone4D.updateSliceCone(threeScene, parseFloat(this.angleIN), parseFloat(this.translateW))
                             break
                     }
@@ -232,38 +236,64 @@ export default {
             Cube4D.undoInits(threeScene)
             Sphere4D.undoInits(threeScene)
             Cone4D.undoInits(threeScene)
+            Axes.undoInits(threeScene)
         },
         initScene(sceneID) {
+            controls.enableRotate = true
+            controls.update()
             switch(sceneID) {
-                case (Util.scenes.three.sliceHypercube):
+                case (Constants.scenes.three.sliceHypercube):
                     this.angleMax = 90
                     this.toggleSliders('XW', 'YW', 'ZW', 'W')
                     Cube4D.initSliceHypercube(threeScene, this.canvasSize.width, this.canvasSize.height) 
                     break
-                case (Util.scenes.three.projHypercube):
+                case (Constants.scenes.three.projHypercube):
                     this.angleMax = 90
                     this.toggleSliders('XW', 'YW', 'ZW')
                     Cube4D.initProjHypercube(threeScene)
                     break
-                case (Util.scenes.three.sliceHypersphere):
+                case (Constants.scenes.three.sliceHypersphere):
                     this.angleMax = 0
                     this.toggleSliders('W')
                     Sphere4D.initSliceHypersphere(threeScene)
                     break
-                case (Util.scenes.three.projHypersphere):
+                case (Constants.scenes.three.projHypersphere):
                     this.angleMax = 180
                     this.toggleSliders('XW', 'YW', 'ZW')
                     Sphere4D.initProjHypersphere(threeScene)
                     break
-                case (Util.scenes.three.projCone):
+                case (Constants.scenes.three.projCone):
                     this.angleMax = 360
                     this.toggleSliders('XW', 'YW', 'ZW')
                     Cone4D.initProjCone(threeScene)
                     break
-                case (Util.scenes.three.sliceCone):
+                case (Constants.scenes.three.sliceCone):
                     this.angleMax = 360
                     this.toggleSliders('IN', 'W')
                     Cone4D.initSliceCone(threeScene)
+                    break
+                case (Constants.scenes.three.axesWithCube):
+                    this.toggleSliders()
+                    Axes.initAxesWithCube(threeScene, this.$store.state.canvasSize.w, this.$store.state.canvasSize.h)
+                    camera.position.set(-0.951, 0.917, 5.853)
+                    controls.update()
+                    break
+                case (Constants.scenes.three.axis1D):
+                    this.toggleSliders()
+                    Axes.init1D(threeScene, this.$store.state.canvasSize.w, this.$store.state.canvasSize.h)
+                    controls.enableRotate = false
+                    controls.reset()
+                    break
+                case(Constants.scenes.three.axis2D):
+                    this.toggleSliders()
+                    Axes.init2D(threeScene, this.$store.state.canvasSize.w, this.$store.state.canvasSize.h)
+                    controls.reset()
+                    break
+                case(Constants.scenes.three.axis3D):
+                    this.toggleSliders()
+                    Axes.init3D(threeScene, this.$store.state.canvasSize.w, this.$store.state.canvasSize.h)
+                    camera.position.set(0.864, 0.78, 5.886)
+                    controls.update()
                     break
             }
             this.objectNeedsUpdate = true
@@ -290,9 +320,9 @@ export default {
             this.translateW = 0
         },
         isSceneInThree(sceneID) {
-            for (const key in Util.scenes.three) {
-                if (Object.hasOwnProperty.call(Util.scenes.three, key)) {
-                    if (sceneID === Util.scenes.three[key]) {
+            for (const key in Constants.scenes.three) {
+                if (Object.hasOwnProperty.call(Constants.scenes.three, key)) {
+                    if (sceneID === Constants.scenes.three[key]) {
                         return true 
                     }                
                 }
@@ -308,6 +338,7 @@ export default {
         requestAnimationFrame(this.animate)
     }
 }
+
 </script>
 
 <style scoped>

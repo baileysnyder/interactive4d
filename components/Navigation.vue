@@ -6,7 +6,7 @@
 
 <script>
 import NavigationLink from './NavigationLink'
-import {navPages} from '../scripts/util'
+import {navPages} from '../scripts/constants'
 export default {
   components: {
     NavigationLink,

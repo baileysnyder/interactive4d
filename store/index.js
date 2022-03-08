@@ -2,8 +2,8 @@ export const state = () => ({
     sceneID: undefined,
     sceneSliders: [],
     pageURLs: [],
-    canvasSize: {height: 0, width: 0},
-    articleSize: {height: 0, width: 0}
+    canvasSize: {h: 0, w: 0},
+    articleSize: {h: 0, w: 0}
 })
 
 export const mutations = {

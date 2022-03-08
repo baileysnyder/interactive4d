@@ -22,6 +22,7 @@ export default {
 .button-row {
   display: flex;
   justify-content: center;
-  margin: 8px;
+  margin: 12px;
+  margin-bottom: 26px;
 }
 </style>

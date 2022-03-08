@@ -37,6 +37,7 @@ export default {
 
   display: flex;
   align-items: center;
+  box-shadow: 3px 3px 3px rgb(0 0 0 / 50%);
 }
 
 .inactive {

@@ -207,7 +207,7 @@ function drawLatheSolid(scene, {points, isBaseCutUp}, isHalf) {
     //addCutoffPoint(vec2s, isUp)
 
     const geometry = new THREE.LatheGeometry(vec2s, latheSegments);
-    //Util.printThreeVertices(geometry)
+    // will number of vertices in base be constant? Just need to scale?
     if (isBaseCutUp !== undefined) {
         let cutoffPoints = getCutoffPoints(geometry, isBaseCutUp, vec2s.length)
         if (!isBaseCutUp) {

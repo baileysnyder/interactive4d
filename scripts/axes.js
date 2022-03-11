@@ -97,22 +97,11 @@ const cubeLineColor = '#D2F3F5'
 const cubeLineWidth = 2
 const axisWidth = 3
 
-let lineMeshes = []
-let meshes = []
-let sprites = []
-
-export function undoInits(scene) {
-    Util.removeThreeJsObjects(scene, lineMeshes, meshes, sprites)
-
-    lineMeshes = []
-    sprites = []
-}
-
 function createLine(scene, startAndEnd, color, canvasW, canvasH, lineWidth) {
     const points = new Float32Array(startAndEnd)
-    const geometry = new LineGeometry();
+    const geometry = new LineGeometry()
 
-    geometry.setPositions(points);
+    geometry.setPositions(points)
 
     const material = new LineMaterial({
         linewidth: lineWidth,
@@ -120,10 +109,10 @@ function createLine(scene, startAndEnd, color, canvasW, canvasH, lineWidth) {
     })
     material.resolution.set(canvasW, canvasH)
 
-    let line = new Line2( geometry, material );
-    scene.add( line );
+    let line = new Line2( geometry, material )
+    scene.add( line )
 
-    lineMeshes.push(line)
+    return line
 }
 
 function getCubePointsNormals(cube) {
@@ -133,7 +122,7 @@ function getCubePointsNormals(cube) {
     let normals = []
     for (let i = 0; i < facePoints.length; i++) {
         let normal = Util.getFaceNormal(facePoints[i], origin)
-        Util.sortFacePoints(facePoints[i], normal, facePoints[i])
+        Util.sortFacePointsFromNormal(facePoints[i], normal, facePoints[i])
         let verts = Util.triangulateSortedFace(facePoints[i])
         points.push(...verts)
         for (let k = 0; k < verts.length/3; k++) {
@@ -173,34 +162,7 @@ function initAxisCube(scene, cube) {
 
     const mesh = new THREE.Mesh(geometry, material)
     scene.add(mesh)
-    meshes.push(mesh)
-}
-
-function createLabel(scene, text, position, scale, color) {
-    let canvas = document.createElement('canvas')
-    canvas.width = 28
-    canvas.height = 22
-    let ctx = canvas.getContext('2d')
-
-    ctx.textAlign = 'center'
-    ctx.fillStyle = color
-    ctx.font = '30px Karla'
-    ctx.fillText(text, 14, 20)
-
-    let t = new THREE.Texture(canvas)
-    t.needsUpdate = true
-
-    let mat = new THREE.SpriteMaterial({
-        map: t,
-        transparent: true,
-        color: 0xffffff
-    })
-
-    let sp = new THREE.Sprite(mat)
-    sp.position.set(position[0], position[1], position[2])
-    sp.scale.set(scale, scale, 1)
-    scene.add(sp)
-    sprites.push(sp)
+    return mesh
 }
 
 function initImage(scene, url, position, width, height) {
@@ -208,19 +170,27 @@ function initImage(scene, url, position, width, height) {
     const geometry = new THREE.PlaneGeometry(width, height)
     const material = new THREE.MeshBasicMaterial()
     material.side = THREE.DoubleSide
+    //material.alphaTest = 0.5
+    material.depthTest = false
     material.transparent = true
-    material.map = loader.load(url)
+    let tex = loader.load(url)
+    tex.anisotropy = 4
+    material.map = tex
 
     const mesh = new THREE.Mesh(geometry, material)
     mesh.position.set(position[0], position[1], 0)
+    mesh.renderOrder = 1
     scene.add(mesh)
-    meshes.push(mesh)
+    return mesh
 }
 
 // "Low Poly Male Base" (https://skfb.ly/KVAp) by wh_nerevar is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
-function initMan(scene) {
+function initMan(state, scene) {
     const loader = new GLTFLoader()
     loader.load('/man.glb', function(gltf) {
+        if (state.meshes == null) {
+            throw new Error('state does not have meshes field to add man.glb')
+        }
         let mesh = gltf.scene.children[0]
         // basic material is used to get 2D image of man
         //mesh.material = new THREE.MeshBasicMaterial()
@@ -230,22 +200,25 @@ function initMan(scene) {
         mesh.rotateX(-Math.PI/6)
         mesh.rotateY(Math.PI/6)
         scene.add(mesh)
-        meshes.push(mesh)
+        state.meshes.push(mesh)
     }, undefined, function(error) {
         console.log(error)
     })
 }
 
-function initTrapezoidal(scene) {
+function initTrapezoidal(state, scene) {
     const loader = new GLTFLoader()
     loader.load('/trapezoidal.glb', function(gltf) {
+        if (state.meshes == null) {
+            throw new Error('state does not have meshes field to add trapezoidal.glb')
+        }
         let mesh = gltf.scene.children[0]
         mesh.material.color = new THREE.Color(trapezoidColor)
         mesh.position.set(-1, -1, -0.5)
         mesh.scale.set(0.6, 0.6, 0.6)
         mesh.rotateZ(0.1)
         scene.add(mesh)
-        meshes.push(mesh)
+        state.meshes.push(mesh)
     }, undefined, function(error) {
         console.log(error)
     })
@@ -261,7 +234,7 @@ function initCube(scene) {
     mesh.rotateY(Math.PI/4)
 
     scene.add(mesh)
-    meshes.push(mesh)
+    return mesh
 }
 
 function initSphere(scene) {
@@ -273,10 +246,10 @@ function initSphere(scene) {
     mesh.position.set(-1.2, 1.3, 0.9)
 
     scene.add(mesh)
-    meshes.push(mesh)
+    return mesh
 }
 
-function createLabeledLine(scene, startAndEnd, color, canvasW, canvasH, lineWidth, label) {
+function createLabeledLine(state, scene, startAndEnd, color, canvasW, canvasH, lineWidth, label) {
     const labelDistance = 0.15
     const labelHeight = 0.05
     const textDistance = 0.15
@@ -290,20 +263,47 @@ function createLabeledLine(scene, startAndEnd, color, canvasW, canvasH, lineWidt
     let middleStartEnd = [startAndEnd[0], startAndEnd[1]+labelDistance+labelHeight, startAndEnd[2],
                         startAndEnd[3], startAndEnd[4]+labelDistance+labelHeight, startAndEnd[5]]
 
-    createLine(scene, leftStartEnd, labelColor, canvasW, canvasH, labelWidth)
-    createLine(scene, rightStartEnd, labelColor, canvasW, canvasH, labelWidth)
-    createLine(scene, middleStartEnd, labelColor, canvasW, canvasH, labelWidth)
+    state.lineMeshes.push(createLine(scene, leftStartEnd, labelColor, canvasW, canvasH, labelWidth))
+    state.lineMeshes.push(createLine(scene, rightStartEnd, labelColor, canvasW, canvasH, labelWidth))
+    state.lineMeshes.push(createLine(scene, middleStartEnd, labelColor, canvasW, canvasH, labelWidth))
 
-    //createLabel(scene, label, [(middleStartEnd[0]+middleStartEnd[3])/2, middleStartEnd[1] + textDistance, middleStartEnd[2]], 0.18, textColor)
-
-    createLine(scene, startAndEnd, color, canvasW, canvasH, lineWidth)
+    state.lineMeshes.push(createLine(scene, startAndEnd, color, canvasW, canvasH, lineWidth))
 
     return [(middleStartEnd[0]+middleStartEnd[3])/2, middleStartEnd[1], middleStartEnd[2]]
 }
 
-function createLineObjectLabel(scene, midpoints, canvasW, canvasH) {
+function createLabel(scene, text, position, scale, color) {
+    let canvas = document.createElement('canvas')
+    let spriteW = 200
+    let spriteH = 30
+    canvas.width = spriteW
+    canvas.height = spriteH
+    let ctx = canvas.getContext('2d')
+
+    ctx.textAlign = 'center'
+    ctx.fillStyle = color
+    ctx.font = '30px Karla'
+    ctx.fillText(text, spriteW/2, 22)
+
+    let t = new THREE.Texture(canvas)
+    t.needsUpdate = true
+
+    let mat = new THREE.SpriteMaterial({
+        map: t,
+        transparent: true,
+        color: 0xffffff
+    })
+
+    let sp = new THREE.Sprite(mat)
+    sp.position.set(position[0], position[1], position[2])
+    sp.scale.set((spriteW/spriteH)*scale, scale, 1)
+    scene.add(sp)
+    sp.renderOrder = 3
+    return sp
+}
+
+function create1DAxisLabels(state, scene, midpoints, canvasW, canvasH) {
     const labelHeight = 0.5
-    const labelScale = 0.24
     const lineEndDistance = 0.17
     const lineColor = '#545454'
     const lineWidth = 1
@@ -317,9 +317,162 @@ function createLineObjectLabel(scene, midpoints, canvasW, canvasH) {
     let lineEnd = [position[0], position[1]-lineEndDistance, position[2]]
 
     for (let i = 0; i < midpoints.length; i++) {
-        createLine(scene, [...midpoints[i], ...lineEnd], lineColor, canvasW, canvasH, lineWidth)       
+        state.lineMeshes.push(createLine(scene, [...midpoints[i], ...lineEnd], lineColor, canvasW, canvasH, lineWidth))
     }
     
+    state.meshes.push(createLabel(scene, '1D objects', position, 0.24, '#8c8c8c'))
+}
+
+function initCameraSphere(mainCamera) {
+    const geometry = new THREE.SphereGeometry(0.3, 32, 16)
+    const material = new THREE.MeshStandardMaterial()
+    material.transparent = true
+
+    const mesh = new THREE.Mesh(geometry, material)
+
+    mesh.layers.set(2)
+    mesh.renderOrder = 2
+    mainCamera.add(mesh)
+    return mesh
+}
+
+function initBackgroundPlane(scene) {
+    const geometry = new THREE.PlaneGeometry(30, 30)
+    const material = new THREE.MeshBasicMaterial()
+    material.side = THREE.DoubleSide
+    material.transparent = true
+    material.opacity = 0.3
+    material.color = new THREE.Color('#4c4c4c')
+    material.depthTest = false
+
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.position.set(0, 0, 0)
+    scene.add(mesh)
+    return mesh
+}
+
+function calcZLinePoints(cameraPosition) {
+    return [cameraPosition.x, cameraPosition.y, 0, cameraPosition.x, cameraPosition.y, cameraPosition.z]
+}
+
+function genericState() {
+    return {
+        lineMeshes: [],
+        meshes: []
+    }
+}
+
+export function init1D(scene, canvasW, canvasH) {
+    let state = genericState()
+    let midpoints = []
+
+    state.lineMeshes.push(createLine(scene, [-2, 0, 0, -1.7, 0, 0], axisColors[0], canvasW, canvasH, axisWidth))
+    midpoints.push(createLabeledLine(state, scene, [-1.7, 0, 0, -1.2, 0, 0], sphereColor, canvasW, canvasH, axisWidth, '1'))
+    state.lineMeshes.push(createLine(scene, [-1.2, 0, 0, -0.6, 0, 0], axisColors[0], canvasW, canvasH, axisWidth))
+    midpoints.push(createLabeledLine(state, scene, [-0.6, 0, 0, -0.4, 0, 0], trapezoidColor, canvasW, canvasH, axisWidth, '2'))
+    state.lineMeshes.push(createLine(scene, [-0.4, 0, 0, -0.1, 0, 0], axisColors[0], canvasW, canvasH, axisWidth))
+    midpoints.push(createLabeledLine(state, scene, [-0.1, 0, 0, 0.6, 0, 0], cubeColor, canvasW, canvasH, axisWidth, '3'))
+    state.lineMeshes.push(createLine(scene, [0.6, 0, 0, 1, 0, 0], axisColors[0], canvasW, canvasH, axisWidth))
+    midpoints.push(createLabeledLine(state, scene, [1, 0, 0, 1.3, 0, 0], manColor, canvasW, canvasH, axisWidth, '4'))
+    state.lineMeshes.push(createLine(scene, [1.3, 0, 0, 2, 0, 0], axisColors[0], canvasW, canvasH, axisWidth))
+
+    create1DAxisLabels(state, scene, midpoints, canvasW, canvasH)
+    return state
+}
+
+export function init2D(scene, canvasW, canvasH) {
+    let state = genericState()
+    let x = createLine(scene, [-2, 0, 0, 2, 0, 0], axisColors[0], canvasW, canvasH, axisWidth)
+    let y = createLine(scene, [0, -2, 0, 0, 2, 0], axisColors[1], canvasW, canvasH, axisWidth)
+
+    // need layers for sideView2D case
+    x.layers.set(1)
+    y.layers.set(1)
+    state.lineMeshes.push(x, y)
+
+    state.meshes.push(initImage(scene, '/textures/blueman.png', [1.2, -0.2], 1.4, 1.4))
+    state.meshes.push(initImage(scene, '/textures/circle.png', [-1.2, 1.3], 1, 1))
+    state.meshes.push(initImage(scene, '/textures/square.png', [0.1, 0.8], 0.8, 0.8))
+    state.meshes.push(initImage(scene, '/textures/trapezoid.png', [-0.75, -1], 1.3, 1.3))
+
+    return state
+}
+
+export function initSideView2D(scene, mainCanvasD, bottomCanvasD, mainCamera) {
+    let state = {
+        zLine: undefined,
+        xLine: undefined,
+        yLine: undefined,
+        zLabel: undefined,
+
+        lineMeshes: undefined,
+        meshes: undefined,
+    }
+
+    let state2D = init2D(scene, mainCanvasD.w, mainCanvasD.h)
+    state.lineMeshes = state2D.lineMeshes
+    state.meshes = state2D.meshes
+    // want an extra x and y line for the bottom canvas so it looks right with different canvas size
+    state.xLine = createLine(scene, [-2, 0, 0, 2, 0, 0], axisColors[0], bottomCanvasD.w, bottomCanvasD.h, axisWidth)
+    state.yLine = createLine(scene, [0, -2, 0, 0, 2, 0], axisColors[1], bottomCanvasD.w, bottomCanvasD.h, axisWidth)
+    state.xLine.layers.set(2)
+    state.yLine.layers.set(2)
+
+    const points = calcZLinePoints(mainCamera.position)
+    state.zLine = createLine(scene, points, '#FFFFFF', bottomCanvasD.w, bottomCanvasD.h, 1)
+    state.zLine.layers.set(2)
+
+    state.meshes.push(initCameraSphere(mainCamera))
+    state.meshes.push(initBackgroundPlane(scene))
+
+    const labelPosition = [mainCamera.position.x, mainCamera.position.y + 0.7, mainCamera.position.z/2]
+    state.zLabel = createLabel(scene, 'Z='+mainCamera.position.z, labelPosition, 0.9, '#FFFFFF')
+    state.zLabel.layers.set(2)
+
+    return state
+}
+
+export function init3D(scene, canvasW, canvasH) {
+    let state = genericState()
+    state.lineMeshes.push(createLine(scene, [-2, 0, 0, 2, 0, 0], axisColors[0], canvasW, canvasH, axisWidth))
+    state.lineMeshes.push(createLine(scene, [0, -2, 0, 0, 2, 0], axisColors[1], canvasW, canvasH, axisWidth))
+    state.lineMeshes.push(createLine(scene, [0, 0, -2, 0, 0, 2], axisColors[2], canvasW, canvasH, axisWidth))
+
+    state.meshes.push(initMan(state, scene))
+    state.meshes.push(initTrapezoidal(state, scene))
+    state.meshes.push(initCube(scene))
+    state.meshes.push(initSphere(scene))
+
+    //init3DForImage(scene, canvasW, canvasH)
+    return state
+}
+
+export function initAxesWithCube(scene, canvasW, canvasH) {
+    let state = genericState()
+    for (let i = 0; i < axes4DTransformed.length; i++) {
+        state.lineMeshes.push(createLine(scene, axes4DTransformed[i].concat(translate4D), axisColors[i], canvasW, canvasH, axisWidth))
+    }    
+    
+    const labelScalar = 1.11
+    const spriteScale = 0.27
+    state.meshes.push(createLabel(scene, "X", Util.scaleVector(axes4DTransformed[0], labelScalar), spriteScale, cubeLineColor))
+    state.meshes.push(createLabel(scene, "Y", Util.scaleVector(axes4DTransformed[1], labelScalar), spriteScale, cubeLineColor))
+    state.meshes.push(createLabel(scene, "Z", Util.scaleVector(axes4DTransformed[2], labelScalar), spriteScale, cubeLineColor))
+    state.meshes.push(createLabel(scene, "W", Util.scaleVector(axes4DTransformed[3], labelScalar), spriteScale, cubeLineColor))
+
+    state.meshes.push(initAxisCube(scene, skewCube))
+    for (let i = 0; i < cubeEdgeI.length; i++) {
+        state.lineMeshes.push(createLine(scene, skewCube[cubeEdgeI[i][0]].concat(skewCube[cubeEdgeI[i][1]]), cubeLineColor, canvasW, canvasH, cubeLineWidth))
+    }
+    return state
+}
+
+export function updateZLine(state, cameraPosition) {
+    const points = new Float32Array(calcZLinePoints(cameraPosition))
+    state.zLine.geometry.setPositions(points)
+    state.zLabel.position.set(cameraPosition.x, cameraPosition.y+0.7, cameraPosition.z/2)
+    let text = 'Z='+cameraPosition.z.toFixed(2)
+
     let canvas = document.createElement('canvas')
     let spriteW = 200
     let spriteH = 30
@@ -328,88 +481,28 @@ function createLineObjectLabel(scene, midpoints, canvasW, canvasH) {
     let ctx = canvas.getContext('2d')
 
     ctx.textAlign = 'center'
-    ctx.fillStyle = '#8c8c8c'
+    ctx.fillStyle = '#FFFFFF'
     ctx.font = '30px Karla'
-    ctx.fillText('1D objects', spriteW/2, 22)
+    ctx.fillText(text, spriteW/2, 22)
 
     let t = new THREE.Texture(canvas)
     t.needsUpdate = true
-
-    let mat = new THREE.SpriteMaterial({
-        map: t,
-        transparent: true,
-        color: 0xffffff
-    })
-
-    let sp = new THREE.Sprite(mat)
-    sp.position.set(position[0], position[1], position[2])
-    sp.scale.set((spriteW/spriteH)*labelScale, labelScale, 1)
-    scene.add(sp)
-    sprites.push(sp)
+    state.zLabel.material.map = t
 }
 
-export function init1D(scene, canvasW, canvasH) {
-    let midpoints = []
-    createLine(scene, [-2, 0, 0, -1.7, 0, 0], axisColors[0], canvasW, canvasH, axisWidth)
-    midpoints.push(createLabeledLine(scene, [-1.7, 0, 0, -1.2, 0, 0], sphereColor, canvasW, canvasH, axisWidth, '1'))
-    createLine(scene, [-1.2, 0, 0, -0.6, 0, 0], axisColors[0], canvasW, canvasH, axisWidth)
-    midpoints.push(createLabeledLine(scene, [-0.6, 0, 0, -0.4, 0, 0], trapezoidColor, canvasW, canvasH, axisWidth, '2'))
-    createLine(scene, [-0.4, 0, 0, -0.1, 0, 0], axisColors[0], canvasW, canvasH, axisWidth)
-    midpoints.push(createLabeledLine(scene, [-0.1, 0, 0, 0.6, 0, 0], cubeColor, canvasW, canvasH, axisWidth, '3'))
-    createLine(scene, [0.6, 0, 0, 1, 0, 0], axisColors[0], canvasW, canvasH, axisWidth)
-    midpoints.push(createLabeledLine(scene, [1, 0, 0, 1.3, 0, 0], manColor, canvasW, canvasH, axisWidth, '4'))
-    createLine(scene, [1.3, 0, 0, 2, 0, 0], axisColors[0], canvasW, canvasH, axisWidth)
-
-    createLineObjectLabel(scene, midpoints, canvasW, canvasH)
-}
-
-export function init2D(scene, canvasW, canvasH) {
-    createLine(scene, [-2, 0, 0, 2, 0, 0], axisColors[0], canvasW, canvasH, axisWidth)
-    createLine(scene, [0, -2, 0, 0, 2, 0], axisColors[1], canvasW, canvasH, axisWidth)
-
-    initImage(scene, '/textures/blueman.png', [1.2, -0.2], 1.4, 1.4)
-    initImage(scene, '/textures/circle.png', [-1.2, 1.3], 1, 1)
-    initImage(scene, '/textures/square.png', [0.1, 0.8], 0.8, 0.8)
-    initImage(scene, '/textures/trapezoid.png', [-0.75, -1], 1.3, 1.3)
-}
-
-export function init3D(scene, canvasW, canvasH) {
-    createLine(scene, [-2, 0, 0, 2, 0, 0], axisColors[0], canvasW, canvasH, axisWidth)
-    createLine(scene, [0, -2, 0, 0, 2, 0], axisColors[1], canvasW, canvasH, axisWidth)
-    createLine(scene, [0, 0, -2, 0, 0, 2], axisColors[2], canvasW, canvasH, axisWidth)
-
-    initMan(scene)
-    initTrapezoidal(scene)
-    initCube(scene)
-    initSphere(scene)
-
-    //init3DForImage(scene, canvasW, canvasH)
-}
-
-export function initAxesWithCube(scene, canvasW, canvasH) {
-    for (let i = 0; i < axes4DTransformed.length; i++) {
-        createLine(scene, axes4DTransformed[i].concat(translate4D), axisColors[i], canvasW, canvasH, axisWidth)
-    }    
-    
-    const labelScalar = 1.09
-    const spriteScale = 0.19
-    createLabel(scene, "X", Util.scaleVector(axes4DTransformed[0], labelScalar), spriteScale, cubeLineColor)
-    createLabel(scene, "Y", Util.scaleVector(axes4DTransformed[1], labelScalar), spriteScale, cubeLineColor)
-    createLabel(scene, "Z", Util.scaleVector(axes4DTransformed[2], labelScalar), spriteScale, cubeLineColor)
-    createLabel(scene, "W", Util.scaleVector(axes4DTransformed[3], labelScalar), spriteScale, cubeLineColor)
-
-    initAxisCube(scene, skewCube)
-    for (let i = 0; i < cubeEdgeI.length; i++) {
-        createLine(scene, skewCube[cubeEdgeI[i][0]].concat(skewCube[cubeEdgeI[i][1]]), cubeLineColor, canvasW, canvasH, cubeLineWidth)
-    }
-}
-
-export function updateLineResolution(width, height) {
+export function updateLineResolution(lineMeshes, width, height) {
     if (lineMeshes && lineMeshes.length > 0) {
         for (let i = 0; i < lineMeshes.length; i++) {
             lineMeshes[i].material.resolution.set(width, height)                   
         }
     }
+}
+
+export function updateSideViewResolutions(state, mainCanvasD, bottomCanvasD) {
+    updateLineResolution(state.lineMeshes, mainCanvasD.w, mainCanvasD.h)
+    state.zLine.material.resolution.set(bottomCanvasD.w, bottomCanvasD.h)
+    state.xLine.material.resolution.set(bottomCanvasD.w, bottomCanvasD.h)
+    state.yLine.material.resolution.set(bottomCanvasD.w, bottomCanvasD.h)
 }
 
 // For creating an image used in the article

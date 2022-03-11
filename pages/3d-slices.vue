@@ -13,7 +13,7 @@
 </template>
 
 <script>
-import {scenes} from '../scripts/util'
+import {scenes} from '../scripts/constants'
 import SceneButtonSingle from '../components/SceneButtonSingle'
 
 let activeScene = undefined

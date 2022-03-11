@@ -32,31 +32,19 @@ conePoints = conePoints.concat(spherePoints)
 
 const edgeIndices = getConeEdges(spherePoints.length)
 
-let sphereMeshes = []
-let cylinderMeshes = []
-let projSpherePoints4D = []
-let projectionSphereMesh = undefined
-let latheMesh = undefined
-let baseCutoffMesh = undefined
-
-export function undoInits(scene) {
-    Util.removeThreeJsObjects(scene, sphereMeshes, cylinderMeshes, projSpherePoints4D, projectionSphereMesh, latheMesh, baseCutoffMesh)
-
-    sphereMeshes = []
-    cylinderMeshes = []
-    projSpherePoints4D = []
-    projectionSphereMesh = undefined
-    latheMesh = undefined
-    baseCutoffMesh = undefined
-}
-
 export function initProjCone(scene) {
-    initSpheres(scene)
-    initCylinders(scene)
-    //initProjectionSphere()
+    let state = {
+        sphereMeshes: undefined,
+        cylinderMeshes: undefined
+    }
+    state.sphereMeshes = initSpheres(scene)
+    state.cylinderMeshes = initCylinders(scene)
+
+    return state
 }
 
 function initSpheres(scene) {
+    let meshes = []
     for (let i = 0; i < conePoints.length; i++){
         let radius = projectionPointRadius
         let color = lineColor
@@ -72,11 +60,13 @@ function initSpheres(scene) {
         const mesh = new THREE.Mesh(geometry, material)
 
         scene.add(mesh)
-        sphereMeshes.push(mesh)
+        meshes.push(mesh)
     }
+    return meshes
 }
 
 function initCylinders(scene) {
+    let meshes = []
     for (let i = 0; i < edgeIndices.length; i++){
         const geometry = new THREE.CylinderGeometry(0.1, 0.1, 0.1, 16, 1, true)
         geometry.getAttribute('position').setUsage(THREE.DynamicDrawUsage)
@@ -86,19 +76,44 @@ function initCylinders(scene) {
         const mesh = new THREE.Mesh(geometry, material)
 
         scene.add(mesh)
-        cylinderMeshes.push(mesh)
+        meshes.push(mesh)
+    }
+    return meshes
+}
+
+function initProjectionSphere(state, scene) {
+    const geometry = new THREE.SphereGeometry(sphereRadius, sphereSegmentsW, sphereSegmentsH)
+    geometry.getAttribute('position').setUsage(THREE.DynamicDrawUsage)
+    const material = new THREE.MeshBasicMaterial()
+    material.side = THREE.DoubleSide
+    //material.wireframe = true
+    material.depthWrite = false
+    material.transparent = true
+    material.opacity = 0.1
+
+    const mesh = new THREE.Mesh(geometry, material)
+
+    scene.add(mesh)
+    state.projectionSphereMesh = mesh
+    let points = geometry.getAttribute("position").array
+    for (let i = 0; i < points.length; i+=3) {
+        state.projSpherePoints4D.push([points[i], points[i+1], points[i+2], 0])
     }
 }
 
-export function initSliceCone(scene) {   
-    initLathe(scene)
-    initBaseCutFace(scene)
+export function initSliceCone(scene) {
+    let state = {
+        baseCutoffMesh: undefined,
+        latheMesh: undefined
+    }
+    state.baseCutoffMesh = initBaseCutFace(scene)
+
+    return state
 }
 
-function initLathe() {
+function initLathe(scene) {
     
 }
-
 
 function initBaseCutFace(scene) {
     const geometry = new THREE.BufferGeometry()
@@ -120,43 +135,21 @@ function initBaseCutFace(scene) {
     material.color = new THREE.Color(coneColor)
     const mesh = new THREE.Mesh(geometry, material)
     scene.add(mesh)
-    baseCutoffMesh = mesh
+    return mesh
 }
 
-
-function initProjectionSphere(scene) {
-    const geometry = new THREE.SphereGeometry(sphereRadius, sphereSegmentsW, sphereSegmentsH)
-    geometry.getAttribute('position').setUsage(THREE.DynamicDrawUsage)
-    const material = new THREE.MeshBasicMaterial()
-    material.side = THREE.DoubleSide
-    //material.wireframe = true
-    material.depthWrite = false
-    material.transparent = true
-    material.opacity = 0.1
-
-    const mesh = new THREE.Mesh(geometry, material)
-
-    scene.add(mesh)
-    projectionSphereMesh = mesh
-    let points = geometry.getAttribute("position").array
-    for (let i = 0; i < points.length; i+=3) {
-        projSpherePoints4D.push([points[i], points[i+1], points[i+2], 0])
-    }
-}
-
-export function updateProjectionCone(angleXW, angleYW, angleZW, translateW) {
+export function updateProjectionCone(state, angleXW, angleYW, angleZW, translateW) {
     let rotatedPoints = Util.rotate4D(conePoints, angleXW, angleYW, angleZW)
     let finalPoints = Util.project4DTo3D(rotatedPoints, projectionDistance4D, scaleFactor)
-    Util.drawSpherePoints(finalPoints, sphereMeshes)
-    Util.drawCylinders(finalPoints, cylinderMeshes, edgeIndices, cylinderScaleFactor)
-    //drawProjectionSphere(angleXW, angleYW, angleZW)
+    Util.drawSpherePoints(finalPoints, state.sphereMeshes)
+    Util.drawCylinders(finalPoints, state.cylinderMeshes, edgeIndices, cylinderScaleFactor)
 }
 
-function drawProjectionSphere(angleXW, angleYW, angleZW) {
-    let rotatedPoints = Util.rotate4D(projSpherePoints4D, angleXW, angleYW, angleZW)
+function drawProjectionSphere(state, angleXW, angleYW, angleZW) {
+    let rotatedPoints = Util.rotate4D(state.projSpherePoints4D, angleXW, angleYW, angleZW)
     let finalPoints = Util.project4DTo3D(rotatedPoints, projectionDistance4D, scaleFactor)
 
-    let a = projectionSphereMesh.geometry.getAttribute("position")
+    let a = state.projectionSphereMesh.geometry.getAttribute("position")
     let meshPoints = a.array
     for (let i = 0; i < meshPoints.length; i++) {
         meshPoints[i] = finalPoints[Math.floor(i/3)][i%3]
@@ -164,25 +157,25 @@ function drawProjectionSphere(angleXW, angleYW, angleZW) {
     a.needsUpdate = true
 }
 
-export function updateSliceCone(scene, angleIN, translateW){
+export function updateSliceCone(state, scene, angleIN, translateW){
     let transformedCone = new Cone.Cone(coneHeight, coneRadius, angleIN, translateW)
     switch(Cone.getSliceType(angleIN)) {
         case (Cone.sliceType.parabola):
-            drawLatheSolid(scene, Cone.coneToParabola(angleIN, transformedCone), false)
+            drawLatheSolid(state, scene, Cone.coneToParabola(angleIN, transformedCone), false)
             break
         case (Cone.sliceType.hyperbola):
-            drawLatheSolid(scene, Cone.coneToHyperbola(angleIN, transformedCone), false)
+            drawLatheSolid(state, scene, Cone.coneToHyperbola(angleIN, transformedCone), false)
             break
         case (Cone.sliceType.ellipse):
-            drawLatheSolid(scene, Cone.coneToEllipsePoints(angleIN, transformedCone), true)
+            drawLatheSolid(state, scene, Cone.coneToEllipsePoints(angleIN, transformedCone), true)
             break
     }
 }
 
-function drawLatheSolid(scene, {points, isBaseCutUp}, isHalf) {
+function drawLatheSolid(state, scene, {points, isBaseCutUp}, isHalf) {
     if (points === undefined || points.length === 0) {
-        baseCutoffMesh.visible = false
-        scene.remove(latheMesh)
+        state.baseCutoffMesh.visible = false
+        scene.remove(state.latheMesh)
         return
     }
     
@@ -207,7 +200,7 @@ function drawLatheSolid(scene, {points, isBaseCutUp}, isHalf) {
     //addCutoffPoint(vec2s, isUp)
 
     const geometry = new THREE.LatheGeometry(vec2s, latheSegments);
-    // will number of vertices in base be constant? Just need to scale?
+    // will spacing of vertices in base be constant? Just need to scale?
     if (isBaseCutUp !== undefined) {
         let cutoffPoints = getCutoffPoints(geometry, isBaseCutUp, vec2s.length)
         if (!isBaseCutUp) {
@@ -216,8 +209,8 @@ function drawLatheSolid(scene, {points, isBaseCutUp}, isHalf) {
         }
         let triGuys = Util.triangulateSortedFace(cutoffPoints)
         
-        let positions = baseCutoffMesh.geometry.getAttribute('position').array
-        let normals = baseCutoffMesh.geometry.getAttribute('normal').array
+        let positions = state.baseCutoffMesh.geometry.getAttribute('position').array
+        let normals = state.baseCutoffMesh.geometry.getAttribute('normal').array
         for (let i = 0; i < positions.length; i+=3) {
             positions[i] = triGuys[i]
             positions[i+1] = triGuys[i+1]
@@ -229,11 +222,11 @@ function drawLatheSolid(scene, {points, isBaseCutUp}, isHalf) {
                 normals[i+1] = -1
             }
         }
-        baseCutoffMesh.geometry.getAttribute('position').needsUpdate = true
-        baseCutoffMesh.geometry.getAttribute('normal').needsUpdate = true
-        baseCutoffMesh.visible = true
+        state.baseCutoffMesh.geometry.getAttribute('position').needsUpdate = true
+        state.baseCutoffMesh.geometry.getAttribute('normal').needsUpdate = true
+        state.baseCutoffMesh.visible = true
     } else {
-        baseCutoffMesh.visible = false
+        state.baseCutoffMesh.visible = false
     }
     
     
@@ -249,10 +242,9 @@ function drawLatheSolid(scene, {points, isBaseCutUp}, isHalf) {
     material.color = new THREE.Color(coneColor)
     const mesh = new THREE.Mesh(geometry, material)
 
-    scene.remove(latheMesh)
+    scene.remove(state.latheMesh)
     scene.add(mesh)
-
-    latheMesh = mesh
+    state.latheMesh = mesh
 }
 
 function getCutoffPoints(geometry, isBaseCutUp, curvePointCount) {

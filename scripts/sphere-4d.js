@@ -52,14 +52,8 @@ const sphereColor = '#00aa19'
 let sphereMeshes = []
 let hypersphereMesh = undefined
 
-export function undoInits(scene) {
-    Util.removeThreeJsObjects(scene, sphereMeshes, hypersphereMesh)
-
-    sphereMeshes = []
-    hypersphereMesh = undefined
-}
-
 function initSpheres(scene, count) {
+    let meshes = []
     for (let i = 0; i < count; i++){
         const geometry = new THREE.SphereGeometry(projectionSphereRadius, 20, 10)
         const material = new THREE.MeshStandardMaterial()
@@ -67,13 +61,16 @@ function initSpheres(scene, count) {
         const mesh = new THREE.Mesh(geometry, material)
 
         scene.add(mesh)
-        sphereMeshes.push(mesh)
+        meshes.push(mesh)
     }
+    return meshes
 }
 
 
 export function initProjHypersphere(scene) {
-    initSpheres(scene, hyperspherePoints.length)
+    return {
+        sphereMeshes: initSpheres(scene, hyperspherePoints.length)
+    }
 }
 
 
@@ -85,22 +82,24 @@ export function initSliceHypersphere(scene) {
     const mesh = new THREE.Mesh(geometry, material)
 
     scene.add(mesh)
-    hypersphereMesh = mesh
+    return {
+        hypersphereMesh: mesh
+    }
 }
 
-export function updateSliceHypersphere(translateW) {
+export function updateSliceHypersphere(state, translateW) {
     let radius = Util.getSphereIntersectionRadius(hypersphereRadius, Math.abs(translateW))
     let scale = radius / hypersphereRadius
 
-    hypersphereMesh.scale.x = scale;
-    hypersphereMesh.scale.y = scale;
-    hypersphereMesh.scale.z = scale;
+    state.hypersphereMesh.scale.x = scale;
+    state.hypersphereMesh.scale.y = scale;
+    state.hypersphereMesh.scale.z = scale;
 }
 
-export function updateProjHypersphere(angleXW, angleYW, angleZW) {
+export function updateProjHypersphere(state, angleXW, angleYW, angleZW) {
     let rotatedPoints = Util.rotate4D(hyperspherePoints, angleXW, angleYW, angleZW)
     let finalPoints = Util.project4DTo3D(rotatedPoints, projectionDistance4D, scaleFactor)
-    drawSpherePoints(finalPoints, sphereMeshes)
+    drawSpherePoints(finalPoints, state.sphereMeshes)
 }
 
 function drawSpherePoints(points, sphereMeshes) {

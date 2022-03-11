@@ -10,7 +10,7 @@
 </template>
 
 <script>
-import {scenes} from '../scripts/util'
+import {scenes} from '../scripts/constants'
 import LoadSceneButton from '../components/LoadSceneButton'
 import SceneButtonGrid from '../components/SceneButtonGrid'
 

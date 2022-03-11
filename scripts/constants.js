@@ -21,6 +21,7 @@ export const scenes = {
         cone: 203,
         projSphere: 204,
         projCube: 205,
+        sideView2D: 206
     }
 }
 
@@ -37,3 +38,6 @@ export const navPages = [
 export const coneColor = '#F31414'
 export const projCylColor = '#62DDE5'
 export const projPointColor = '#D2F3F5'
+
+export const navigationWidth = 250
+export const headerFooterHeight = 150

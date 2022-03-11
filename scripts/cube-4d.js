@@ -82,25 +82,8 @@ const scaleFactor = 2
 const lineColor = '#62DDE5'
 const pointColor = '#D2F3F5'
 
-let sphereMeshes = []
-let cylinderMeshes = []
-let linePointArrays = []
-let lineMeshes = []
-let convexGeometry = undefined
-let convexMesh = undefined
-
-export function undoInits(scene) {
-    Util.removeThreeJsObjects(scene, sphereMeshes, cylinderMeshes, lineMeshes, convexMesh)
-
-    sphereMeshes = []
-    cylinderMeshes = []
-    linePointArrays = []
-    lineMeshes = []
-    convexGeometry = undefined
-    convexMesh = undefined
-}
-
 function initSpheres(scene, count) {
+    let meshes = []
     for (let i = 0; i < count; i++){
         const geometry = new THREE.SphereGeometry(projectionSphereRadius, 24, 12)
         const material = new THREE.MeshStandardMaterial()
@@ -109,11 +92,13 @@ function initSpheres(scene, count) {
         const mesh = new THREE.Mesh(geometry, material)
 
         scene.add(mesh)
-        sphereMeshes.push(mesh)
+        meshes.push(mesh)
     }
+    return meshes
 }
 
 function initCylinders(scene) {
+    let meshes = []
     for (let i = 0; i < edgeIndices.length; i++){
         const geometry = new THREE.CylinderGeometry(0.1, 0.1, 0.1, 16, 1, true)
         geometry.getAttribute('position').setUsage(THREE.DynamicDrawUsage)
@@ -123,18 +108,31 @@ function initCylinders(scene) {
         const mesh = new THREE.Mesh(geometry, material)
 
         scene.add(mesh)
-        cylinderMeshes.push(mesh)
+        meshes.push(mesh)
     }
+    return meshes
 }
 
 export function initProjHypercube(scene) {
-    initSpheres(scene, cubePoints.length)
-    initCylinders(scene)
+    let state = {
+        sphereMeshes: undefined,
+        cylinderMeshes: undefined
+    }
+    state.sphereMeshes = initSpheres(scene, cubePoints.length)
+    state.cylinderMeshes = initCylinders(scene)
+
+    return state
 }
 
 export function initSliceHypercube(scene, width, height) {
-    initConvexShape(scene)
-    initConvexEdges(scene, width, height)
+    let state = {
+        convexMesh: undefined,
+        lineMeshes: undefined
+    }
+    state.convexMesh = initConvexShape(scene)
+    state.lineMeshes = initConvexEdges(scene, width, height)
+
+    return state
 }
 
 function initConvexShape(scene) {
@@ -142,8 +140,6 @@ function initConvexShape(scene) {
     const positionAttribute = new THREE.BufferAttribute(new Float32Array(0), 3)
     positionAttribute.setUsage(THREE.DynamicDrawUsage)
     geometry.setAttribute('position', positionAttribute)
-
-    convexGeometry = geometry
 
     const material = new THREE.MeshStandardMaterial()
     material.transparent = true
@@ -154,16 +150,16 @@ function initConvexShape(scene) {
     //material.blendEquation = THREE.SubtractEquation
     const mesh = new THREE.Mesh(geometry, material)
     scene.add(mesh)
-    convexMesh = mesh
+    return mesh
 }
 
 function initConvexEdges(scene, canvasWidth, canvasHeight) {
+    let meshes = []
     for (let i = 0; i < 20; i++) {
         const geoPoints = new Float32Array(6)
         for (let j = 0; j < geoPoints.length; j++) {
             geoPoints[j] = 0
         }
-        linePointArrays.push(geoPoints)
 
         const geometry = new LineGeometry();
 		geometry.setPositions( geoPoints );
@@ -177,11 +173,12 @@ function initConvexEdges(scene, canvasWidth, canvasHeight) {
         let line = new Line2( geometry, material );
         scene.add( line );
 
-        lineMeshes.push(line)
+        meshes.push(line)
     }
+    return meshes
 }
 
-export function updateLineResolution(width, height) {
+export function updateLineResolution(lineMeshes, width, height) {
     if (lineMeshes && lineMeshes.length > 0) {
         for (let i = 0; i < lineMeshes.length; i++) {
             lineMeshes[i].material.resolution.set(width, height)                   
@@ -189,29 +186,15 @@ export function updateLineResolution(width, height) {
     }
 }
 
-export function updateHypercubeProjection(angleXW, angleYW, angleZW, translateW) {
+export function updateHypercubeProjection(state, angleXW, angleYW, angleZW, translateW) {
     let rotatedPoints = Util.rotate4D(cubePoints, angleXW, angleYW, angleZW)
     let finalPoints = Util.project4DTo3D(rotatedPoints, projectionDistance4D, scaleFactor)
-    Util.drawSpherePoints(finalPoints, sphereMeshes)
-    Util.drawCylinders(finalPoints, cylinderMeshes, edgeIndices, cylinderScaleFactor)
+    Util.drawSpherePoints(finalPoints, state.sphereMeshes)
+    Util.drawCylinders(finalPoints, state.cylinderMeshes, edgeIndices, cylinderScaleFactor)
 }
 
-function drawEdges(points) {
-    for (let i = 0; i < lineMeshes.length; i++) {
-        const startIndex = edgeIndices[i][0]
-        const endIndex = edgeIndices[i][1]
-
-        for (let j = 0; j < 3; j++) {
-            linePointArrays[i][j] = points[startIndex][j]
-            linePointArrays[i][j+3] = points[endIndex][j]
-        }
-
-        lineMeshes[i].geometry.attributes.position.needsUpdate = true
-    }
-}
-
-export function updateHypercubeSlice(angleXW, angleYW, angleZW, translateW){
-    let rotatedPoints = Util.rotate4D(cubePoints,angleXW, angleYW, angleZW)
+export function updateHypercubeSlice(state, angleXW, angleYW, angleZW, translateW){
+    let rotatedPoints = Util.rotate4D(cubePoints, angleXW, angleYW, angleZW)
     let points4d = []
     for (let i = 0; i < rotatedPoints.length; i++){
         let workingVector = Util.vectorToMatrix(rotatedPoints[i]);
@@ -221,7 +204,7 @@ export function updateHypercubeSlice(angleXW, angleYW, angleZW, translateW){
     }
     let intersectionPoints = get3DIntersectionPoints(points4d)
     let faceGeometry = separatePointsByCube(intersectionPoints)
-    drawFaces(faceGeometry)
+    drawFaces(state.convexMesh, state.lineMeshes, faceGeometry)
 }
 
 function get3DIntersectionPoint(greaterPoint, lesserPoint, wClip) {
@@ -237,13 +220,6 @@ class FaceGeometry {
     constructor(origin, pointsByFace) {
         this.origin = origin
         this.pointsByFace = pointsByFace
-    }
-}
-
-class IntersectionPoint {
-    constructor(point, edgeIndex) {
-        this.point = point
-        this.edgeIndex = edgeIndex
     }
 }
 
@@ -275,7 +251,7 @@ function separatePointsByCube(intersectionPoints) {
             let edgeIndex = edgeIndicesByCube[i][j]
 
             if (intersectionPoints[edgeIndex]) {
-                pointsThisCube.push(new IntersectionPoint(intersectionPoints[edgeIndex], edgeIndex))
+                pointsThisCube.push(new Util.IntersectionPoint(edgeIndex, intersectionPoints[edgeIndex]))
             }
         }
 
@@ -288,7 +264,7 @@ function separatePointsByCube(intersectionPoints) {
 }
 
 
-function drawFaces(faceGeometry) {
+function drawFaces(convexMesh, lineMeshes, faceGeometry) {
     let edgePointPairs = []
     for (let i = 0; i < edgeIndices.length; i++) {
         edgePointPairs.push([])
@@ -308,13 +284,13 @@ function drawFaces(faceGeometry) {
                 edgePointPairs[sortedFacePoints[endIndex].edgeIndex].push(sortedFacePoints[i].edgeIndex)
             }
 
+            let arr = new Float32Array(6)
             for (let j = 0; j < 3; j++) {
-                linePointArrays[edgeIndex][j] = sortedFacePoints[i].point[j] * scale
-                linePointArrays[edgeIndex][j+3] = sortedFacePoints[endIndex].point[j] * scale
+                arr[j] = sortedFacePoints[i].point[j] * scale
+                arr[j+3] = sortedFacePoints[endIndex].point[j] * scale
             }
             lineMeshes[edgeIndex].visible = true
-            lineMeshes[edgeIndex].geometry.setPositions(linePointArrays[edgeIndex])
-            lineMeshes[edgeIndex].geometry.attributes.position.needsUpdate = true
+            lineMeshes[edgeIndex].geometry.setPositions(arr)
             edgeIndex++
         }
     }
@@ -330,7 +306,8 @@ function drawFaces(faceGeometry) {
         }
         let points = pointsByFace[i].map(ip => ip.point)
         let normal = Util.getFaceNormal(points, faceGeometry.origin)        
-        Util.sortFacePoints(points, normal, pointsByFace[i])
+       
+        Util.sortFacePointsFromNormal(points, normal, pointsByFace[i])
 
         drawEdgesForFace(pointsByFace[i])
         let faceVertices = Util.triangulateSortedFace(pointsByFace[i].map(ip => ip.point))
@@ -343,11 +320,10 @@ function drawFaces(faceGeometry) {
 
     const positionAttribute = new THREE.BufferAttribute(new Float32Array(positions), 3)
     const normalAttribute = new THREE.BufferAttribute(new Float32Array(normals), 3)
-    //positionAttribute.setUsage(THREE.DynamicDrawUsage)
-    //normalAttribute.setUsage(THREE.DynamicDrawUsage)
 
-    convexGeometry.setAttribute('position', positionAttribute)
-    convexGeometry.setAttribute('normal', normalAttribute)
+    // number of positions and normals is changing so have to replace entire attribute on update
+    convexMesh.geometry.setAttribute('position', positionAttribute)
+    convexMesh.geometry.setAttribute('normal', normalAttribute)
 
     for (let i = edgeIndex; i < lineMeshes.length; i++) {
         lineMeshes[i].visible = false        

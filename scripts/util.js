@@ -1,28 +1,35 @@
 import * as THREE from "three"
 
-export const scenes = {
-    three: {
-        sliceHypercube: 0,
-        projHypercube: 1,
-        sliceHypersphere: 2,
-        projHypersphere: 3,
-        sliceCone: 4,
-        projCone: 5,
-        axesWithCube: 6,
-        axis1D: 7,
-        axis2D: 8,
-        axis3D: 9,
-    },
-    firstperson2d: {
-        firstperson2d: 100
-    },
-    threeandcanvas: {
-        sphere: 200,
-        solidCube: 201,
-        edgeCube: 202,
-        cone: 203,
-        projSphere: 204,
-        projCube: 205,
+export function isValueInObject(val, obj) {
+    for (const key in obj) {
+        if (Object.hasOwnProperty.call(obj, key)) {
+            if (val === obj[key]) {
+                return true 
+            }                
+        }
+    }
+    return false
+}
+
+export function toggleBoolsInObj(obj, ...propNames) {
+    for (const key in obj) {
+        obj[key] =  false
+    }
+
+    for (const p of propNames) {
+        if (Object.hasOwnProperty.call(obj, p)) {
+            obj[p] = true                  
+        }
+        else {
+            throw new Error('Invalid property name ' + p)
+        }
+    }
+}
+
+export class Dimensions {
+    constructor(width, height) {
+        this.w = width
+        this.h = height
     }
 }
 
@@ -299,18 +306,33 @@ export function getFaceNormal(points, origin) {
     return normal
 }
 
-export function sortFacePoints(points, normal, arrToSort) {
+export class IntersectionPoint {
+    constructor(edgeIndex, point) {
+        this.edgeIndex = edgeIndex
+        this.point = point
+    }
+}
+
+export function sortFacePointsFromNormal(points, normal, arrToSort) {
     let theta0Vector = getArbitraryPerpendicularVector3D(normal)
     normalizeVector(theta0Vector)
     let posAngleVector = crossProduct(normal, theta0Vector)
     normalizeVector(posAngleVector)
 
+    sortFacePoints(points, theta0Vector, posAngleVector, arrToSort)
+}
+
+export function sortFacePoints2D(points, arrToSort) {
+    sortFacePoints(points, [1, 0], [0, 1], arrToSort)
+}
+
+function sortFacePoints(points, theta0Vector, posAngleVector, arrToSort) {
     let faceCenter = getCenterOfPoints(points)
 
     let angles = []
     for (let i = 0; i < points.length; i++) {
         let v = subtractVectors(points[i], faceCenter)
-        angles.push(calcAngleBetweenVectors(theta0Vector, v, posAngleVector)) 
+        angles.push(calcAngleBetweenVectors(theta0Vector, v, posAngleVector))
     }
 
     bubbleSortParallel(angles, arrToSort)
@@ -363,7 +385,13 @@ function removeThreejsMesh(scene, mesh) {
 
     scene.remove(mesh)
     mesh.geometry.dispose()
-    mesh.material.dispose()
+    if (mesh.material.length) {
+        for (const m of mesh.material) {
+            m.dispose()
+        }
+    } else {
+        mesh.material.dispose()
+    }  
 }
 
 export function removeThreeJsObjects(scene, ...arr) {

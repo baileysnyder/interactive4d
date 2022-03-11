@@ -43,20 +43,33 @@ export default {
         }
     },
     props: {
-        canvasSize: Object,
+        isComponentActive: Boolean,
+    },
+    computed: {
+        interactiveSize() {
+            return this.$store.state.interactiveSize
+        }
     },
     watch: {
-        canvasSize: function(newD, oldD) {
-            if (newD.width === oldD.width && newD.height === oldD.height) {
+        interactiveSize: function(newD, oldD) {
+            if (newD.w === oldD.w && newD.h === oldD.h) {
                 return
             }
-            let width = newD.width
-            let height = newD.height
+            this.updateCanvases(newD.w, newD.h)
 
-            this.updateCanvases(width, height)
+            if (!this.isComponentActive) {
+                return
+            }
             drawCanvas(this.canvas)
             drawOverheadCanvas(this.overheadCanvas)
-        }
+        },
+        isComponentActive: function(newA, oldA) {
+            if (oldA === false && newA) {
+                drawCanvas(this.canvas)
+                drawOverheadCanvas(this.overheadCanvas)
+                requestAnimationFrame(this.animate)
+            }
+        },
     },
     methods: {
         animate(timestamp) {
@@ -70,7 +83,7 @@ export default {
                 }
                 previousTimestamp = timestamp
             }
-            if (!this._inactive) {
+            if (this.isComponentActive) {
                 requestAnimationFrame(this.animate)
             }
         },
@@ -114,7 +127,7 @@ export default {
     mounted() {
         this.canvas = this.$refs.canvas
         this.overheadCanvas = this.$refs.overheadCanvas
-        this.updateCanvases(this.canvasSize.width, this.canvasSize.height)
+        this.updateCanvases(this.interactiveSize.w, this.interactiveSize.h)
 
         window.addEventListener("keydown", onKeyDown)
         window.addEventListener("keyup", onKeyUp)
@@ -125,11 +138,8 @@ export default {
             e.preventDefault()
         }, {passive: false})
 
-        //this.animate(0)
-    },
-    activated() {
         requestAnimationFrame(this.animate)
-    }
+    },
 }
 
 let pressedUp = false

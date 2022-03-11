@@ -47,9 +47,9 @@ import * as THREE from 'three'
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
 import * as Util from '../../scripts/util'
 import * as Constants from '../../scripts/constants'
-import * as Cone4D from '../../scripts/cone4D'
-import * as Cube4D from '../../scripts/cube4D'
-import * as Sphere4D from '../../scripts/sphere4D'
+import * as Cone4D from '../../scripts/cone-4d'
+import * as Cube4D from '../../scripts/cube-4d'
+import * as Sphere4D from '../../scripts/sphere-4d'
 import * as Axes from '../../scripts/axes'
 
 class SliderState {
@@ -101,54 +101,58 @@ export default {
                 W: false
             },
             angleMax: 0,
+            state: undefined
         }
     },
     props: {
-        canvasSize: Object,
+        isComponentActive: Boolean
     },
     computed: {
         scene() {
             return this.$store.state.sceneID
+        },
+        interactiveSize() {
+            return this.$store.state.interactiveSize
         }
     },
     watch: {
-        canvasSize: function(newD, oldD) {
-            if (newD.width === oldD.width && newD.height === oldD.height) {
+        interactiveSize: function(newD, oldD) {
+            if (newD.w === oldD.w && newD.h === oldD.h) {
                 return
             }
-            let width = newD.width
-            let height = newD.height
-
-            camera.aspect = width / height
-            camera.updateProjectionMatrix()
-            renderer.setSize(width, height)
-
-            Cube4D.updateLineResolution(width, height)
-            Axes.updateLineResolution(width, height)
+            
+            if (this.isComponentActive) {
+                this.updateResolution(newD.w, newD.h)
+            }
         },
         scene: function(newScene, oldScene) {
-            if (!this.isSceneInThree(oldScene)) {
-                return
-            }
-            this.$store.commit('updateSceneSlider', new SliderState(oldScene, this))
-            // Keep the same values between cube proj and slice so the user can compare them more easily
-            if (oldScene === Constants.scenes.three.sliceHypercube) {
-                this.$store.commit('updateSceneSlider', new SliderState(Constants.scenes.three.projHypercube, this))
-            } else if (oldScene === Constants.scenes.three.projHypercube) {
-                this.$store.commit('updateSceneSlider', new SliderState(Constants.scenes.three.sliceHypercube, this))
+            if (Util.isValueInObject(oldScene, Constants.scenes.three)) {
+                this.undoInits()
+                this.$store.commit('updateSceneSlider', new SliderState(oldScene, this))
+                // Keep the same values between cube proj and slice so the user can compare them more easily
+                if (oldScene === Constants.scenes.three.sliceHypercube) {
+                    this.$store.commit('updateSceneSlider', new SliderState(Constants.scenes.three.projHypercube, this))
+                } else if (oldScene === Constants.scenes.three.projHypercube) {
+                    this.$store.commit('updateSceneSlider', new SliderState(Constants.scenes.three.sliceHypercube, this))
+                }
             }
 
-            if (!this.isSceneInThree(newScene)) {
-                return
+            // when page is first loaded (oldScene is undefined) let the scene be loaded by mounted() instead
+            if (oldScene != null && Util.isValueInObject(newScene, Constants.scenes.three)) {
+                let newSliders = this.$store.state.sceneSliders[newScene]
+                if (newSliders !== undefined) {
+                    newSliders.extractValues(this)
+                } else {
+                    this.resetSliderValues()
+                }            
+                this.initScene(newScene)
             }
-            let newSliders = this.$store.state.sceneSliders[newScene]
-            if (newSliders !== undefined) {
-                newSliders.extractValues(this)
-            } else {
-                this.resetSliderValues()
+        },
+        isComponentActive: function(newA, oldA) {
+            if (oldA === false && newA) {
+                this.updateResolution(this.interactiveSize.w, this.interactiveSize.h)
+                requestAnimationFrame(this.animate)
             }
-            this.undoInits()
-            this.initScene(newScene)
         },
         angleDegXW: function() {
             this.angleXW = Util.degreeToRadian(this.angleDegXW)
@@ -171,9 +175,17 @@ export default {
         },
     },
     methods: {
+        updateResolution(width, height) {
+            camera.aspect = width / height
+            camera.updateProjectionMatrix()
+            renderer.setSize(width, height)
+
+            Cube4D.updateLineResolution(width, height)
+            Axes.updateLineResolution(this.state.lineMeshes, width, height)
+        },
         initThree() {
-            let width = this.canvasSize.width
-            let height = this.canvasSize.height
+            let width = this.interactiveSize.w
+            let height = this.interactiveSize.h
             const canvas = this.$refs.canvas
             threeScene = new THREE.Scene()
 
@@ -184,6 +196,7 @@ export default {
             renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
 
             camera = new THREE.PerspectiveCamera(80, width/height, 0.1, 100)
+            camera.layers.enable(1)
             camera.position.set(0, 0, 6)
             threeScene.add(camera)
 
@@ -204,22 +217,22 @@ export default {
                 if (this.objectNeedsUpdate) {
                     switch (this.scene) {
                         case (Constants.scenes.three.sliceHypercube):
-                            Cube4D.updateHypercubeSlice(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
+                            Cube4D.updateHypercubeSlice(this.state, parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
                             break
                         case (Constants.scenes.three.projHypercube):
-                            Cube4D.updateHypercubeProjection(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
+                            Cube4D.updateHypercubeProjection(this.state, parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
                             break
                         case (Constants.scenes.three.sliceHypersphere):
-                            Sphere4D.updateSliceHypersphere(parseFloat(this.translateW))
+                            Sphere4D.updateSliceHypersphere(this.state, parseFloat(this.translateW))
                             break
                         case (Constants.scenes.three.projHypersphere):
-                            Sphere4D.updateProjHypersphere(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW))
+                            Sphere4D.updateProjHypersphere(this.state, parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW))
                             break
                         case (Constants.scenes.three.projCone):
-                            Cone4D.updateProjectionCone(parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
+                            Cone4D.updateProjectionCone(this.state, parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
                             break
                         case (Constants.scenes.three.sliceCone):
-                            Cone4D.updateSliceCone(threeScene, parseFloat(this.angleIN), parseFloat(this.translateW))
+                            Cone4D.updateSliceCone(this.state, threeScene, parseFloat(this.angleIN), parseFloat(this.translateW))
                             break
                     }
                     this.objectNeedsUpdate = false
@@ -228,15 +241,16 @@ export default {
                 renderer.render(threeScene, camera)
                 delta = delta % interval;
             }
-            if (!this._inactive) {
+            if (this.isComponentActive) {
                 requestAnimationFrame(this.animate)
             }
         },
         undoInits() {
-            Cube4D.undoInits(threeScene)
-            Sphere4D.undoInits(threeScene)
-            Cone4D.undoInits(threeScene)
-            Axes.undoInits(threeScene)
+            if (this.state == null) {
+                return
+            }
+            Util.removeThreeJsObjects(threeScene, ...Object.values(this.state))
+            this.state = undefined
         },
         initScene(sceneID) {
             controls.enableRotate = true
@@ -244,73 +258,59 @@ export default {
             switch(sceneID) {
                 case (Constants.scenes.three.sliceHypercube):
                     this.angleMax = 90
-                    this.toggleSliders('XW', 'YW', 'ZW', 'W')
-                    Cube4D.initSliceHypercube(threeScene, this.canvasSize.width, this.canvasSize.height) 
+                    Util.toggleBoolsInObj(this.slidersEnabled, 'XW', 'YW', 'ZW', 'W')
+                    this.state = Cube4D.initSliceHypercube(threeScene, this.interactiveSize.w, this.interactiveSize.h) 
                     break
                 case (Constants.scenes.three.projHypercube):
                     this.angleMax = 90
-                    this.toggleSliders('XW', 'YW', 'ZW')
-                    Cube4D.initProjHypercube(threeScene)
+                    Util.toggleBoolsInObj(this.slidersEnabled, 'XW', 'YW', 'ZW')
+                    this.state = Cube4D.initProjHypercube(threeScene)
                     break
                 case (Constants.scenes.three.sliceHypersphere):
                     this.angleMax = 0
-                    this.toggleSliders('W')
-                    Sphere4D.initSliceHypersphere(threeScene)
+                    Util.toggleBoolsInObj(this.slidersEnabled, 'W')
+                    this.state = Sphere4D.initSliceHypersphere(threeScene)
                     break
                 case (Constants.scenes.three.projHypersphere):
                     this.angleMax = 180
-                    this.toggleSliders('XW', 'YW', 'ZW')
-                    Sphere4D.initProjHypersphere(threeScene)
+                    Util.toggleBoolsInObj(this.slidersEnabled, 'XW', 'YW', 'ZW')
+                    this.state = Sphere4D.initProjHypersphere(threeScene)
                     break
                 case (Constants.scenes.three.projCone):
                     this.angleMax = 360
-                    this.toggleSliders('XW', 'YW', 'ZW')
-                    Cone4D.initProjCone(threeScene)
+                    Util.toggleBoolsInObj(this.slidersEnabled, 'XW', 'YW', 'ZW')
+                    this.state = Cone4D.initProjCone(threeScene)
                     break
                 case (Constants.scenes.three.sliceCone):
                     this.angleMax = 360
-                    this.toggleSliders('IN', 'W')
-                    Cone4D.initSliceCone(threeScene)
+                    Util.toggleBoolsInObj(this.slidersEnabled, 'IN', 'W')
+                    this.state = Cone4D.initSliceCone(threeScene)
                     break
                 case (Constants.scenes.three.axesWithCube):
-                    this.toggleSliders()
-                    Axes.initAxesWithCube(threeScene, this.$store.state.canvasSize.w, this.$store.state.canvasSize.h)
+                    Util.toggleBoolsInObj(this.slidersEnabled)
+                    this.state = Axes.initAxesWithCube(threeScene, this.interactiveSize.w, this.interactiveSize.h)
                     camera.position.set(-0.951, 0.917, 5.853)
                     controls.update()
                     break
                 case (Constants.scenes.three.axis1D):
-                    this.toggleSliders()
-                    Axes.init1D(threeScene, this.$store.state.canvasSize.w, this.$store.state.canvasSize.h)
+                    Util.toggleBoolsInObj(this.slidersEnabled)
+                    this.state = Axes.init1D(threeScene, this.interactiveSize.w, this.interactiveSize.h)
                     controls.enableRotate = false
                     controls.reset()
                     break
                 case(Constants.scenes.three.axis2D):
-                    this.toggleSliders()
-                    Axes.init2D(threeScene, this.$store.state.canvasSize.w, this.$store.state.canvasSize.h)
+                    Util.toggleBoolsInObj(this.slidersEnabled)
+                    this.state = Axes.init2D(threeScene, this.interactiveSize.w, this.interactiveSize.h)
                     controls.reset()
                     break
                 case(Constants.scenes.three.axis3D):
-                    this.toggleSliders()
-                    Axes.init3D(threeScene, this.$store.state.canvasSize.w, this.$store.state.canvasSize.h)
+                    Util.toggleBoolsInObj(this.slidersEnabled)
+                    this.state = Axes.init3D(threeScene, this.interactiveSize.w, this.interactiveSize.h)
                     camera.position.set(0.864, 0.78, 5.886)
                     controls.update()
                     break
             }
             this.objectNeedsUpdate = true
-        },
-        toggleSliders(...sliderPropNames) {
-            for (const key in this.slidersEnabled) {
-                this.slidersEnabled[key] =  false
-            }
-
-            for (const s of sliderPropNames) {
-                if (Object.hasOwnProperty.call(this.slidersEnabled, s)) {
-                    this.slidersEnabled[s] = true                  
-                }
-                else {
-                    throw new Error('Invalid slider name ' + s)
-                }
-            }
         },
         resetSliderValues() {
             this.angleDegXW = 0
@@ -318,23 +318,11 @@ export default {
             this.angleDegZW = 0
             this.angleDegIN = 0
             this.translateW = 0
-        },
-        isSceneInThree(sceneID) {
-            for (const key in Constants.scenes.three) {
-                if (Object.hasOwnProperty.call(Constants.scenes.three, key)) {
-                    if (sceneID === Constants.scenes.three[key]) {
-                        return true 
-                    }                
-                }
-            }
-            return false
         }
     },
     mounted() {
         this.initThree()
         this.initScene(this.scene)
-    },
-    activated() {
         requestAnimationFrame(this.animate)
     }
 }

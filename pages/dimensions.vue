@@ -14,14 +14,14 @@
       <p>One trick for visualization is to squish all 4 axes into a 3D space. Let’s see what that looks like with the 4 axes labeled x, y, z, w, and also a 3D cube for reference:</p>
       <SceneButtonSingle :sceneID="scenes.three.axesWithCube" :text="'LOAD SCENE'" :imgName="'axis4d.png'"></SceneButtonSingle>
       <p>It’s a good start, but the problem here is that everything gets stretched out of proportion. Since we’ve squished all the axes into 3D the angle between each is no longer 90°, meaning they are no longer perpendicular. The true fourth axis is angled in some direction we can’t see no matter how much we move and rotate around in 3D. That means adding this fourth axis would actually look like nothing to us.</p>
-      <img class="img16by9" src="~assets/3d4d_no_difference.png" alt="3D axes and 4D axes shown to look identical in 3D">
+      <img class="img-wide" src="~assets/3d4d_no_difference.png" alt="3D axes and 4D axes shown to look identical in 3D">
       <p>In other words, observing 4D as a 3D being can get pretty tricky. But fear not! In the next few sections we'll build up a solid understanding of simpler dimensions that makes this all much easier.</p>
     </div>
   </div>
 </template>
 
 <script>
-import {scenes} from '../scripts/util'
+import {scenes} from '../scripts/constants'
 import SceneButtonSingle from '../components/SceneButtonSingle'
 
 let activeScene = undefined

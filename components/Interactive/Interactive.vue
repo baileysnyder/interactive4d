@@ -1,9 +1,9 @@
 <template>
 <div>
-    <div v-show="componentToDisplay === undefined" class="placeholder resizable" :style="{'width': canvasSize.width + 'px'}"></div>
-    <keep-alive>
-    <component :is="componentToDisplay" class="resizable" :canvasSize="canvasSize" :style="{'width': canvasSize.width + 'px'}" />
-    </keep-alive>
+    <div v-show="noneActive" class="placeholder resizable" :style="{'width': interactiveSize.w + 'px'}"></div>
+    <Three v-show="isThreeActive" :isComponentActive="isThreeActive" class="resizable" :style="{'width': interactiveSize.w + 'px'}"/>
+    <FirstPerson2D v-show="isFirstPerson2DActive" :isComponentActive="isFirstPerson2DActive" class="resizable" :style="{'width': interactiveSize.w + 'px'}"/>
+    <ThreeAndCanvas v-show="isThreeAndCanvasActive" :isComponentActive="isThreeAndCanvasActive" class="resizable" :style="{'width': interactiveSize.w + 'px'}" />
 </div>
 </template>
 
@@ -22,24 +22,30 @@ export default {
     data() {
         return {
             componentToDisplay: undefined,
+            isThreeActive: false,
+            isFirstPerson2DActive: false,
+            isThreeAndCanvasActive: false,
         }
-    },
-    props: {
-        canvasSize: Object,
     },
     computed: {
         scene() {
             return this.$store.state.sceneID
+        },
+        noneActive() {
+            return this.isThreeActive === false && this.isFirstPerson2DActive === false && this.isThreeAndCanvasActive === false
+        },
+        interactiveSize() {
+            return this.$store.state.interactiveSize
         }
     },
     watch: {
         scene: function(newScene, oldScene) {
             if (this.isSceneInComponent(newScene, Constants.scenes.three)) {
-                this.componentToDisplay = "Three"
+                this.activateComponent(true, false, false)
             } else if (this.isSceneInComponent(newScene, Constants.scenes.firstperson2d)) {
-                this.componentToDisplay = "FirstPerson2D"
+                this.activateComponent(false, true, false)
             } else if (this.isSceneInComponent(newScene, Constants.scenes.threeandcanvas)) {
-                this.componentToDisplay = "ThreeAndCanvas"
+                this.activateComponent(false, false, true)
             }
         }
     },
@@ -53,6 +59,11 @@ export default {
                 }
             }
             return false
+        },
+        activateComponent(three, firstPerson2D, threeAndCanvas) {
+            this.isThreeActive = three
+            this.isFirstPerson2DActive = firstPerson2D
+            this.isThreeAndCanvasActive = threeAndCanvas
         }
     }
 }

@@ -1,9 +1,13 @@
+import * as Constants from '../scripts/constants'
+import { Dimensions } from '~/scripts/util'
+
 export const state = () => ({
     sceneID: undefined,
     sceneSliders: [],
     pageURLs: [],
-    canvasSize: {h: 0, w: 0},
-    articleSize: {h: 0, w: 0}
+    mainSize: new Dimensions(window.innerWidth - Constants.navigationWidth, window.innerHeight - Constants.headerFooterHeight),
+    interactiveSize: new Dimensions((window.innerWidth - Constants.navigationWidth) / 2, window.innerHeight - Constants.headerFooterHeight),
+    articleSize: new Dimensions((window.innerWidth - Constants.navigationWidth) / 2, window.innerHeight - Constants.headerFooterHeight)
 })
 
 export const mutations = {
@@ -16,8 +20,11 @@ export const mutations = {
     setPageURLs(state, urls) {
         state.pageURLs = urls
     },
-    setCanvasSize(state, d) {
-        state.canvasSize = d
+    setMainSize(state, d) {
+        state.mainSize = d
+    },
+    setInteractiveSize(state, d) {
+        state.interactiveSize = d
     },
     setArticleSize(state, d) {
         state.articleSize = d

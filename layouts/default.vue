@@ -1,9 +1,9 @@
 <template>
 <div ref="topContainer">
     <h1>INTERACTIVE 4D VISUALIZER</h1>
-    <div id="main-content" :style="{'width': mainWidth + 'px', 'height': mainHeight + 'px'}">
+    <div id="main-content" :style="{'width': mainSize.w + 'px', 'height': mainSize.h + 'px'}">
           <div class="wrapper" ref="wrapper">
-            <Interactive ref="interactive" class="resizable-box interactive-box" :canvasSize="{width: interactiveWidth, height: interactiveHeight}" :style="{'width': interactiveWidth + 'px'}" />
+            <Interactive ref="interactive" class="resizable-box interactive-box" :style="{'width': interactiveSize.w + 'px'}" />
             <div @mousedown="onMousedownHandler" class="handler" >
                 <svg class="handler-grip">
                     <rect x="21%" y="0" width="18%" height="100%" rx="4px" fill="rgb(56, 56, 56)" />
@@ -31,10 +31,9 @@
 <script>
 import Navigation from '../components/Navigation'
 import Interactive from '../components/Interactive/Interactive'
-import {navPages} from '../scripts/constants'
+import * as Constants from '../scripts/constants'
+import {Dimensions} from '../scripts/util'
 
-const navigationWidth = 250
-const headerFooterHeight = 150
 const minInteractiveWidth = 0.2
 
 export default {
@@ -44,32 +43,33 @@ export default {
     },
     data() {
         return {
-            mainWidth: window.innerWidth - navigationWidth,
-            mainHeight: window.innerHeight - headerFooterHeight,
-
             isHandlerDragging: false,
-            interactiveWidth: (window.innerWidth - navigationWidth) / 2,
-            interactiveHeight: window.innerHeight - headerFooterHeight,
         }
     },
     computed: {
         previousRoute() {
-            for (let i = 0; i < navPages.length; i++) {
-                if (navPages[i].path === this.$route.path) {
-                    return i > 0 ? navPages[i-1] : ''
+            for (let i = 0; i < Constants.navPages.length; i++) {
+                if (Constants.navPages[i].path === this.$route.path) {
+                    return i > 0 ? Constants.navPages[i-1] : ''
                 }
             }
         },
         nextRoute() {
-            for (let i = 0; i < navPages.length; i++) {
-                if (navPages[i].path === this.$route.path) {
-                    return i < navPages.length-1 ? navPages[i+1] : ''
+            for (let i = 0; i < Constants.navPages.length; i++) {
+                if (Constants.navPages[i].path === this.$route.path) {
+                    return i < Constants.navPages.length-1 ? Constants.navPages[i+1] : ''
                 }
             }
+        },
+        interactiveSize() {
+            return this.$store.state.interactiveSize
+        },
+        mainSize() {
+            return this.$store.state.mainSize
         }
     },
     mounted() {
-        this.storeSizes(this.interactiveWidth, this.interactiveHeight)
+        //this.storeSizes(this.interactiveWidth, this.interactiveHeight)
         window.addEventListener('resize', this.onResize)
 
         const vueContext = this
@@ -94,8 +94,8 @@ export default {
             let pointerRelativeXpos = e.clientX - containerOffsetLeft
             
             // Arbitrary minimum width set on box A, otherwise its inner content will collapse to width of 0
-            let minWidth = vueContext.mainWidth * minInteractiveWidth
-            let maxWidth = vueContext.mainWidth - minWidth
+            let minWidth = vueContext.mainSize.w * minInteractiveWidth
+            let maxWidth = vueContext.mainSize.w - minWidth
 
             // Resize box A
             // * 8px is the left/right spacing between .handler and its inner pseudo-element
@@ -107,9 +107,8 @@ export default {
             }
 
             interactive.style.width = width + 'px'
-            vueContext.interactiveWidth = width
 
-            vueContext.storeSizes(width, vueContext.mainHeight)           
+            vueContext.storeSizes(vueContext.mainSize.w, vueContext.mainSize.h, width, vueContext.mainSize.h)       
         })
     },
     methods: {
@@ -120,27 +119,24 @@ export default {
             topContainter.addEventListener('mousemove', preventEvent)
         },
         onResize() {
-            this.mainWidth = window.innerWidth - navigationWidth
-            this.mainHeight = window.innerHeight - headerFooterHeight
+            let mainW = window.innerWidth - Constants.navigationWidth
+            let mainH = window.innerHeight - Constants.headerFooterHeight
 
-            this.interactiveWidth = this.mainWidth / 2
-            this.interactiveHeight = this.mainHeight
+            this.storeSizes(mainW, mainH, mainW/2, mainH)
         },
-        storeSizes(canvasWidth, canvasHeight) {
-            let canvasSize = {
-                w: canvasWidth,
-                h: canvasHeight
-            }
-            this.$store.commit('setCanvasSize', canvasSize)
+        storeSizes(mainW, mainH, interactiveW, interactiveH) {
+            let mSize = new Dimensions(mainW, mainH)
+            this.$store.commit('setMainSize', mSize)
 
 
-            let articleWidth = this.mainWidth === canvasWidth ? canvasWidth : this.mainWidth - canvasWidth
-            let articleHeight = this.mainHeight === canvasHeight ? canvasHeight : this.mainHeight - canvasHeight
-            let articleSize = {
-                w: articleWidth,
-                h: articleHeight
-            }
-            this.$store.commit('setArticleSize', articleSize)
+            let iSize = new Dimensions(interactiveW, interactiveH)
+            this.$store.commit('setInteractiveSize', iSize)
+
+
+            let articleWidth = this.mainWidth === interactiveW ? interactiveW : this.mainWidth - interactiveW
+            let articleHeight = this.mainHeight === interactiveH ? interactiveH : this.mainHeight - interactiveH
+            let aSize = new Dimensions(articleWidth, articleHeight)
+            this.$store.commit('setArticleSize', aSize)
         }
     }
 }
@@ -286,7 +282,7 @@ h1, h2, .navlink, button {
     padding-bottom: 50px;
 }
 
-.img16by9 {
+.img-wide {
     margin: auto;
     display: block;
     margin-top: 12px;

@@ -4,6 +4,8 @@
         <canvas ref="canvas"></canvas>
         <div class="three-overlay">
             <div class="top-right sticky-box">
+                <button v-show="scene === rapSceneID" class="top-right-button" :class="{'active': !isPlaneActive, 'inactive': isPlaneActive}" @click="isPlaneActive=false">Axis</button>
+                <button v-show="scene === rapSceneID" class="top-right-button" :class="{'active': isPlaneActive, 'inactive': !isPlaneActive}" @click="isPlaneActive=true">Plane</button>
             </div>
             <div class="bottom-right sticky-box">
                 <div class="slider" v-show="slidersEnabled.XW">
@@ -36,6 +38,11 @@
                     <input class="slider-text" v-model="translateW" type="text" size="4">
                     <span class="unit-text invisible">°</span>
                 </div>
+                <div class="slider" v-show="slidersEnabled.RAP">
+                    <input v-model="angleDegRAP" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
+                    <input class="slider-text" v-model="angleDegRAP" type="text" size="4">
+                    <span class="unit-text">°</span>
+                </div>
             </div>
         </div>
     </div>
@@ -51,6 +58,7 @@ import * as Cone4D from '../../scripts/cone-4d'
 import * as Cube4D from '../../scripts/cube-4d'
 import * as Sphere4D from '../../scripts/sphere-4d'
 import * as Axes from '../../scripts/axes'
+import * as Rotations from '../../scripts/rotations' 
 
 class SliderState {
     constructor(sceneID, vueContext) {
@@ -59,6 +67,7 @@ class SliderState {
         this.angleDegYW = vueContext.angleDegYW
         this.angleDegZW = vueContext.angleDegZW
         this.angleDegIN = vueContext.angleDegIN
+        this.angleRAP = vueContext.angleRAP
         this.translateW = vueContext.translateW
     }
 
@@ -67,6 +76,7 @@ class SliderState {
         vueContext.angleDegYW = this.angleDegYW
         vueContext.angleDegZW = this.angleDegZW
         vueContext.angleDegIN = this.angleDegIN
+        vueContext.angleRAP = this.angleRAP
         vueContext.translateW = this.translateW
     }
 }
@@ -83,25 +93,32 @@ let interval = 1 / 60;
 export default {
     data() {
         return {
+            isPlaneActive: false,
+
             angleXW: 0.0,
             angleYW: 0.0,
             angleZW: 0.0,
             angleIN: 0.0,
+            angleRAP: 0.0,
             angleDegXW: 0,
             angleDegYW: 0,
             angleDegZW: 0,
             angleDegIN: 0,
+            angleDegRAP: 0,
             translateW: 0.0,
-            objectNeedsUpdate: false,
             slidersEnabled: {
                 XW: false,
                 YW: false,
                 ZW: false,
                 IN: false,
-                W: false
+                W: false,
+                RAP: false
             },
             angleMax: 0,
-            state: undefined
+
+            objectNeedsUpdate: false,
+            state: undefined,
+            rapSceneID: Constants.scenes.three.rotateAxisPlane
         }
     },
     props: {
@@ -154,6 +171,9 @@ export default {
                 requestAnimationFrame(this.animate)
             }
         },
+        isPlaneActive: function() {
+            this.objectNeedsUpdate = true
+        },
         angleDegXW: function() {
             this.angleXW = Util.degreeToRadian(this.angleDegXW)
             this.objectNeedsUpdate = true
@@ -170,9 +190,13 @@ export default {
             this.angleIN = Util.degreeToRadian(this.angleDegIN)
             this.objectNeedsUpdate = true
         },
-        translateW: function() {
+        angleDegRAP: function() {
+            this.angleRAP = Util.degreeToRadian(this.angleDegRAP)
             this.objectNeedsUpdate = true
         },
+        translateW: function() {
+            this.objectNeedsUpdate = true
+        }
     },
     methods: {
         updateResolution(width, height) {
@@ -180,8 +204,9 @@ export default {
             camera.updateProjectionMatrix()
             renderer.setSize(width, height)
 
-            Cube4D.updateLineResolution(width, height)
-            Axes.updateLineResolution(this.state.lineMeshes, width, height)
+            if (this.state != null && this.state.lineMeshes != null) {
+                Util.updateLineResolution(this.state.lineMeshes, width, height)
+            }
         },
         initThree() {
             let width = this.interactiveSize.w
@@ -214,6 +239,7 @@ export default {
         animate() {
             delta += clock.getDelta();
             if (delta > interval) {
+                //console.log(camera.position)
                 if (this.objectNeedsUpdate) {
                     switch (this.scene) {
                         case (Constants.scenes.three.sliceHypercube):
@@ -233,6 +259,9 @@ export default {
                             break
                         case (Constants.scenes.three.sliceCone):
                             Cone4D.updateSliceCone(this.state, threeScene, parseFloat(this.angleIN), parseFloat(this.translateW))
+                            break
+                        case (Constants.scenes.three.rotateAxisPlane):
+                            Rotations.updateRotateAxisPlane(this.state, parseFloat(this.angleRAP), this.isPlaneActive)
                             break
                     }
                     this.objectNeedsUpdate = false
@@ -309,6 +338,25 @@ export default {
                     camera.position.set(0.864, 0.78, 5.886)
                     controls.update()
                     break
+                case (Constants.scenes.three.rotateAxisPlane):
+                    this.angleMax = 360
+                    Util.toggleBoolsInObj(this.slidersEnabled, "RAP")
+                    this.state = Rotations.initRotateAxisPlane(threeScene, this.interactiveSize.w, this.interactiveSize.h)
+                    camera.position.set(-2.674, 3.265, 4.265)
+                    controls.update()
+                    break
+                case (Constants.scenes.three.rotate3D):
+                    Util.toggleBoolsInObj(this.slidersEnabled)
+                    this.state = Rotations.initPlanes3D(threeScene, this.interactiveSize.w, this.interactiveSize.h)
+                    camera.position.set(2.903, 2.217, 5.969)
+                    controls.update()
+                    break
+                case (Constants.scenes.three.rotate4D):
+                    Util.toggleBoolsInObj(this.slidersEnabled)
+                    this.state = Rotations.initPlanes4D(threeScene, this.interactiveSize.w, this.interactiveSize.h)
+                    camera.position.set(-1.911, 1.862, 5.725)
+                    controls.update()
+                    break
             }
             this.objectNeedsUpdate = true
         },
@@ -373,5 +421,29 @@ export default {
 
 .invisible {
     color: transparent;
+}
+
+
+.top-right-button {
+  border: none;
+  border-radius: 5px;
+  padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 3px;
+    padding-bottom: 3px;
+}
+
+.inactive {
+  background: rgb(60, 60, 60);
+  color: rgb(232, 232, 232);
+}
+
+.inactive:hover {
+  background: rgb(75, 75, 75);
+}
+
+.active {
+  background: rgb(209, 209, 209);
+  color: rgb(30, 30, 30);
 }
 </style>

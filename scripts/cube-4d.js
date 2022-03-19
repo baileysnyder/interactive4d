@@ -178,14 +178,6 @@ function initConvexEdges(scene, canvasWidth, canvasHeight) {
     return meshes
 }
 
-export function updateLineResolution(lineMeshes, width, height) {
-    if (lineMeshes && lineMeshes.length > 0) {
-        for (let i = 0; i < lineMeshes.length; i++) {
-            lineMeshes[i].material.resolution.set(width, height)                   
-        }
-    }
-}
-
 export function updateHypercubeProjection(state, angleXW, angleYW, angleZW, translateW) {
     let rotatedPoints = Util.rotate4D(cubePoints, angleXW, angleYW, angleZW)
     let finalPoints = Util.project4DTo3D(rotatedPoints, projectionDistance4D, scaleFactor)

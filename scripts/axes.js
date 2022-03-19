@@ -80,7 +80,7 @@ const axes4D = [
 ]
 const translate4D = [0, 0, 0]
 
-const axes4DTransformed = Util.applyMatXYZ4D(axes4D, Util.getTransformMatXYZ4D(1, translate4D, 0, -Math.PI/4, -Math.PI/5))
+export const axes4DTransformed = Util.applyMatXYZ4D(axes4D, Util.getTransformMatXYZ4D(1, translate4D, 0, -Math.PI/4, -Math.PI/5))
 const skewCube = calcCube(axes4DTransformed, 0.5, [0.5, 0, 0])
 
 const cubeColor = "#ffffff"
@@ -97,7 +97,7 @@ const cubeLineColor = '#D2F3F5'
 const cubeLineWidth = 2
 const axisWidth = 3
 
-function createLine(scene, startAndEnd, color, canvasW, canvasH, lineWidth) {
+export function createLine(scene, startAndEnd, color, canvasW, canvasH, lineWidth) {
     const points = new Float32Array(startAndEnd)
     const geometry = new LineGeometry()
 
@@ -272,7 +272,7 @@ function createLabeledLine(state, scene, startAndEnd, color, canvasW, canvasH, l
     return [(middleStartEnd[0]+middleStartEnd[3])/2, middleStartEnd[1], middleStartEnd[2]]
 }
 
-function createLabel(scene, text, position, scale, color) {
+export function createLabel(scene, text, position, scale, color) {
     let canvas = document.createElement('canvas')
     let spriteW = 200
     let spriteH = 30
@@ -324,7 +324,7 @@ function create1DAxisLabels(state, scene, midpoints, canvasW, canvasH) {
 }
 
 function initCameraSphere(mainCamera) {
-    const geometry = new THREE.SphereGeometry(0.3, 32, 16)
+    const geometry = new THREE.SphereGeometry(0.5, 32, 16)
     const material = new THREE.MeshStandardMaterial()
     material.transparent = true
 
@@ -425,8 +425,8 @@ export function initSideView2D(scene, mainCanvasD, bottomCanvasD, mainCamera) {
     state.meshes.push(initCameraSphere(mainCamera))
     state.meshes.push(initBackgroundPlane(scene))
 
-    const labelPosition = [mainCamera.position.x, mainCamera.position.y + 0.7, mainCamera.position.z/2]
-    state.zLabel = createLabel(scene, 'Z='+mainCamera.position.z, labelPosition, 0.9, '#FFFFFF')
+    const labelPosition = [mainCamera.position.x, mainCamera.position.y + 1.4, mainCamera.position.z/2]
+    state.zLabel = createLabel(scene, 'Z='+mainCamera.position.z.toFixed(2), labelPosition, 2, '#FFFFFF')
     state.zLabel.layers.set(2)
 
     return state
@@ -470,7 +470,7 @@ export function initAxesWithCube(scene, canvasW, canvasH) {
 export function updateZLine(state, cameraPosition) {
     const points = new Float32Array(calcZLinePoints(cameraPosition))
     state.zLine.geometry.setPositions(points)
-    state.zLabel.position.set(cameraPosition.x, cameraPosition.y+0.7, cameraPosition.z/2)
+    state.zLabel.position.set(cameraPosition.x, cameraPosition.y+1.4, cameraPosition.z/2)
     let text = 'Z='+cameraPosition.z.toFixed(2)
 
     let canvas = document.createElement('canvas')
@@ -490,16 +490,8 @@ export function updateZLine(state, cameraPosition) {
     state.zLabel.material.map = t
 }
 
-export function updateLineResolution(lineMeshes, width, height) {
-    if (lineMeshes && lineMeshes.length > 0) {
-        for (let i = 0; i < lineMeshes.length; i++) {
-            lineMeshes[i].material.resolution.set(width, height)                   
-        }
-    }
-}
-
 export function updateSideViewResolutions(state, mainCanvasD, bottomCanvasD) {
-    updateLineResolution(state.lineMeshes, mainCanvasD.w, mainCanvasD.h)
+    Util.updateLineResolution(state.lineMeshes, mainCanvasD.w, mainCanvasD.h)
     state.zLine.material.resolution.set(bottomCanvasD.w, bottomCanvasD.h)
     state.xLine.material.resolution.set(bottomCanvasD.w, bottomCanvasD.h)
     state.yLine.material.resolution.set(bottomCanvasD.w, bottomCanvasD.h)

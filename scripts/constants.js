@@ -10,6 +10,9 @@ export const scenes = {
         axis1D: 7,
         axis2D: 8,
         axis3D: 9,
+        rotateAxisPlane: 10,
+        rotate3D: 11,
+        rotate4D: 12,
     },
     firstperson2d: {
         firstperson2d: 100
@@ -29,6 +32,7 @@ export const navPages = [
     {title: 'INTRODUCTION', path: '/'},
     {title: 'THINKING IN DIMENSIONS', path: '/dimensions'},
     {title: '2D UNIVERSE', path: '/2d-universe'},
+    {title: 'PLANES OF ROTATION', path: '/rotations'},
     {title: '3D SLICES', path: '/3d-slices'},
     {title: '3D PROJECTION', path: '/3d-projection'},
     {title: '4D SPHERES AND CUBES', path: '/4d-spheres-cubes'},

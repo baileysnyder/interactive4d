@@ -379,7 +379,7 @@ export function calcAngleBetweenVectors(u, v, posAngleVector) {
 }
 
 function removeThreejsMesh(scene, mesh) {
-    if (!mesh || mesh === []) {
+    if (mesh == null || mesh === [] || mesh.geometry == null || mesh.material == null) {
         return
     }
 
@@ -402,6 +402,14 @@ export function removeThreeJsObjects(scene, ...arr) {
             }
         } else {
             removeThreejsMesh(scene, o)
+        }
+    }
+}
+
+export function updateLineResolution(lineMeshes, width, height) {
+    if (lineMeshes && lineMeshes.length > 0) {
+        for (let i = 0; i < lineMeshes.length; i++) {
+            lineMeshes[i].material.resolution.set(width, height)                   
         }
     }
 }
@@ -513,6 +521,31 @@ export function applyMatXYZ4D(points3D, mat4D) {
         applied3D.push([p[0], p[1], p[2]])
     }
     return applied3D
+}
+
+// returns flat 3d points
+export function applyMatXYZFlat4D(flatPoints3D, mat4D) {
+    let applied3D = new Float32Array(flatPoints3D.length)
+    for (let i = 0; i < flatPoints3D.length; i+=3) {
+        let p = multiplyMatrixVector(mat4D, [flatPoints3D[i], flatPoints3D[i+1], flatPoints3D[i+2], 1])
+        applied3D[i] = p[0]
+        applied3D[i+1] = p[1]
+        applied3D[i+2] = p[2]
+    }
+    return applied3D
+}
+
+export function midpointBetween(v1, v2) {
+    if (v1.length !== v2.length) {
+        throw new Error('vector lengths must match to find midpoint')
+    }
+
+    let mid = []
+    for (let i = 0; i < v1.length; i++) {
+        let sum = v1[i] + v2[i]
+        mid.push(sum/2)       
+    }
+    return mid
 }
 
 

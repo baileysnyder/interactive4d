@@ -14,10 +14,10 @@
                 <nuxt class="article"/>
                 <div class="navbar">
                     <NuxtLink :to="previousRoute" v-show="previousRoute !== ''">
-                        <button class="nav-button previous-button">← Prev</button>
+                        <button class="nav-button previous-button gray-rounded-button">← Prev</button>
                     </NuxtLink>
                     <NuxtLink :to="nextRoute" v-show="nextRoute !== ''">
-                        <button class="nav-button next-button">Next →</button>
+                        <button class="nav-button next-button gray-rounded-button">Next →</button>
                     </NuxtLink>
                 </div>
             </div>
@@ -196,10 +196,6 @@ h1 {
 }
 
 .nav-button {
-    background: rgb(60, 60, 60);
-    color: rgb(232, 232, 232);
-    border: none;
-    border-radius: 5px;
     padding-left: 8px;
     padding-right: 8px;
     height: 60%;
@@ -208,11 +204,6 @@ h1 {
     position: relative;
     top: 50%;
     transform: translateY(-50%);
-    box-shadow: 2px 2px 3px rgb(0 0 0 / 50%);
-}
-
-.nav-button:hover {
-  background: rgb(75, 75, 75);
 }
 
 .next-button {
@@ -277,6 +268,10 @@ h1, h2, .navlink, button {
     margin-top: 10px;
 }
 
+.article ol, .article ul {
+    margin-left: 30px;
+}
+
 .article .main-content {
   overflow-y: auto;
     padding-bottom: 50px;
@@ -292,6 +287,18 @@ h1, h2, .navlink, button {
     border: solid 2px rgb(100, 100, 100);
     border-radius: 8px;
     /* box-shadow: 4px 4px 5px rgb(0 0 0 / 50%); */
+}
+
+.gray-rounded-button {
+    background: rgb(60, 60, 60);
+    color: rgb(232, 232, 232);
+    border: none;
+    border-radius: 5px;
+    box-shadow: 2px 2px 3px rgb(0 0 0 / 50%);
+}
+
+.gray-rounded-button:hover {
+  background: rgb(75, 75, 75);
 }
 
 /* Scrollbar */

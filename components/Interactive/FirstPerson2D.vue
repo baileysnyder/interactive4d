@@ -2,25 +2,36 @@
     <div id="fp-container">
         <canvas id="main-canvas" ref="canvas"></canvas>
         <div ref="controls" id="controls">
-            <div id="arrows">
+            <div id="left-section">
                 <p class="controls-header">Move:</p>
-                <button class="control-button">up</button>
-                <div class="button-column">
-                    <button class="control-button">left</button>
-                    <button class="control-button">right</button>
+                <div class="buttons">
+                    <button ref="upArrow" @pointerdown="onPressDirection('up', true)" @pointerup="onPressDirection('up', false)" @pointerout="onPressDirection('up', false)"
+                    class="control-button gray-rounded-button" :style="{'width': buttonWidth + 'px'}">↑</button>
+                    <div class="button-column">
+                        <button ref="leftArrow" @pointerdown="onPressDirection('left', true)" @pointerup="onPressDirection('left', false)" @pointerout="onPressDirection('left', false)"
+                        class="control-button gray-rounded-button" :style="{'width': buttonWidth + 'px'}">←</button>
+                        <div class="button-center gray-rounded-button" :style="{'width': buttonWidth + 'px'}"></div>
+                        <button ref="rightArrow" @pointerdown="onPressDirection('right', true)" @pointerup="onPressDirection('right', false)" @pointerout="onPressDirection('right', false)"
+                        class="control-button gray-rounded-button" :style="{'width': buttonWidth + 'px'}">→</button>
+                    </div>
+                    <button ref="downArrow" @pointerdown="onPressDirection('down', true)" @pointerup="onPressDirection('down', false)" @pointerout="onPressDirection('down', false)"
+                    class="control-button gray-rounded-button" :style="{'width': buttonWidth + 'px'}">↓</button>
                 </div>
-                <button class="control-button">down</button>
             </div>
-            <div id="controls-text">
-                <p>Look around: mouse</p>
-                <p>Move Keys: WASD</p>
+            <div id="right-section">
+                <p>Look around:</p>
+                <img src="" alt="">
+                <p>Move Keys:</p>
+                <img src="" alt="">
             </div>
         </div>
         <div ref="toggleOverhead">
-            <button class="middle-button">Toggle Overhead View</button>
+            <!-- <button class="overhead-button gray-rounded-button">Toggle Overhead View</button> -->
+            <input type="checkbox" id="overhead" v-model="showOverhead">
+            <label for="overhead">Show Overhead Display</label>
         </div>
 
-        <canvas id="overhead-canvas" ref="overheadCanvas"></canvas>
+        <canvas v-show="showOverhead" id="overhead-canvas" ref="overheadCanvas"></canvas>
     </div>
 </template>
 
@@ -34,12 +45,15 @@ const rotPerFullSwipe = 3*Math.PI/4
 export default {
     data() {
         return {
-            canvasPercentH: 0.5,
+            canvasPercentH: 0.45,
             overheadCanvasPercentH: 0.3,
+            overheadPadding: 8,
             canvas: undefined,
             overheadCanvas: undefined,
             prevOffsetX: 0,
             angleNeedsUpdate: true,
+            buttonWidth: 20,
+            showOverhead: false
         }
     },
     props: {
@@ -56,6 +70,7 @@ export default {
                 return
             }
             this.updateCanvases(newD.w, newD.h)
+            this.buttonWidth = this.$refs.upArrow.clientHeight
 
             if (!this.isComponentActive) {
                 return
@@ -65,6 +80,8 @@ export default {
         },
         isComponentActive: function(newA, oldA) {
             if (oldA === false && newA) {
+                this.updateCanvases(this.interactiveSize.w, this.interactiveSize.h)
+                this.buttonWidth = this.$refs.upArrow.clientHeight
                 drawCanvas(this.canvas)
                 drawOverheadCanvas(this.overheadCanvas)
                 requestAnimationFrame(this.animate)
@@ -93,11 +110,11 @@ export default {
 
             let remainingHeight = height - this.canvas.offsetHeight - this.$refs.controls.offsetHeight - this.$refs.toggleOverhead.offsetHeight
             if (remainingHeight*2 < width) {
-                this.overheadCanvas.width = 2*remainingHeight
-                this.overheadCanvas.height = remainingHeight
+                this.overheadCanvas.width = 2*remainingHeight - (this.overheadPadding*2)
+                this.overheadCanvas.height = remainingHeight - (this.overheadPadding*2)
             } else {
-                this.overheadCanvas.width = width
-                this.overheadCanvas.height = width/2
+                this.overheadCanvas.width = width - (this.overheadPadding*2)
+                this.overheadCanvas.height = width/2 - (this.overheadPadding*2)
             }
         },
         onCanvasPointerDown(e) {
@@ -121,13 +138,39 @@ export default {
         onReleaseCanvas(e) {
             this.canvas.releasePointerCapture(e.pointerId)
             this.canvas.removeEventListener("pointermove", this.onDragCanvas)
-            this.canvas.removeEventListener("pointermove", this.onReleaseCanvas)
+            this.canvas.removeEventListener("pointerup", this.onReleaseCanvas)
+        },
+        onPressUp(e) {
+            e.preventDefault()
+            this.$refs.upArrow.setPointerCapture(e.pointerId)
+            this.$refs.upArrow.addEventListener("pointerout", this.onReleaseUp)
+            pressedUp = true
+        },
+        onReleaseUp(e) {
+            this.$refs.upArrow.releasePointerCapture(e.pointerId)
+            this.$refs.upArrow.removeEventListener("pointerout", this.onReleaseUp)
+            pressedUp = false
+        },
+        onPressDirection(dir, val) {
+            switch (dir) {
+                case "up":
+                    pressedUp = val
+                    break
+                case "down":
+                    pressedDown = val
+                    break
+                case "left":
+                    pressedLeft = val
+                    break
+                case "right":
+                    pressedRight = val
+                    break
+            }
         }
     },
     mounted() {
         this.canvas = this.$refs.canvas
         this.overheadCanvas = this.$refs.overheadCanvas
-        this.updateCanvases(this.interactiveSize.w, this.interactiveSize.h)
 
         window.addEventListener("keydown", onKeyDown)
         window.addEventListener("keyup", onKeyUp)
@@ -844,20 +887,28 @@ function drawGameLine(context, line, scaleX, scaleY) {
 
 #overhead-canvas {
     display: inline-block;
+    padding: 8px;
 }
 
 #controls {
-    width: 100%;
-    height: 20%;
+    padding: 10px;
+    height: 25%;
 }
 
-#arrows {
+#controls p {
+    text-align: left;
+    margin: 0;
+}
+
+#left-section {
     width: 50%;
     height: 100%;
     float: left;
+    display: flex;
+    flex-direction: column;
 }
 
-#controls-text {
+#right-section {
     width: 50%;
     height: 100%;
     display: inline-block;
@@ -865,20 +916,29 @@ function drawGameLine(context, line, scaleX, scaleY) {
 }
 
 .control-button {
-    width: 20%;
-    height: 30%;
+    margin: 0;
+    padding: 0;
+}
+
+.buttons {
+    flex: auto;
+}
+
+.control-button, .button-column {
+    height: 33%;
+    max-height: 55px;
 }
 
 .button-column {
-    height: 30%;
+    font-size: 0;
 }
 
 .button-column .control-button {
     height: 100%;
 }
 
-.controls-header {
-    position: absolute;
+.button-center {
+    display: inline-block;
 }
 
 </style>

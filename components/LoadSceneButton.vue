@@ -1,6 +1,6 @@
 <template>
   <button class="load-button" :class="{'active': isActive, 'inactive': !isActive}" @click="updateScene">
-    <span class="button-text">{{text}}</span>
+    <span class="button-text">{{buttonText}}</span>
     <div class="img-box">
       <img class="button-image" :src="require(`~/assets/load-scene-images/${imgName}`)">
       <div class="button-image"></div>
@@ -18,6 +18,13 @@ export default {
     computed: {
       isActive() {
         return this.$store.state.sceneID === this.sceneID
+      },
+      buttonText() {
+        if (!this.isActive || this.text !== "LOAD SCENE") {
+          return this.text
+        } else {
+          return "SCENE LOADED"
+        }
       }
     },
     methods: {

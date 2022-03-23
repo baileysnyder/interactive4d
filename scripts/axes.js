@@ -404,6 +404,7 @@ export function initSideView2D(scene, mainCanvasD, bottomCanvasD, mainCamera) {
         xLine: undefined,
         yLine: undefined,
         zLabel: undefined,
+        cameraSphere: undefined,
 
         lineMeshes: undefined,
         meshes: undefined,
@@ -422,7 +423,7 @@ export function initSideView2D(scene, mainCanvasD, bottomCanvasD, mainCamera) {
     state.zLine = createLine(scene, points, '#FFFFFF', bottomCanvasD.w, bottomCanvasD.h, 1)
     state.zLine.layers.set(2)
 
-    state.meshes.push(initCameraSphere(mainCamera))
+    state.cameraSphere = initCameraSphere(mainCamera)
     state.meshes.push(initBackgroundPlane(scene))
 
     const labelPosition = [mainCamera.position.x, mainCamera.position.y + 1.4, mainCamera.position.z/2]

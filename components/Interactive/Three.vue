@@ -8,37 +8,41 @@
                 <button v-show="scene === rapSceneID" class="top-right-button" :class="{'active': isPlaneActive, 'inactive': !isPlaneActive}" @click="isPlaneActive=true">Plane</button>
             </div>
             <div class="bottom-right sticky-box">
-                <div class="slider" v-show="slidersEnabled.XW">
+                <div class="slider-row" v-show="slidersEnabled.RESET">
+                    <button class="slider-button" @click="resetSliderValues"><svg class="reset-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Pro 6.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path fill="#e8e8e8" d="M480 256c0 123.4-100.5 223.9-223.9 223.9c-48.84 0-95.17-15.58-134.2-44.86c-14.12-10.59-16.97-30.66-6.375-44.81c10.59-14.12 30.62-16.94 44.81-6.375c27.84 20.91 61 31.94 95.88 31.94C344.3 415.8 416 344.1 416 256s-71.69-159.8-159.8-159.8c-37.46 0-73.09 13.49-101.3 36.64l45.12 45.14c17.01 17.02 4.955 46.1-19.1 46.1H35.17C24.58 224.1 16 215.5 16 204.9V59.04c0-24.04 29.07-36.08 46.07-19.07l47.6 47.63C149.9 52.71 201.5 32.11 256.1 32.11C379.5 32.11 480 132.6 480 256z"/></svg></button>
+                    <span class="unit-text invisible">°</span>
+                </div>
+                <div class="slider-row" v-show="slidersEnabled.XW">
                     <label for="angleXW">XW</label>
                     <input id="angleXW" v-model="angleDegXW" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
                     <input v-model="angleDegXW" class="slider-text" type="text" size="4">
                     <span class="unit-text">°</span>
                 </div>
-                <div class="slider" v-show="slidersEnabled.YW">
+                <div class="slider-row" v-show="slidersEnabled.YW">
                     <label for="angleYW">YW</label>
                     <input id="angleYW" v-model="angleDegYW" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
                     <input v-model="angleDegYW" class="slider-text" type="text" size="4">
                     <span class="unit-text">°</span>
                 </div>
-                <div class="slider" v-show="slidersEnabled.ZW">
+                <div class="slider-row" v-show="slidersEnabled.ZW">
                     <label for="angleZW">ZW</label>
                     <input id="angleZW" v-model="angleDegZW" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
                     <input v-model="angleDegZW" class="slider-text" type="text" size="4">
                     <span class="unit-text">°</span>
                 </div>
-                <div class="slider" v-show="slidersEnabled.IN">
+                <div class="slider-row" v-show="slidersEnabled.IN">
                     <label for="angleIN">IN/OUT</label>
                     <input id="angleIN" v-model="angleDegIN" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
                     <input v-model="angleDegIN" class="slider-text" type="text" size="4">
                     <span class="unit-text">°</span>
                 </div>
-                <div class="slider" v-show="slidersEnabled.W">
+                <div class="slider-row" v-show="slidersEnabled.W">
                     <label for="translateW">W</label>
                     <input id="translateW" v-model="translateW" type="range" min="-2" max="2" value="0" step="0.01">
                     <input class="slider-text" v-model="translateW" type="text" size="4">
                     <span class="unit-text invisible">°</span>
                 </div>
-                <div class="slider" v-show="slidersEnabled.RAP">
+                <div class="slider-row" v-show="slidersEnabled.RAP">
                     <input v-model="angleDegRAP" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
                     <input class="slider-text" v-model="angleDegRAP" type="text" size="4">
                     <span class="unit-text">°</span>
@@ -59,6 +63,7 @@ import * as Cube4D from '../../scripts/cube-4d'
 import * as Sphere4D from '../../scripts/sphere-4d'
 import * as Axes from '../../scripts/axes'
 import * as Rotations from '../../scripts/rotations' 
+import * as Objects3D from '../../scripts/objects-3d'
 
 class SliderState {
     constructor(sceneID, vueContext) {
@@ -90,6 +95,12 @@ let clock = new THREE.Clock();
 let delta = 0;
 let interval = 1 / 60;
 
+let sphereSliceCount = 0
+let maxSphereSliceCount = 0
+let frameCount = 0
+const maxFrameCount = 15
+
+
 export default {
     data() {
         return {
@@ -112,7 +123,8 @@ export default {
                 ZW: false,
                 IN: false,
                 W: false,
-                RAP: false
+                RAP: false,
+                RESET: false
             },
             angleMax: 0,
 
@@ -239,6 +251,15 @@ export default {
         animate() {
             delta += clock.getDelta();
             if (delta > interval) {
+                if (this.scene === Constants.scenes.three.sphereSliceAnim) {
+                    frameCount++
+                    if (frameCount >= maxFrameCount) {                        
+                        Objects3D.updateSphereSliceAnim(this.state, sphereSliceCount)
+                        sphereSliceCount = (sphereSliceCount+1)%maxSphereSliceCount
+                        frameCount = 0
+                    }
+                }
+
                 //console.log(camera.position)
                 if (this.objectNeedsUpdate) {
                     switch (this.scene) {
@@ -287,32 +308,32 @@ export default {
             switch(sceneID) {
                 case (Constants.scenes.three.sliceHypercube):
                     this.angleMax = 90
-                    Util.toggleBoolsInObj(this.slidersEnabled, 'XW', 'YW', 'ZW', 'W')
+                    Util.toggleBoolsInObj(this.slidersEnabled, 'XW', 'YW', 'ZW', 'W', 'RESET')
                     this.state = Cube4D.initSliceHypercube(threeScene, this.interactiveSize.w, this.interactiveSize.h) 
                     break
                 case (Constants.scenes.three.projHypercube):
                     this.angleMax = 90
-                    Util.toggleBoolsInObj(this.slidersEnabled, 'XW', 'YW', 'ZW')
+                    Util.toggleBoolsInObj(this.slidersEnabled, 'XW', 'YW', 'ZW', 'RESET')
                     this.state = Cube4D.initProjHypercube(threeScene)
                     break
                 case (Constants.scenes.three.sliceHypersphere):
                     this.angleMax = 0
-                    Util.toggleBoolsInObj(this.slidersEnabled, 'W')
+                    Util.toggleBoolsInObj(this.slidersEnabled, 'W', 'RESET')
                     this.state = Sphere4D.initSliceHypersphere(threeScene)
                     break
                 case (Constants.scenes.three.projHypersphere):
                     this.angleMax = 180
-                    Util.toggleBoolsInObj(this.slidersEnabled, 'XW', 'YW', 'ZW')
+                    Util.toggleBoolsInObj(this.slidersEnabled, 'XW', 'YW', 'ZW', 'RESET')
                     this.state = Sphere4D.initProjHypersphere(threeScene)
                     break
                 case (Constants.scenes.three.projCone):
                     this.angleMax = 360
-                    Util.toggleBoolsInObj(this.slidersEnabled, 'XW', 'YW', 'ZW')
+                    Util.toggleBoolsInObj(this.slidersEnabled, 'XW', 'YW', 'ZW', 'RESET')
                     this.state = Cone4D.initProjCone(threeScene)
                     break
                 case (Constants.scenes.three.sliceCone):
                     this.angleMax = 360
-                    Util.toggleBoolsInObj(this.slidersEnabled, 'IN', 'W')
+                    Util.toggleBoolsInObj(this.slidersEnabled, 'IN', 'W', 'RESET')
                     this.state = Cone4D.initSliceCone(threeScene)
                     break
                 case (Constants.scenes.three.axesWithCube):
@@ -340,7 +361,7 @@ export default {
                     break
                 case (Constants.scenes.three.rotateAxisPlane):
                     this.angleMax = 360
-                    Util.toggleBoolsInObj(this.slidersEnabled, "RAP")
+                    Util.toggleBoolsInObj(this.slidersEnabled, "RAP", 'RESET')
                     this.state = Rotations.initRotateAxisPlane(threeScene, this.interactiveSize.w, this.interactiveSize.h)
                     camera.position.set(-2.674, 3.265, 4.265)
                     controls.update()
@@ -357,6 +378,11 @@ export default {
                     camera.position.set(-1.911, 1.862, 5.725)
                     controls.update()
                     break
+                case (Constants.scenes.three.sphereSliceAnim):
+                    Util.toggleBoolsInObj(this.slidersEnabled)
+                    this.state = Objects3D.initSphereSliceAnim(threeScene)
+                    maxSphereSliceCount = this.state.meshes.length
+                    break
             }
             this.objectNeedsUpdate = true
         },
@@ -365,7 +391,8 @@ export default {
             this.angleDegYW = 0
             this.angleDegZW = 0
             this.angleDegIN = 0
-            this.translateW = 0
+            this.angleDegRAP = 0
+            this.translateW = 0           
         }
     },
     mounted() {
@@ -409,7 +436,7 @@ export default {
     pointer-events: auto;
 }
 
-.slider {
+.slider-row {
     text-align: right;
 }
 
@@ -445,5 +472,19 @@ export default {
 .active {
   background: rgb(209, 209, 209);
   color: rgb(30, 30, 30);
+}
+
+.slider-button {
+    margin-bottom: 6px;
+    border: none;
+    border-radius: 5px;
+    padding-left: 8px;
+    padding-right: 8px;
+    padding-top: 4px;
+    background: rgb(60, 60, 60);
+}
+
+.slider-button:hover {
+  background: rgb(75, 75, 75);
 }
 </style>

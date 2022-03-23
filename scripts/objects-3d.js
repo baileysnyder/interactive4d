@@ -69,15 +69,18 @@ export function initSphere(scene) {
     return state
 }
 
-export function initSolidCube(scene) {
+export function initSolidCube(scene, planeZ, cubeZ) {
     let state = genericState()
     state.plane = initPlane(scene)
+    state.plane.position.set(0, 0, planeZ)
+    state.plane.layers.set(1)
 
     const geometry = new THREE.BoxGeometry(cubeLength, cubeLength, cubeLength)
     const material = new THREE.MeshStandardMaterial()
     material.color = new THREE.Color(cubeColor)
 
     const mesh = new THREE.Mesh(geometry, material)
+    mesh.position.set(0, 0, cubeZ)
 
     scene.add(mesh)
     state.mainMesh = mesh
@@ -106,7 +109,7 @@ export function initEdgeCube(scene) {
     return state
 }
 
-export function initCone(scene) {
+export function initCone(scene, showObject) {
     let state = genericState()
     state.plane = initPlane(scene)
 
@@ -116,13 +119,14 @@ export function initCone(scene) {
     material.color = new THREE.Color(coneColor)
 
     const mesh = new THREE.Mesh(geometry, material)
+    mesh.visible = showObject
 
     scene.add(mesh)
     state.mainMesh = mesh
     return state
 }
 
-function transformMesh(mesh, angleXZ, angleYZ, translateZ) {
+export function transformMesh(mesh, angleXZ, angleYZ, translateZ) {
     mesh.position.z = translateZ
     mesh.rotation.y = angleXZ
     mesh.rotation.x = angleYZ
@@ -219,4 +223,46 @@ export function updateCone(state, canvas, angleXZ, angleYZ, translateZ) {
             Draw.drawBaseCutoff(canvas, ellipse, planeColor, planeWidth)
             break
     }
+}
+
+export function initSphereSliceAnim(scene) {
+    let state = {
+        meshes: []
+    }
+    const stepHalf = 6
+    const radius = 2
+
+    for (let i = -stepHalf+0.5; i < stepHalf; i+=1) {
+        let z = (i/stepHalf) * radius
+        let innerRadius = Util.getSphereIntersectionRadius(radius, z)
+        state.meshes.push(addSphereSlice(scene, '/textures/slice_circle.png', [0, 0, z], innerRadius*2, innerRadius*2))
+    }
+    return state
+}
+
+export function updateSphereSliceAnim(state, count) {
+    for (let i = 0; i < state.meshes.length; i++) {
+        state.meshes[i].visible = i <= count ? true : false
+    }
+}
+
+function addSphereSlice(scene, url, position, width, height) {
+    const loader = new THREE.TextureLoader()
+    const geometry = new THREE.PlaneGeometry(width, height)
+    const material = new THREE.MeshBasicMaterial()
+    material.side = THREE.DoubleSide
+    //material.depthTest = false
+    material.alphaTest = 0.2
+    material.transparent = true
+    material.opacity = 0.3
+    material.color = new THREE.Color(sphereColor)
+    let tex = loader.load(url)
+    tex.anisotropy = 4
+    material.map = tex
+
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.position.set(position[0], position[1], position[2])
+    //mesh.renderOrder = 1
+    scene.add(mesh)
+    return mesh
 }

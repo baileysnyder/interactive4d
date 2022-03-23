@@ -46,7 +46,7 @@ export function drawEdgeCubeSlice(canvas, points, color, planeWidth) {
     let hCenter = (canvas.height/2)
 
     let ctx = canvas.getContext("2d")
-    ctx.lineWidth = 5
+    ctx.lineWidth = 7
     ctx.lineCap = "round"
     for (let i = 0; i < points.length; i++) {
         ctx.beginPath()

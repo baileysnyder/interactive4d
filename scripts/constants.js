@@ -13,6 +13,7 @@ export const scenes = {
         rotateAxisPlane: 10,
         rotate3D: 11,
         rotate4D: 12,
+        sphereSliceAnim: 13,
     },
     firstperson2d: {
         firstperson2d: 100

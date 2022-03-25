@@ -3,6 +3,7 @@ import * as THREE from 'three'
 import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { Line2 } from 'three/examples/jsm/lines/Line2.js'
+import * as Constants from './constants'
 
 const cubePoints = [
     [-1, -1, -1, -1], //0
@@ -74,52 +75,17 @@ const edgeIndicesByCube = [
     [20, 21, 22, 23, 29, 31, 30, 28, 24, 25, 26, 27], //inner
 ]
 
-const projectionSphereRadius = 0.09
 const cylinderScaleFactor = 0.06
 const projectionDistance4D = 3
 const scaleFactor = 2
-
-const lineColor = '#62DDE5'
-const pointColor = '#D2F3F5'
-
-function initSpheres(scene, count) {
-    let meshes = []
-    for (let i = 0; i < count; i++){
-        const geometry = new THREE.SphereGeometry(projectionSphereRadius, 24, 12)
-        const material = new THREE.MeshStandardMaterial()
-        material.color = new THREE.Color(pointColor)
-
-        const mesh = new THREE.Mesh(geometry, material)
-
-        scene.add(mesh)
-        meshes.push(mesh)
-    }
-    return meshes
-}
-
-function initCylinders(scene) {
-    let meshes = []
-    for (let i = 0; i < edgeIndices.length; i++){
-        const geometry = new THREE.CylinderGeometry(0.1, 0.1, 0.1, 16, 1, true)
-        geometry.getAttribute('position').setUsage(THREE.DynamicDrawUsage)
-
-        const material = new THREE.MeshStandardMaterial()
-        material.color = new THREE.Color(lineColor)
-        const mesh = new THREE.Mesh(geometry, material)
-
-        scene.add(mesh)
-        meshes.push(mesh)
-    }
-    return meshes
-}
 
 export function initProjHypercube(scene) {
     let state = {
         sphereMeshes: undefined,
         cylinderMeshes: undefined
     }
-    state.sphereMeshes = initSpheres(scene, cubePoints.length)
-    state.cylinderMeshes = initCylinders(scene)
+    state.sphereMeshes = Util.initProjSpheres(scene, Constants.projectionSphereRadius, cubePoints.length, 24, 12, Constants.projPointColor)
+    state.cylinderMeshes = Util.initProjCylinders(scene, edgeIndices.length, Constants.projCylColor)
 
     return state
 }

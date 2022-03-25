@@ -23,9 +23,11 @@ export const scenes = {
         solidCube: 201,
         edgeCube: 202,
         cone: 203,
-        projSphere: 204,
+        sideView2D: 204,
         projCube: 205,
-        sideView2D: 206
+        projEdgeCube: 206,
+        projSphere: 207,
+        projSpherePoints: 208
     }
 }
 
@@ -46,3 +48,5 @@ export const projPointColor = '#D2F3F5'
 
 export const navigationWidth = 250
 export const headerFooterHeight = 150
+
+export const projectionSphereRadius = 0.09

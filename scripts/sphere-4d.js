@@ -1,5 +1,6 @@
 import * as Util from './util'
 import * as THREE from 'three'
+import * as Constants from './constants'
 
 function generate4DSphere(radius, maxSpherePoints, wSteps) {
     const maxAngle = Math.PI*2
@@ -41,35 +42,19 @@ let minPointColor
 let maxPointColor
 generate4DSphere(1, 13, 7)
 
-const projectionSphereRadius = 0.09
 const projectionDistance4D = 2
 const scaleFactor = 2.5
 const hypersphereRadius = 1.25
 
-const pointColor = '#D2F3F5'
 const sphereColor = '#00aa19'
 
 let sphereMeshes = []
 let hypersphereMesh = undefined
 
-function initSpheres(scene, count) {
-    let meshes = []
-    for (let i = 0; i < count; i++){
-        const geometry = new THREE.SphereGeometry(projectionSphereRadius, 20, 10)
-        const material = new THREE.MeshStandardMaterial()
-
-        const mesh = new THREE.Mesh(geometry, material)
-
-        scene.add(mesh)
-        meshes.push(mesh)
-    }
-    return meshes
-}
-
 
 export function initProjHypersphere(scene) {
     return {
-        sphereMeshes: initSpheres(scene, hyperspherePoints.length)
+        sphereMeshes: Util.initProjSpheres(scene, Constants.projectionSphereRadius, hyperspherePoints.length, 20, 10, maxPointColor)
     }
 }
 

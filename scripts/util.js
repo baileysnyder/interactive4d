@@ -671,6 +671,37 @@ const baseCirclePoints = [
     [0, 0, 1],
 ]
 
+export function initProjCylinders(scene, count, color) {
+    let meshes = []
+    for (let i = 0; i < count; i++){
+        const geometry = new THREE.CylinderGeometry(0.1, 0.1, 0.1, 16, 1, true)
+        geometry.getAttribute('position').setUsage(THREE.DynamicDrawUsage)
+
+        const material = new THREE.MeshStandardMaterial()
+        material.color = new THREE.Color(color)
+        const mesh = new THREE.Mesh(geometry, material)
+
+        scene.add(mesh)
+        meshes.push(mesh)
+    }
+    return meshes
+}
+
+export function initProjSpheres(scene, radius, count, wSeg, hSeg, color) {
+    let meshes = []
+    for (let i = 0; i < count; i++){
+        const geometry = new THREE.SphereGeometry(radius, wSeg, hSeg)
+        const material = new THREE.MeshStandardMaterial()
+        material.color = new THREE.Color(color)
+
+        const mesh = new THREE.Mesh(geometry, material)
+
+        scene.add(mesh)
+        meshes.push(mesh)
+    }
+    return meshes
+}
+
 export function drawCylinders(points, meshes, edgeIndices, scaleFactor) {
     for (let i = 0; i < edgeIndices.length; i++) {
         let endpoint1 = points[edgeIndices[i][0]]

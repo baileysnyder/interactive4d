@@ -6,8 +6,10 @@
                 <div class="top-right sticky-box">
                     <input v-show="enableShowObject" type="checkbox" id="show-object" v-model="showObject">
                     <label v-show="enableShowObject" for="show-object">Show Object</label>
-                    <button v-show="enableOrthoPersp" class="top-right-button" :class="{'active': !isOrthoActive, 'inactive': isOrthoActive}" @click="isOrthoActive=false">Perspective</button>
-                    <button v-show="enableOrthoPersp" class="top-right-button" :class="{'active': isOrthoActive, 'inactive': !isOrthoActive}" @click="isOrthoActive=true">Orthographic</button>
+                    <input v-show="enableHighlightFace" type="checkbox" id="highlight-face" v-model="highlightFace">
+                    <label v-show="enableHighlightFace" for="highlight-face">Highlight Face</label>
+                    <!-- <button v-show="enableOrthoPersp" class="top-right-button" :class="{'active': !isOrthoActive, 'inactive': isOrthoActive}" @click="isOrthoActive=false">Perspective</button>
+                    <button v-show="enableOrthoPersp" class="top-right-button" :class="{'active': isOrthoActive, 'inactive': !isOrthoActive}" @click="isOrthoActive=true">Orthographic</button> -->
                 </div>
                 <div class="bottom-right sticky-box">
                     <div class="slider-row" v-show="slidersEnabled.RESET">
@@ -38,8 +40,8 @@
                 </div>
             </div>
         </div>
-        <canvas v-show="!bottomCamActive" class="bottom-canvas" ref="sliceCanvas"></canvas>
-        <canvas v-show="bottomCamActive" class="bottom-canvas canvas-border" ref="canvas2"></canvas>
+        <canvas v-show="!bottomCamActive && !orthoCamActive" class="bottom-canvas" ref="sliceCanvas"></canvas>
+        <canvas v-show="bottomCamActive || orthoCamActive" class="bottom-canvas canvas-border" ref="canvasBottom"></canvas>
     </div>
 </template>
 
@@ -81,6 +83,9 @@ let controls
 let bottomCam
 let bottomRend
 
+// let orthoCam
+// const orthoS = 0.006
+
 let previousCameraPosition = new THREE.Vector3(0, 0, 0)
 
 export default {
@@ -100,6 +105,7 @@ export default {
                 RESET: false
             },
             showObject: false,
+            highlightFace: false,
             canvas: undefined,
             sliceCanvas: undefined,
             objectNeedsUpdate: false,
@@ -122,11 +128,18 @@ export default {
         enableShowObject() {
             return this.scene === Constants.scenes.threeandcanvas.cone
         },
+        enableHighlightFace() {
+            return this.scene === Constants.scenes.threeandcanvas.projEdgeCube
+        },
         enableOrthoPersp() {
             return this.scene === Constants.scenes.threeandcanvas.projCube
         },
         bottomCamActive() {
-            return this.scene === Constants.scenes.threeandcanvas.sideView2D || this.scene === Constants.scenes.threeandcanvas.projCube || this.scene === Constants.scenes.threeandcanvas.projSphere
+            return this.scene === Constants.scenes.threeandcanvas.sideView2D || (this.scene === Constants.scenes.threeandcanvas.projCube && this.isOrthoActive === false) ||
+            this.scene === Constants.scenes.threeandcanvas.projSphere || this.scene === Constants.scenes.threeandcanvas.projEdgeCube || this.scene === Constants.scenes.threeandcanvas.projSpherePoints
+        },
+        orthoCamActive() {
+            return this.scene === Constants.scenes.threeandcanvas.projCube && this.isOrthoActive === true
         }
     },
     watch: {
@@ -173,6 +186,12 @@ export default {
                 camera.position.set(-6.011, 0.447, 3.556)
                 controls.update()
             }
+            if (newA && this.scene && this.scene === Constants.scenes.threeandcanvas.projCube ||
+            this.scene === Constants.scenes.threeandcanvas.projEdgeCube || this.scene === Constants.scenes.threeandcanvas.projSphere ||
+            this.scene === Constants.scenes.threeandcanvas.projSpherePoints) {
+                camera.position.set(-4.961, 3.505, 3.4747)
+                controls.update()
+            }
             if (oldA === false && newA) {
                 this.updateResolution(this.interactiveSize.w, this.interactiveSize.h)
                 requestAnimationFrame(this.animate)
@@ -194,6 +213,12 @@ export default {
                 return
             }
             this.state.mainMesh.visible = val
+        },
+        highlightFace() {
+            if (this.scene !== Constants.scenes.threeandcanvas.projEdgeCube) {
+                return
+            }
+            this.objectNeedsUpdate = true
         }
     },
     methods: {
@@ -208,6 +233,15 @@ export default {
             bottomCam.updateProjectionMatrix()
             bottomRend.setSize(width, bottomHeight)
 
+            if (this.orthoCamActive) {
+                orthoCam.left = -width*orthoS
+                orthoCam.right = width*orthoS
+                orthoCam.top = bottomHeight*orthoS
+                orthoCam.bottom = -bottomHeight*orthoS
+                //orthoCam.zoom = Math.min(width/300, bottomHeight/300)
+                orthoCam.updateProjectionMatrix()
+            }
+
             this.updateSliceCanvas(width, height)
             this.updateDisplay()
 
@@ -217,16 +251,20 @@ export default {
                 Axes.updateSideViewResolutions(this.state, mainD, bottomD)
             }
         },
+        initRenderer(canvas, w, h) {
+            let rend = new THREE.WebGLRenderer({
+                canvas: canvas,
+            })
+            rend.setSize(w, h)
+            rend.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+            return rend
+        },
         initThree() {
             let width = this.interactiveSize.w
-            let height = this.interactiveSize.h*canvasPercentH
-            threeScene = new THREE.Scene()
+            let height = this.interactiveSize.h*sliceCanvasPercentH
 
-            renderer = new THREE.WebGLRenderer({
-                canvas: this.canvas,
-            })
-            renderer.setSize(width, height)
-            renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+            threeScene = new THREE.Scene()
+            renderer = this.initRenderer(this.canvas, width, height)
 
             camera = new THREE.PerspectiveCamera(80, width/height, 0.1, 100)
             camera.layers.enable(1)
@@ -250,11 +288,7 @@ export default {
             let width = this.interactiveSize.w
             let height = this.interactiveSize.h*sliceCanvasPercentH
 
-            bottomRend = new THREE.WebGLRenderer({
-                canvas: this.canvas2,
-            })
-            bottomRend.setSize(width, height)
-            bottomRend.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+            bottomRend = this.initRenderer(this.$refs.canvasBottom, width, height)
 
             bottomCam = new THREE.PerspectiveCamera(80, width/height, 0.1, 100)
             bottomCam.layers.enable(2)
@@ -262,10 +296,25 @@ export default {
             bottomCam.lookAt(0, 0, 3)
             threeScene.add(bottomCam)
 
-            const mainLight = new THREE.DirectionalLight(0xffffff, 0.5)
-            bottomCam.add(mainLight)
-            mainLight.position.set(-1.5, 2.5, 0)
-            mainLight.layers.set(2)
+            const light = new THREE.DirectionalLight(0xffffff, 0.5)
+            bottomCam.add(light)
+            light.position.set(-1.5, 2.5, 0)
+            light.layers.set(2)
+        },
+        initOrthoCamera() {
+            let width = this.interactiveSize.w
+            let height = this.interactiveSize.h*sliceCanvasPercentH
+
+            orthoCam = new THREE.OrthographicCamera(-width*orthoS, width*orthoS, height*orthoS, -height*orthoS, 0.5, 10)
+            orthoCam.layers.enable(3)
+            orthoCam.position.set(0, 0, -1)
+            orthoCam.lookAt(0, 0, 1)
+            threeScene.add(orthoCam)
+
+            const light = new THREE.DirectionalLight(0xffffff, 0.5)
+            orthoCam.add(light)
+            light.position.set(-1.5, 2.5, 0)
+            light.layers.set(3)
         },
         updateDisplay() {
             switch (this.scene) {
@@ -277,6 +326,7 @@ export default {
                     break
                 case (Constants.scenes.threeandcanvas.edgeCube):
                     Objects3D.updateEdgeCube(this.state, this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
+                    break
                 case (Constants.scenes.threeandcanvas.projCube):
                     Objects3D.transformMesh(this.state.mainMesh, parseFloat(this.angleXZ), parseFloat(this.angleYZ), projObjZ)
                     break
@@ -285,6 +335,15 @@ export default {
                     break
                 case (Constants.scenes.threeandcanvas.sideView2D):
                     Axes.updateZLine(this.state, camera.position)
+                    break
+                case (Constants.scenes.threeandcanvas.projEdgeCube):
+                    Objects3D.updateProjCube(this.state, parseFloat(this.angleXZ), parseFloat(this.angleYZ), projObjZ, this.highlightFace)
+                    break
+                case (Constants.scenes.threeandcanvas.projSphere):
+                    //Objects3D.transformMesh(this.state.mainMesh, parseFloat(this.angleXZ), parseFloat(this.angleYZ), projObjZ)
+                    break
+                case (Constants.scenes.threeandcanvas.projSpherePoints):
+                    Objects3D.updateProjSpherePoints(this.state, parseFloat(this.angleXZ), parseFloat(this.angleYZ), projObjZ)
                     break
             }
         },
@@ -300,11 +359,15 @@ export default {
                 renderer.render(threeScene, camera)
 
                 if (this.bottomCamActive) {
-                    if (!previousCameraPosition.equals(camera.position)) {
+                    if (this.scene === Constants.scenes.threeandcanvas.sideView2D && !previousCameraPosition.equals(camera.position)) {
                         this.updateDisplay()
                         previousCameraPosition.copy(camera.position)
-                    }                    
+                    }
                     bottomRend.render(threeScene, bottomCam)
+                }
+
+                if (this.orthoCamActive) {
+                    bottomRend.render(threeScene, orthoCam)
                 }
 
                 previousTimestamp = timestamp
@@ -371,6 +434,25 @@ export default {
                     this.state = Axes.initSideView2D(threeScene, mainD, bottomD, camera)
                     Util.toggleBoolsInObj(this.slidersEnabled)
                     break
+                case (Constants.scenes.threeandcanvas.projEdgeCube):
+                    bottomCam.position.set(0, 0, -projObjZ)
+                    bottomCam.lookAt(0, 0, 0)
+                    this.state = Objects3D.initProjCube(threeScene, -projObjZ)
+                    Util.toggleBoolsInObj(this.slidersEnabled, 'XZ', 'YZ', 'RESET')
+                    break
+                case (Constants.scenes.threeandcanvas.projSphere):
+                    bottomCam.position.set(0, 0, -projObjZ)
+                    bottomCam.lookAt(0, 0, 0)
+                    this.state = Objects3D.initProjSphere(threeScene, -projObjZ, projObjZ)
+                    Util.toggleBoolsInObj(this.slidersEnabled, 'XZ', 'YZ', 'RESET')
+                    break
+                case (Constants.scenes.threeandcanvas.projSpherePoints):
+                    bottomCam.position.set(0, 0, -projObjZ)
+                    bottomCam.lookAt(0, 0, 0)
+                    this.state = Objects3D.initProjSpherePoints(threeScene, -projObjZ)
+                    Util.toggleBoolsInObj(this.slidersEnabled, 'XZ', 'YZ', 'RESET')
+                    break
+
             }
             this.objectNeedsUpdate = true
         },
@@ -412,7 +494,6 @@ export default {
     mounted() {
         this.canvas = this.$refs.canvas
         this.sliceCanvas = this.$refs.sliceCanvas
-        this.canvas2 = this.$refs.canvas2
         this.updateSliceCanvas(this.interactiveSize.w, this.interactiveSize.h)
 
         this.$nuxt.$on('align-face-first', () => this.setFaceAngle())
@@ -421,6 +502,7 @@ export default {
 
         this.initThree()
         this.initBottomCamera()
+        //this.initOrthoCamera()
         this.initScene(this.scene)
         requestAnimationFrame(this.animate)
     }

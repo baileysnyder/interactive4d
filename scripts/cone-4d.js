@@ -38,7 +38,7 @@ export function initProjCone(scene) {
         cylinderMeshes: undefined
     }
     state.sphereMeshes = initSpheres(scene)
-    state.cylinderMeshes = initCylinders(scene)
+    state.cylinderMeshes = Util.initProjCylinders(scene, edgeIndices.length, lineColor)
 
     return state
 }
@@ -57,22 +57,6 @@ function initSpheres(scene) {
         const material = new THREE.MeshStandardMaterial()
         material.color = new THREE.Color(color)
 
-        const mesh = new THREE.Mesh(geometry, material)
-
-        scene.add(mesh)
-        meshes.push(mesh)
-    }
-    return meshes
-}
-
-function initCylinders(scene) {
-    let meshes = []
-    for (let i = 0; i < edgeIndices.length; i++){
-        const geometry = new THREE.CylinderGeometry(0.1, 0.1, 0.1, 16, 1, true)
-        geometry.getAttribute('position').setUsage(THREE.DynamicDrawUsage)
-
-        const material = new THREE.MeshStandardMaterial()
-        material.color = new THREE.Color(lineColor)
         const mesh = new THREE.Mesh(geometry, material)
 
         scene.add(mesh)

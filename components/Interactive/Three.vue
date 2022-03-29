@@ -86,14 +86,16 @@ class SliderState {
     }
 }
 
-let camera;
-let threeScene;
-let renderer;
-let controls;
+let camera
+let threeScene
+let renderer
+let controls
+let mainLight
+let ambientLight
 
-let clock = new THREE.Clock();
-let delta = 0;
-let interval = 1 / 60;
+let clock = new THREE.Clock()
+let delta = 0
+let interval = 1 / 60
 
 let sphereSliceCount = 0
 let maxSphereSliceCount = 0
@@ -241,11 +243,11 @@ export default {
             controls.enablePan = false;
             controls.update();
 
-            const mainLight = new THREE.DirectionalLight(0xffffff, 0.5)
+            mainLight = new THREE.DirectionalLight(0xffffff, 0.5)
             camera.add(mainLight)
             mainLight.position.set(-1.5, 2.5, 0)
 
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
             threeScene.add(ambientLight)
         },
         animate() {
@@ -259,8 +261,8 @@ export default {
                         frameCount = 0
                     }
                 }
-
-                //console.log(camera.position)
+                //this.angleDegXW+=1
+                //console.log(camera.position.x + ", " + camera.position.y + ", " + camera.position.z)
                 if (this.objectNeedsUpdate) {
                     switch (this.scene) {
                         case (Constants.scenes.three.sliceHypercube):
@@ -305,6 +307,8 @@ export default {
         initScene(sceneID) {
             controls.enableRotate = true
             controls.update()
+            mainLight.intensity = 0.5
+            ambientLight.intensity = 0.5
             switch(sceneID) {
                 case (Constants.scenes.three.sliceHypercube):
                     this.angleMax = 90
@@ -318,6 +322,8 @@ export default {
                     break
                 case (Constants.scenes.three.sliceHypersphere):
                     this.angleMax = 0
+                    mainLight.intensity = 0.8
+                    ambientLight.intensity = 0.25
                     Util.toggleBoolsInObj(this.slidersEnabled, 'W', 'RESET')
                     this.state = Sphere4D.initSliceHypersphere(threeScene)
                     break
@@ -333,6 +339,8 @@ export default {
                     break
                 case (Constants.scenes.three.sliceCone):
                     this.angleMax = 360
+                    mainLight.intensity = 0.8
+                    ambientLight.intensity = 0.25
                     Util.toggleBoolsInObj(this.slidersEnabled, 'IN', 'W', 'RESET')
                     this.state = Cone4D.initSliceCone(threeScene)
                     break
@@ -380,8 +388,18 @@ export default {
                     break
                 case (Constants.scenes.three.sphereSliceAnim):
                     Util.toggleBoolsInObj(this.slidersEnabled)
-                    this.state = Objects3D.initSphereSliceAnim(threeScene)
-                    maxSphereSliceCount = this.state.meshes.length
+                    this.state = Objects3D.initSphereSliceAnim(threeScene, this.interactiveSize.w, this.interactiveSize.h)
+                    maxSphereSliceCount = this.state.circleMeshes.length
+                    break
+                case (Constants.scenes.three.sphereOutlineRadius):
+                    Util.toggleBoolsInObj(this.slidersEnabled)
+                    this.state = Objects3D.initSphereOutlineRadius(threeScene)
+                    break
+                case (Constants.scenes.three.sphereSlicesLined):
+                    mainLight.intensity = 0.8
+                    ambientLight.intensity = 0.25
+                    Util.toggleBoolsInObj(this.slidersEnabled)
+                    this.state = Objects3D.initSphereSlicesLined(threeScene)
                     break
             }
             this.objectNeedsUpdate = true

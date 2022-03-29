@@ -4,9 +4,11 @@ import * as Draw from './draw-slices'
 import * as THREE from 'three'
 import * as Constants from './constants'
 import * as Cube from './cube'
+import { createLine } from './axes'
 
 const planeColor = '#1B1B1B'
-const sphereColor = '#14F314'
+//const planeColor = '#000000'
+const sphereColor = '#00aa19'
 const cubeColor = '#FFEE56'
 const coneColor = '#F31414'
 
@@ -41,8 +43,8 @@ const cubeEdgeIndices = [
 
 const projSphereCount = 48
 
-function initPlane(scene) {
-    const geometry = new THREE.PlaneGeometry(planeWidth, planeWidth)
+function initPlane(scene, width) {
+    const geometry = new THREE.PlaneGeometry(width, width)
     const material = new THREE.MeshBasicMaterial()
     material.side = THREE.DoubleSide
     material.color = new THREE.Color(planeColor)
@@ -63,26 +65,54 @@ function genericState() {
     }
 }
 
-export function initSphere(scene) {
-    let state = genericState()
-    state.plane = initPlane(scene)
-
-    const geometry = new THREE.SphereGeometry(sphereRadius, 48, 24)
+function makeSphere(scene, radius, wSeg, hSeg, color) {
+    const geometry = new THREE.SphereGeometry(radius, wSeg, hSeg)
     const material = new THREE.MeshStandardMaterial()
-    material.color = new THREE.Color(sphereColor)
-    //material.transparent = true
-    //material.opacity = 0.6
-
+    material.color = new THREE.Color(color)
     const mesh = new THREE.Mesh(geometry, material)
 
     scene.add(mesh)
-    state.mainMesh = mesh
+    return mesh
+}
+
+export function initSphere(scene) {
+    let state = genericState()
+    state.plane = initPlane(scene, planeWidth)
+    state.mainMesh = makeSphere(scene, sphereRadius, 48, 24, sphereColor)
+
+    return state
+}
+
+export function initSphereRing(scene) {
+    let state = {
+        pointCount: 10,
+        z: 0.4,
+        spherePoints: [],
+        sphereMeshes: undefined
+    }
+
+    let rad = Util.getSphereIntersectionRadius(sphereRadius, state.z)
+    for (let i = 0; i < state.pointCount; i++) {
+        let theta = (i/state.pointCount)*(2*Math.PI)
+        let x = Math.cos(theta)*rad
+        let y = Math.sin(theta)*rad
+        state.spherePoints.push([x, y, state.z])
+        state.spherePoints.push([x, y, -state.z])        
+    }
+
+    state.sphereMeshes = Util.initProjSpheres(scene, Constants.projectionSphereRadius, state.pointCount*2, 20, 10, Constants.projCylColor)
+    for (let i = 0; i < state.sphereMeshes.length; i++) {
+        if (i%2 === 0) {
+            state.sphereMeshes[i].material.color = new THREE.Color('#ff1e1e')
+        }       
+    }
+
     return state
 }
 
 export function initSolidCube(scene, planeZ, cubeZ) {
     let state = genericState()
-    state.plane = initPlane(scene)
+    state.plane = initPlane(scene, planeWidth)
     state.plane.position.set(0, 0, planeZ)
     state.plane.layers.set(1)
 
@@ -100,7 +130,7 @@ export function initSolidCube(scene, planeZ, cubeZ) {
 
 export function initEdgeCube(scene) {
     let state = genericState()
-    state.plane = initPlane(scene)
+    state.plane = initPlane(scene, planeWidth)
 
     const geometry = new THREE.BoxGeometry(cubeLength, cubeLength, cubeLength)
     const materials = [
@@ -122,7 +152,7 @@ export function initEdgeCube(scene) {
 
 export function initCone(scene, showObject) {
     let state = genericState()
-    state.plane = initPlane(scene)
+    state.plane = initPlane(scene, planeWidth)
 
     // assuming equilateral
     const geometry = new THREE.ConeGeometry(sphereRadius, sphereRadius*Math.tan(Math.PI/3), coneSegments)
@@ -174,7 +204,7 @@ export function initProjCube(scene, planeZ) {
         state.sphereMeshes[i].material.transparent = true 
     }
 
-    state.plane = initPlane(scene)
+    state.plane = initPlane(scene, planeWidth)
     state.plane.position.set(0, 0, planeZ)
     state.plane.layers.set(1)
 
@@ -185,19 +215,13 @@ export function initProjCube(scene, planeZ) {
 
 export function initProjSphere(scene, planeZ, sphereZ) {
     let state = genericState()
-    state.plane = initPlane(scene)
+    state.plane = initPlane(scene, planeWidth)
     state.plane.position.set(0, 0, planeZ)
     state.plane.layers.set(1)
 
-    const geometry = new THREE.SphereGeometry(sphereRadius, 32, 16)
-    const material = new THREE.MeshStandardMaterial()
-    material.color = new THREE.Color(sphereColor)
+    state.mainMesh = makeSphere(scene, sphereRadius, 32, 16, sphereColor)
+    state.mainMesh.position.set(0, 0, sphereZ)
 
-    const mesh = new THREE.Mesh(geometry, material)
-    mesh.position.set(0, 0, sphereZ)
-
-    scene.add(mesh)
-    state.mainMesh = mesh
     return state
 }
 
@@ -210,7 +234,7 @@ export function initProjSpherePoints(scene, planeZ) {
 
     state.sphereMeshes = Util.initProjSpheres(scene, Constants.projectionSphereRadius, projSphereCount, 20, 10, Constants.projPointColor)
 
-    state.plane = initPlane(scene)
+    state.plane = initPlane(scene, planeWidth)
     state.plane.position.set(0, 0, planeZ)
     state.plane.layers.set(1)
 
@@ -218,6 +242,12 @@ export function initProjSpherePoints(scene, planeZ) {
     for (let i = 0; i < state.spherePoints.length; i++) {
         state.spherePoints[i].pop()        
     }
+
+    // for red highlight gif
+    // let hSphere = Util.initProjSpheres(scene, Constants.projectionSphereRadius, 1, 20, 10, '#ffffff')
+    // hSphere[0].material = new THREE.MeshBasicMaterial({color: '#ff1e1e'})
+    // hSphere[0].position.set(0, 0, -planeZ)
+    // state.sphereMeshes[2].material = new THREE.MeshBasicMaterial({color: '#ff1e1e'})
 
     return state
 }
@@ -321,9 +351,11 @@ export function updateCone(state, canvas, angleXZ, angleYZ, translateZ) {
     }
 }
 
-export function initSphereSliceAnim(scene) {
+export function initSphereSliceAnim(scene, canvasW, canvasH) {
     let state = {
-        meshes: []
+        circleMeshes: [],
+        planeMeshes: [],
+        lineMeshes: []
     }
     const stepHalf = 6
     const radius = 2
@@ -331,15 +363,23 @@ export function initSphereSliceAnim(scene) {
     for (let i = -stepHalf+0.5; i < stepHalf; i+=1) {
         let z = (i/stepHalf) * radius
         let innerRadius = Util.getSphereIntersectionRadius(radius, z)
-        state.meshes.push(addSphereSlice(scene, '/textures/slice_circle.png', [0, 0, z], innerRadius*2, innerRadius*2))
+
+        state.circleMeshes.push(addSphereSlice(scene, '/textures/slice_circle.png', [0, 0, z], innerRadius*2, innerRadius*2))
+
+        let plane = initPlane(scene, 6)
+        plane.position.set(0, 0, z)
+        //plane.material.depthTest = false
+        plane.material.transparent = false
+        state.planeMeshes.push(plane)
+        
+        let axisLen = 2.6
+        let x = createLine(scene, [-axisLen, 0, z, axisLen, 0, z], Constants.axisColors[0], canvasW, canvasH, 5)
+        state.lineMeshes.push(x)
+
+        let y = createLine(scene, [0, -axisLen, z, 0, axisLen, z], Constants.axisColors[1], canvasW, canvasH, 5)
+        state.lineMeshes.push(y)
     }
     return state
-}
-
-export function updateSphereSliceAnim(state, count) {
-    for (let i = 0; i < state.meshes.length; i++) {
-        state.meshes[i].visible = i <= count ? true : false
-    }
 }
 
 function addSphereSlice(scene, url, position, width, height) {
@@ -347,7 +387,7 @@ function addSphereSlice(scene, url, position, width, height) {
     const geometry = new THREE.PlaneGeometry(width, height)
     const material = new THREE.MeshBasicMaterial()
     material.side = THREE.DoubleSide
-    //material.depthTest = false
+    material.depthTest = false
     material.alphaTest = 0.2
     material.transparent = true
     material.opacity = 0.3
@@ -361,6 +401,83 @@ function addSphereSlice(scene, url, position, width, height) {
     //mesh.renderOrder = 1
     scene.add(mesh)
     return mesh
+}
+
+export function initSphereOutlineRadius(scene) {
+    let state = {
+        lineMeshes: [],
+        meshes: []
+    }
+
+    let s1 = makeSphere(scene, 1, 44, 22, sphereColor)
+    s1.material.wireframe = true
+    state.meshes.push(s1)
+
+    let s2 = makeSphere(scene, 0.05, 24, 12, "#FFFFFF")
+    state.meshes.push(s2)
+
+    let v = [1, 1, 0]
+    Util.normalizeVector(v)
+
+    let s3 = makeSphere(scene, 0.05, 24, 12, "#FFFFFF")
+    s3.position.set(v[0], v[1], v[2])
+    state.meshes.push(s3)
+
+    let points = [
+        [0, 0, 0],
+        v
+    ]
+    let edges = [
+        [0, 1]
+    ]
+
+    let cylinderMesh = Util.initProjCylinders(scene, 1, "#FFFFFF")
+    state.meshes.push(cylinderMesh)
+
+    Util.drawCylinders(points, cylinderMesh, edges, 0.015)
+
+    return state
+}
+
+export function initSphereSlicesLined(scene) {
+    let state = {
+        meshes: []
+    }
+
+    let hypColor = "#00aa19"
+
+    let r = 1
+    let s1 = makeSphere(scene, r, 32, 16, hypColor)
+    s1.material.transparent = true
+    //s1.material.opacity = 0.9
+    state.meshes.push(s1)
+
+    let offset = 0
+    let distance = 0
+    for (let i = 0; i < 3; i++) {
+        let rNew = r-0.25
+        distance = distance+r+rNew+offset
+        for (let j = 0; j < 2; j++) {
+            distance = -distance
+            let s = makeSphere(scene, rNew, 32, 16, hypColor)
+            s.material.transparent = true
+            //s.material.opacity = 0.9
+            s.position.set(distance, 0, 0)
+            state.meshes.push(s)
+        }
+        r = rNew
+    }
+
+    return state
+}
+
+export function updateSphereSliceAnim(state, count) {
+    for (let i = 0; i < state.circleMeshes.length; i++) {
+        state.circleMeshes[i].visible = i <= count ? true : false
+        state.planeMeshes[i].visible = i <= count ? true : false
+        state.lineMeshes[i*2].visible = i <= count ? true : false
+        state.lineMeshes[i*2+1].visible = i <= count ? true : false
+    }
 }
 
 export function updateProjCube(state, angleXZ, angleYZ, cubeZ, highlightFace) {
@@ -394,7 +511,6 @@ export function updateProjCube(state, angleXZ, angleYZ, cubeZ, highlightFace) {
     Util.drawCylinders(points, state.cylinderMeshes, Cube.edgeI, 0.06)
 
 
-
     let facePoints = []
     let faceIndex = 3
     for (let j = 0; j < Cube.faceI[faceIndex].length; j++) {
@@ -415,8 +531,20 @@ export function updateProjCube(state, angleXZ, angleYZ, cubeZ, highlightFace) {
     normalAtt.needsUpdate = true
 }
 
-export function updateProjSpherePoints(state, angleXZ, angleYZ, sphereZ) {
+export function updateProjSpherePoints(state, scene, angleXZ, angleYZ, sphereZ) {
     let m = Util.getTransformMatXYZ4D(1, [0, 0, sphereZ], angleYZ, angleXZ, 0)
+    let points = Util.applyMatXYZ4D(state.spherePoints, m)
+    Util.drawSpherePoints(points, state.sphereMeshes)
+
+    // for red highlight gif
+    // if (state.loine != null) {
+    //     Util.removeThreeJsObjects(scene, state.loine)
+    // }
+    // state.loine = createLine(scene, [0, 0, sphereZ, state.sphereMeshes[2].position.x, state.sphereMeshes[2].position.y, state.sphereMeshes[2].position.z], '#ff1e1e', 550, 332, 4)
+}
+
+export function updateSphereRing(state, angleXZ) {
+    let m = Util.getTransformMatXYZ4D(1, [0, 0, state.z], 0, angleXZ, 0)
     let points = Util.applyMatXYZ4D(state.spherePoints, m)
     Util.drawSpherePoints(points, state.sphereMeshes)
 }

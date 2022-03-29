@@ -79,6 +79,9 @@ let camera
 let threeScene
 let renderer
 let controls
+let mainLight
+let ambientLight
+let bottomLight
 
 let bottomCam
 let bottomRend
@@ -266,7 +269,7 @@ export default {
             threeScene = new THREE.Scene()
             renderer = this.initRenderer(this.canvas, width, height)
 
-            camera = new THREE.PerspectiveCamera(80, width/height, 0.1, 100)
+            camera = new THREE.PerspectiveCamera(80, width/height, 0.1, 40)
             camera.layers.enable(1)
             camera.position.set(0, 0, 6)
             threeScene.add(camera)
@@ -276,12 +279,12 @@ export default {
             controls.minDistance = 0.15
             this.resetControls()
 
-            const mainLight = new THREE.DirectionalLight(0xffffff, 0.5)
+            mainLight = new THREE.DirectionalLight(0xffffff, 0.5)
             camera.add(mainLight)
             mainLight.position.set(-1.5, 2.5, 0)
             mainLight.layers.set(1)
 
-            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
+            ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
             threeScene.add(ambientLight)
         },
         initBottomCamera() {
@@ -290,16 +293,17 @@ export default {
 
             bottomRend = this.initRenderer(this.$refs.canvasBottom, width, height)
 
-            bottomCam = new THREE.PerspectiveCamera(80, width/height, 0.1, 100)
+            bottomCam = new THREE.PerspectiveCamera(80, width/height, 0.1, 20)
             bottomCam.layers.enable(2)
             bottomCam.position.set(-11, 0, 3)
             bottomCam.lookAt(0, 0, 3)
             threeScene.add(bottomCam)
 
-            const light = new THREE.DirectionalLight(0xffffff, 0.5)
-            bottomCam.add(light)
-            light.position.set(-1.5, 2.5, 0)
-            light.layers.set(2)
+            bottomLight = new THREE.DirectionalLight(0xffffff, 0.5)
+            bottomCam.add(bottomLight)
+            bottomLight.position.set(-1.5, 2.5, 0)
+            //bottomLight.position.set(-0.75, 1.25, 0)
+            bottomLight.layers.set(2)
         },
         initOrthoCamera() {
             let width = this.interactiveSize.w
@@ -320,6 +324,7 @@ export default {
             switch (this.scene) {
                 case (Constants.scenes.threeandcanvas.sphere):
                     Objects3D.updateSphere(this.state, this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
+                    //Objects3D.updateSphereRing(this.sillyState, parseFloat(this.angleXZ))
                     break
                 case (Constants.scenes.threeandcanvas.solidCube):
                     Objects3D.updateSolidCube(this.state, this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
@@ -343,7 +348,7 @@ export default {
                     //Objects3D.transformMesh(this.state.mainMesh, parseFloat(this.angleXZ), parseFloat(this.angleYZ), projObjZ)
                     break
                 case (Constants.scenes.threeandcanvas.projSpherePoints):
-                    Objects3D.updateProjSpherePoints(this.state, parseFloat(this.angleXZ), parseFloat(this.angleYZ), projObjZ)
+                    Objects3D.updateProjSpherePoints(this.state, threeScene, parseFloat(this.angleXZ), parseFloat(this.angleYZ), projObjZ)
                     break
             }
         },
@@ -352,7 +357,8 @@ export default {
             if (delta >= interval) {
                 //console.log(camera.position.x + ", " + camera.position.y + ", " + camera.position.z)
                 if (this.objectNeedsUpdate) {
-                    //this.translateZ = this.translateZ < -1.2 ? 1.2 : this.translateZ - 0.02
+                    //this.translateZ = this.translateZ > 1.2 ? -1.2 : this.translateZ + 0.02
+                    //this.angleDegXZ+=2
                     this.updateDisplay()
                     this.objectNeedsUpdate = false
                 }
@@ -391,9 +397,15 @@ export default {
             this.state = undefined
         },
         initScene(sceneID) {
+            mainLight.intensity = 0.5
+            ambientLight.intensity = 0.5
+            bottomLight.intensity = 0.5
             switch(sceneID) {
                 case (Constants.scenes.threeandcanvas.sphere):
+                    mainLight.intensity = 0.8
+                    ambientLight.intensity = 0.25
                     this.state = Objects3D.initSphere(threeScene)
+                    //this.sillyState = Objects3D.initSphereRing(threeScene)
                     Util.toggleBoolsInObj(this.slidersEnabled, 'Z', 'RESET')
                     break
                 case (Constants.scenes.threeandcanvas.solidCube):
@@ -411,6 +423,8 @@ export default {
                     Util.toggleBoolsInObj(this.slidersEnabled, 'XZ', 'YZ', 'RESET')
                     break
                 case (Constants.scenes.threeandcanvas.cone):
+                    mainLight.intensity = 0.7
+                    ambientLight.intensity = 0.3
                     this.state = Objects3D.initCone(threeScene, this.showObject)
                     Util.toggleBoolsInObj(this.slidersEnabled, 'YZ', 'Z', 'RESET')
                     break
@@ -441,6 +455,9 @@ export default {
                     Util.toggleBoolsInObj(this.slidersEnabled, 'XZ', 'YZ', 'RESET')
                     break
                 case (Constants.scenes.threeandcanvas.projSphere):
+                    mainLight.intensity = 0.8
+                    ambientLight.intensity = 0.25
+                    bottomLight.intensity = 0.8
                     bottomCam.position.set(0, 0, -projObjZ)
                     bottomCam.lookAt(0, 0, 0)
                     this.state = Objects3D.initProjSphere(threeScene, -projObjZ, projObjZ)

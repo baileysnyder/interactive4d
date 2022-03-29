@@ -54,7 +54,8 @@ let hypersphereMesh = undefined
 
 export function initProjHypersphere(scene) {
     return {
-        sphereMeshes: Util.initProjSpheres(scene, Constants.projectionSphereRadius, hyperspherePoints.length, 20, 10, maxPointColor)
+        sphereMeshes: Util.initProjSpheres(scene, Constants.projectionSphereRadius, hyperspherePoints.length, 20, 10, maxPointColor),
+        //cylinderMeshes: Util.initProjCylinders(scene, 1, '#fc2e2e')
     }
 }
 
@@ -84,10 +85,10 @@ export function updateSliceHypersphere(state, translateW) {
 export function updateProjHypersphere(state, angleXW, angleYW, angleZW) {
     let rotatedPoints = Util.rotate4D(hyperspherePoints, angleXW, angleYW, angleZW)
     let finalPoints = Util.project4DTo3D(rotatedPoints, projectionDistance4D, scaleFactor)
-    drawSpherePoints(finalPoints, state.sphereMeshes)
+    drawSpherePoints(state, finalPoints, state.sphereMeshes)
 }
 
-function drawSpherePoints(points, sphereMeshes) {
+function drawSpherePoints(state, points, sphereMeshes) {
     for (let i = 0; i < sphereMeshes.length; i++){
         if (i < points.length) {
             let t = Util.getVectorMagnitude(points[i]) / 2
@@ -95,7 +96,18 @@ function drawSpherePoints(points, sphereMeshes) {
             sphereMeshes[i].visible = true
             sphereMeshes[i].position.set(points[i][0], points[i][1], points[i][2])
             sphereMeshes[i].material.color = new THREE.Color(`rgb(${Math.floor(color.r)}, ${Math.floor(color.g)}, ${Math.floor(color.b)})`)
-            sphereMeshes[i].material.needsUpdate = true
+
+            // highlight for pic
+            // if (i === 40) {
+            //     sphereMeshes[0].position.set(0, 0, 0)
+            //     sphereMeshes[0].material.color = new THREE.Color("rgb(252, 30, 30)")
+            //     sphereMeshes[i].material.color = new THREE.Color("rgb(252, 30, 30)")
+            //     let cylinderPoints = [
+            //         [0, 0, 0],
+            //         points[i]
+            //     ]
+            //     Util.drawCylinders(cylinderPoints, state.cylinderMeshes, [[0, 1]], 0.03)
+            // }
         } else {
             sphereMeshes[i].visible = false
         }

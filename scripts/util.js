@@ -33,6 +33,11 @@ export class Dimensions {
     }
 }
 
+export function round(number, decimalPlaces) {
+  const factorOfTen = Math.pow(10, decimalPlaces)
+  return Math.round(number * factorOfTen) / factorOfTen
+}
+
 export function createColor(r, g, b) {
     return {r, g, b}
 }
@@ -370,6 +375,12 @@ export function calcAngleBetweenVectors(u, v, posAngleVector) {
     let vMag = getVectorMagnitude(v)
 
     let cosTheta = dot / (uMag * vMag)
+    // floating point error was causing cosTheta to be slightly outside the -1 to 1 bounds
+    if (cosTheta > 1) {
+        cosTheta = 1
+    } else if (cosTheta < -1) {
+        cosTheta = -1
+    }
     let angle = Math.acos(cosTheta)
 
     if (dotProduct(v, posAngleVector) < 0) {

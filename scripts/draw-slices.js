@@ -35,7 +35,7 @@ export function drawSolidCubeSlice(canvas, points, color, planeWidth) {
     ctx.fill()
 }
 
-export function drawEdgeCubeSlice(canvas, points, color, planeWidth) {
+export function drawEdgeCubeSlice(canvas, points, defaultColor, highlightColor, planeWidth) {
     if (points.length < 2) {
         return
     }
@@ -61,9 +61,9 @@ export function drawEdgeCubeSlice(canvas, points, color, planeWidth) {
         ctx.lineTo(endX, endY)
 
         if (points[i].edgeIndex < 4 && points[nextIndex].edgeIndex < 4) {
-            ctx.strokeStyle=color           
+            ctx.strokeStyle=highlightColor           
         } else {
-            ctx.strokeStyle="gray"
+            ctx.strokeStyle=defaultColor
         }
         ctx.stroke()
     }

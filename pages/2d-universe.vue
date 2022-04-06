@@ -54,17 +54,3 @@ export default {
   }
 }
 </script>
-
-<style scoped>
-.img-300 {
-    margin: auto;
-    display: block;
-    margin-top: 12px;
-    margin-bottom: 26px;
-    width: 70%;
-    max-width: 300px;
-    border: solid 2px rgb(100, 100, 100);
-    border-radius: 8px;
-    /* box-shadow: 4px 4px 5px rgb(0 0 0 / 50%); */
-}
-</style>

@@ -41,6 +41,13 @@ const cubeEdgeIndices = [
     [6, 3],
 ]
 
+const planeEdgeIndices = [
+    cubeEdgeIndices[0],
+    cubeEdgeIndices[1],
+    cubeEdgeIndices[2],
+    cubeEdgeIndices[3],
+]
+
 const projSphereCount = 48
 
 function initPlane(scene, width) {
@@ -147,6 +154,22 @@ export function initEdgeCube(scene) {
 
     scene.add(mesh)
     state.mainMesh = mesh
+    return state
+}
+
+export function initSingleSquare(scene) {
+    let state = genericState()
+    state.plane = initPlane(scene, planeWidth)
+
+    const geometry = new THREE.PlaneGeometry(cubeLength, cubeLength)
+    const material = new THREE.MeshStandardMaterial({color: 0xFFEE56, side: THREE.DoubleSide})
+
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.renderOrder = 1
+
+    scene.add(mesh)
+    state.mainMesh = mesh
+
     return state
 }
 
@@ -279,24 +302,39 @@ export function updateSolidCube(state, canvas, angleXZ, angleYZ, translateZ) {
     Draw.drawSolidCubeSlice(canvas, points2D, cubeColor, planeWidth)
 }
 
-function getCubeSlice(cubeMesh) {
-    let points3D = []
-    for (let i = 0; i < 8; i++) {
-        let v = new THREE.Vector3()
-        v.fromBufferAttribute(cubeMesh.geometry.attributes.position, i)
-        v.applyMatrix4(cubeMesh.matrix)
-        points3D.push(v)
-    }
-
-    return get2DIntersectionPoints(points3D)
+function getPlaneSlice(planeMesh) {
+    let points3D = meshToVector3s(planeMesh, 4)
+    return get2DIntersectionPoints(points3D, planeEdgeIndices)
 }
 
-function get2DIntersectionPoints(points3D) {
+function getCubeSlice(cubeMesh) {
+    let points3D = meshToVector3s(cubeMesh, 8)
+    return get2DIntersectionPoints(points3D, cubeEdgeIndices)
+}
+
+function meshToVector3s(mesh, pointCount) {
+    let points3D = []
+    const decimalPlaces = 15
+    for (let i = 0; i < pointCount; i++) {
+        let v = new THREE.Vector3()
+        v.fromBufferAttribute(mesh.geometry.attributes.position, i)
+        v.applyMatrix4(mesh.matrix)
+
+        v.x = Util.round(v.x, decimalPlaces)
+        v.y = Util.round(v.y, decimalPlaces)
+        v.z = Util.round(v.z, decimalPlaces)
+
+        points3D.push(v)
+    }
+    return points3D
+}
+
+function get2DIntersectionPoints(points3D, edgeIndices) {
     let zClip = 0.0
     let intersectionPoints = []
-    for (let i = 0; i < cubeEdgeIndices.length; i++) {
-        let p1 = points3D[cubeEdgeIndices[i][0]]
-        let p2 = points3D[cubeEdgeIndices[i][1]]
+    for (let i = 0; i < edgeIndices.length; i++) {
+        let p1 = points3D[edgeIndices[i][0]]
+        let p2 = points3D[edgeIndices[i][1]]
         
         if (p1.z >= zClip && p2.z < zClip) {
             intersectionPoints.push(new Util.IntersectionPoint(i, get2DIntersectionPoint(p1, p2, zClip)))
@@ -326,7 +364,36 @@ export function updateEdgeCube(state, canvas, angleXZ, angleYZ, translateZ) {
     }
 
     Util.sortFacePoints2D(points2D.map(p => p.point), points2D)
-    Draw.drawEdgeCubeSlice(canvas, points2D, cubeColor, planeWidth)
+    Draw.drawEdgeCubeSlice(canvas, points2D, 'gray', cubeColor, planeWidth)
+}
+
+export function updateSingleSquare(state, canvas, angleXZ, angleYZ, translateZ) {
+    if (Math.abs(Math.sin(angleXZ)) < 0.00001 && Math.abs(Math.sin(angleYZ)) < 0.00001 && translateZ === 0) {
+        transformMesh(state.mainMesh, angleXZ, angleYZ, translateZ)
+        state.mainMesh.updateMatrix()
+
+        Draw.drawSliceCanvas(canvas, planeColor)
+        let points2D = [
+            new Util.IntersectionPoint(0, [cubeLength/2, cubeLength/2]),
+            new Util.IntersectionPoint(1, [-cubeLength/2, cubeLength/2]),
+            new Util.IntersectionPoint(2, [-cubeLength/2, -cubeLength/2]),
+            new Util.IntersectionPoint(3, [cubeLength/2, -cubeLength/2]),
+        ]
+        Draw.drawSolidCubeSlice(canvas, points2D, cubeColor, planeWidth)
+        return
+    }
+
+    transformMesh(state.mainMesh, angleXZ, angleYZ, translateZ)
+    state.mainMesh.updateMatrix()
+
+    Draw.drawSliceCanvas(canvas, planeColor)
+    let points2D = getPlaneSlice(state.mainMesh)
+    if (points2D.length < 2) {
+        return
+    }
+
+    Util.sortFacePoints2D(points2D.map(p => p.point), points2D)
+    Draw.drawEdgeCubeSlice(canvas, points2D, 'transparent', cubeColor, planeWidth)
 }
 
 export function updateCone(state, canvas, angleXZ, angleYZ, translateZ) {
@@ -484,23 +551,19 @@ export function updateProjCube(state, angleXZ, angleYZ, cubeZ, highlightFace) {
     if (highlightFace) {
         state.faceMesh.visible = true
         for (let i = 0; i < state.cylinderMeshes.length; i++) {
-            //state.cylinderMeshes[i].material.transparent = true
             state.cylinderMeshes[i].material.opacity = 0.2       
         }
 
         for (let i = 0; i < state.sphereMeshes.length; i++) {
-            //state.sphereMeshes[i].material.transparent = true
             state.sphereMeshes[i].material.opacity = 0.4      
         }
     } else {
         state.faceMesh.visible = false
         for (let i = 0; i < state.cylinderMeshes.length; i++) {
-            //state.cylinderMeshes[i].material.transparent = true
             state.cylinderMeshes[i].material.opacity = 1      
         }
 
         for (let i = 0; i < state.sphereMeshes.length; i++) {
-            //state.sphereMeshes[i].material.transparent = true
             state.sphereMeshes[i].material.opacity = 1    
         }
     }
@@ -529,6 +592,19 @@ export function updateProjCube(state, angleXZ, angleYZ, cubeZ, highlightFace) {
 
     positionAtt.needsUpdate = true
     normalAtt.needsUpdate = true
+}
+
+export function colorProjCubeSquare(state, fIndex, color) {
+    const projCylUncolored = new THREE.Color('#191919')
+    for (let i = 0; i < state.cylinderMeshes.length; i++) {
+        state.cylinderMeshes[i].material.color = projCylUncolored       
+    }
+
+    const c3 = new THREE.Color(color)
+    let edges = Cube.faceByEdgeI[fIndex]
+    for (let i = 0; i < edges.length; i++) {
+        state.cylinderMeshes[edges[i]].material.color = c3        
+    }
 }
 
 export function updateProjSpherePoints(state, scene, angleXZ, angleYZ, sphereZ) {

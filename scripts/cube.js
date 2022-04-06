@@ -24,6 +24,15 @@ export const faceI = [
     [3, 5, 7, 6]
 ]
 
+export const faceByEdgeI = [
+    [0, 11, 4, 8],
+    [11, 5, 10, 1],
+    [2, 10, 6, 9],
+    [3, 9, 7, 8],
+    [0, 1, 2, 3],
+    [7, 6, 5, 4]
+]
+
 export function calcCube(axes, scale, translate) {
     function addArr(...arrs) {
         let ret = []

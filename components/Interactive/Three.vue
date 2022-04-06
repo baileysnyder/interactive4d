@@ -4,18 +4,41 @@
         <canvas ref="canvas"></canvas>
         <div class="three-overlay">
             <div class="top-right sticky-box">
-                <button v-show="scene === rapSceneID" class="top-right-button" :class="{'active': !isPlaneActive, 'inactive': isPlaneActive}" @click="isPlaneActive=false">Axis</button>
-                <button v-show="scene === rapSceneID" class="top-right-button" :class="{'active': isPlaneActive, 'inactive': !isPlaneActive}" @click="isPlaneActive=true">Plane</button>
+                <div class="slider-row">
+                    <button v-show="scene === rapSceneID" class="top-right-button" :class="{'active': !isPlaneActive, 'inactive': isPlaneActive}" @click="isPlaneActive=false">Axis</button>
+                    <button v-show="scene === rapSceneID" class="top-right-button" :class="{'active': isPlaneActive, 'inactive': !isPlaneActive}" @click="isPlaneActive=true">Plane</button>
+                    <input v-show="enableColorCubes" type="checkbox" id="color-cubes" v-model="colorCubes">
+                    <label v-show="enableColorCubes" for="color-cubes">Color Cubes</label>
+                </div>               
+                <div class="slider-row">
+                    <button v-show="enableOppositeCubeColors" class="top-right-button" :class="{'active': oppCubeIndex === 0, 'inactive': oppCubeIndex !== 0}" @click="oppCubeIndex=0">
+                        <div class="color-patch cube0"></div>
+                        <div class="color-patch cube7"></div>
+                    </button>
+                    <button v-show="enableOppositeCubeColors" class="top-right-button" :class="{'active': !oppCubeIndex === 1, 'inactive': oppCubeIndex !== 1}" @click="oppCubeIndex=1">
+                        <div class="color-patch cube1"></div>
+                        <div class="color-patch cube4"></div>
+                    </button>
+                    <button v-show="enableOppositeCubeColors" class="top-right-button" :class="{'active': !oppCubeIndex === 2, 'inactive': oppCubeIndex !== 2}" @click="oppCubeIndex=2">
+                        <div class="color-patch cube2"></div>
+                        <div class="color-patch cube5"></div>
+                    </button>
+                    <button v-show="enableOppositeCubeColors" class="top-right-button" :class="{'active': !oppCubeIndex === 3, 'inactive': oppCubeIndex !== 3}" @click="oppCubeIndex=3">
+                        <div class="color-patch cube3"></div>
+                        <div class="color-patch cube6"></div>
+                    </button>
+                </div>
+                
             </div>
             <div class="bottom-right sticky-box">
                 <div class="slider-row" v-show="slidersEnabled.RESET">
                     <button class="slider-button" @click="resetSliderValues"><svg class="reset-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Pro 6.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path fill="#e8e8e8" d="M480 256c0 123.4-100.5 223.9-223.9 223.9c-48.84 0-95.17-15.58-134.2-44.86c-14.12-10.59-16.97-30.66-6.375-44.81c10.59-14.12 30.62-16.94 44.81-6.375c27.84 20.91 61 31.94 95.88 31.94C344.3 415.8 416 344.1 416 256s-71.69-159.8-159.8-159.8c-37.46 0-73.09 13.49-101.3 36.64l45.12 45.14c17.01 17.02 4.955 46.1-19.1 46.1H35.17C24.58 224.1 16 215.5 16 204.9V59.04c0-24.04 29.07-36.08 46.07-19.07l47.6 47.63C149.9 52.71 201.5 32.11 256.1 32.11C379.5 32.11 480 132.6 480 256z"/></svg></button>
                     <span class="unit-text invisible">°</span>
                 </div>
-                <div class="slider-row" v-show="slidersEnabled.XW">
-                    <label for="angleXW">XW</label>
-                    <input id="angleXW" v-model="angleDegXW" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
-                    <input v-model="angleDegXW" class="slider-text" type="text" size="4">
+                <div class="slider-row" v-show="slidersEnabled.ZW">
+                    <label for="angleZW">ZW</label>
+                    <input id="angleZW" v-model="angleDegZW" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
+                    <input v-model="angleDegZW" class="slider-text" type="text" size="4">
                     <span class="unit-text">°</span>
                 </div>
                 <div class="slider-row" v-show="slidersEnabled.YW">
@@ -24,10 +47,10 @@
                     <input v-model="angleDegYW" class="slider-text" type="text" size="4">
                     <span class="unit-text">°</span>
                 </div>
-                <div class="slider-row" v-show="slidersEnabled.ZW">
-                    <label for="angleZW">ZW</label>
-                    <input id="angleZW" v-model="angleDegZW" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
-                    <input v-model="angleDegZW" class="slider-text" type="text" size="4">
+                <div class="slider-row" v-show="slidersEnabled.XW">
+                    <label for="angleXW">XW</label>
+                    <input id="angleXW" v-model="angleDegXW" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
+                    <input v-model="angleDegXW" class="slider-text" type="text" size="4">
                     <span class="unit-text">°</span>
                 </div>
                 <div class="slider-row" v-show="slidersEnabled.IN">
@@ -74,6 +97,7 @@ class SliderState {
         this.angleDegIN = vueContext.angleDegIN
         this.angleRAP = vueContext.angleRAP
         this.translateW = vueContext.translateW
+        this.colorCubes = vueContext.colorCubes
     }
 
     extractValues(vueContext){
@@ -83,6 +107,7 @@ class SliderState {
         vueContext.angleDegIN = this.angleDegIN
         vueContext.angleRAP = this.angleRAP
         vueContext.translateW = this.translateW
+        vueContext.colorCubes = this.colorCubes
     }
 }
 
@@ -98,15 +123,18 @@ let delta = 0
 let interval = 1 / 60
 
 let sphereSliceCount = 0
-let maxSphereSliceCount = 0
 let frameCount = 0
-const maxFrameCount = 15
+
+const outToInCubes = [7, 6, 0]
+let cubeIndex = 0
 
 
 export default {
     data() {
         return {
             isPlaneActive: false,
+            colorCubes: false,
+            oppCubeIndex: 0,
 
             angleXW: 0.0,
             angleYW: 0.0,
@@ -144,6 +172,12 @@ export default {
         },
         interactiveSize() {
             return this.$store.state.interactiveSize
+        },
+        enableColorCubes() {
+            return this.scene === Constants.scenes.three.sliceHypercube || this.scene === Constants.scenes.three.projHypercube
+        },
+        enableOppositeCubeColors() {
+            return this.scene === Constants.scenes.three.projHypercube && this.colorCubes
         }
     },
     watch: {
@@ -186,6 +220,12 @@ export default {
             }
         },
         isPlaneActive: function() {
+            this.objectNeedsUpdate = true
+        },
+        colorCubes: function(newVal) {
+            this.objectNeedsUpdate = true        
+        },
+        oppCubeIndex: function(newVal) {
             this.objectNeedsUpdate = true
         },
         angleDegXW: function() {
@@ -252,24 +292,27 @@ export default {
         },
         animate() {
             delta += clock.getDelta();
+            
             if (delta > interval) {
-                if (this.scene === Constants.scenes.three.sphereSliceAnim) {
-                    frameCount++
-                    if (frameCount >= maxFrameCount) {                        
-                        Objects3D.updateSphereSliceAnim(this.state, sphereSliceCount)
-                        sphereSliceCount = (sphereSliceCount+1)%maxSphereSliceCount
-                        frameCount = 0
-                    }
+                frameCount++
+                if (this.scene === Constants.scenes.three.sphereSliceAnim && frameCount%15 === 0) {                   
+                    Objects3D.updateSphereSliceAnim(this.state, sphereSliceCount)
+                    sphereSliceCount = (sphereSliceCount+1)%state.circleMeshes.length
                 }
-                //this.angleDegXW+=1
+                // else if (this.scene === Constants.scenes.three.projHypercube && frameCount%80 === 0) {
+                //     Cube4D.colorSingleCubeHypProj(this.state, cubeIndex, Constants.cubeColors[cubeIndex])
+                //     cubeIndex = (cubeIndex+1)%8
+                // }
+                
                 //console.log(camera.position.x + ", " + camera.position.y + ", " + camera.position.z)
                 if (this.objectNeedsUpdate) {
+                    //this.translateW = this.translateW > 2 ? -2 : this.translateW + 0.024
                     switch (this.scene) {
                         case (Constants.scenes.three.sliceHypercube):
-                            Cube4D.updateHypercubeSlice(this.state, parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
+                            Cube4D.updateHypercubeSlice(this.state, parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW), this.colorCubes)
                             break
                         case (Constants.scenes.three.projHypercube):
-                            Cube4D.updateHypercubeProjection(this.state, parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
+                            Cube4D.updateHypercubeProjection(this.state, parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), this.colorCubes, this.oppCubeIndex)
                             break
                         case (Constants.scenes.three.sliceHypersphere):
                             Sphere4D.updateSliceHypersphere(this.state, parseFloat(this.translateW))
@@ -291,7 +334,7 @@ export default {
                 }
 
                 renderer.render(threeScene, camera)
-                delta = delta % interval;
+                delta = delta % interval
             }
             if (this.isComponentActive) {
                 requestAnimationFrame(this.animate)
@@ -311,12 +354,12 @@ export default {
             ambientLight.intensity = 0.5
             switch(sceneID) {
                 case (Constants.scenes.three.sliceHypercube):
-                    this.angleMax = 90
+                    this.angleMax = 180
                     Util.toggleBoolsInObj(this.slidersEnabled, 'XW', 'YW', 'ZW', 'W', 'RESET')
                     this.state = Cube4D.initSliceHypercube(threeScene, this.interactiveSize.w, this.interactiveSize.h) 
                     break
                 case (Constants.scenes.three.projHypercube):
-                    this.angleMax = 90
+                    this.angleMax = 180
                     Util.toggleBoolsInObj(this.slidersEnabled, 'XW', 'YW', 'ZW', 'RESET')
                     this.state = Cube4D.initProjHypercube(threeScene)
                     break
@@ -504,5 +547,12 @@ export default {
 
 .slider-button:hover {
   background: rgb(75, 75, 75);
+}
+
+.color-patch {
+    width: 10px;
+    height: 10px;
+    display: inline-block;
+    border: solid 1px;
 }
 </style>

@@ -29,7 +29,8 @@ export const scenes = {
         projCube: 205,
         projEdgeCube: 206,
         projSphere: 207,
-        projSpherePoints: 208
+        projSpherePoints: 208,
+        squareSlice: 209,
     }
 }
 
@@ -41,7 +42,7 @@ export const navPages = [
     {title: '3D SLICES', path: '/3d-slices'},
     {title: '3D PROJECTION', path: '/3d-projection'},
     {title: '4D SPHERES', path: '/4d-spheres'},
-    {title: '4D CONES AND MORE', path: '/4d-cones'},
+    {title: '4D CUBES', path: '/4d-cubes'},
 ]
 
 export const coneColor = '#F31414'
@@ -53,8 +54,19 @@ export const axisColors = [
     '#203bc1',
     '#e8da1b'
 ]
+export const cubeColors = [
+    '#FF7E47',
+    '#31a25e',
+    '#90210f',
+    '#783f6b',
+    '#efa7a7',
+    '#abc8c0',
+    '#1f5673',
+    '#57540f',
+]
+export const hypercubeColor = '#FFEE56'
 
-export const navigationWidth = 250
+export const navigationWidth = 234
 export const headerFooterHeight = 150
 
 export const projectionSphereRadius = 0.09

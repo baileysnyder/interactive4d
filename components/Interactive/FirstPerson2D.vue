@@ -38,6 +38,7 @@
 <script>
 import * as Util from '../../scripts/util';
 
+let delta = 0
 let previousTimestamp = 0;
 let interval = 1000/60;
 const rotPerFullSwipe = 3*Math.PI/4
@@ -90,7 +91,7 @@ export default {
     },
     methods: {
         animate(timestamp) {
-            let delta = timestamp - previousTimestamp
+            delta += timestamp - previousTimestamp
             if (delta >= interval) {
                 if (this.angleNeedsUpdate || pressedUp || pressedLeft || pressedDown || pressedRight) {
                     updatePlayerPosition()
@@ -98,9 +99,10 @@ export default {
                     drawOverheadCanvas(this.overheadCanvas)
                     this.angleNeedsUpdate = false
                 }
-                previousTimestamp = timestamp
+                delta = delta % interval
             }
             if (this.isComponentActive) {
+                previousTimestamp = timestamp
                 requestAnimationFrame(this.animate)
             }
         },
@@ -258,7 +260,7 @@ class Line {
 let playerAngle = 5.4
 let playerPosition = [32.3, 86.7]
 
-const moveSpeed = 1
+const moveSpeed = 0.6
 const rotateSpeed = 0.05
 const gameWidth = 200
 const gameHeight = 100

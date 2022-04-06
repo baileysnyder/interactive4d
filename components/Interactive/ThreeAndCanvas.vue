@@ -68,6 +68,7 @@ class SliderState {
     }
 }
 
+let delta = 0
 let previousTimestamp = 0
 let interval = 1000/60
 const canvasPercentH = 0.6
@@ -90,6 +91,11 @@ let bottomRend
 // const orthoS = 0.006
 
 let previousCameraPosition = new THREE.Vector3(0, 0, 0)
+
+const outToInCubes = [4, 2, 5]
+let cubeIndex = 0
+
+let frameCount = 0
 
 export default {
     data() {
@@ -350,15 +356,24 @@ export default {
                 case (Constants.scenes.threeandcanvas.projSpherePoints):
                     Objects3D.updateProjSpherePoints(this.state, threeScene, parseFloat(this.angleXZ), parseFloat(this.angleYZ), projObjZ)
                     break
+                case (Constants.scenes.threeandcanvas.squareSlice):
+                    Objects3D.updateSingleSquare(this.state, this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
+                    break
             }
         },
         animate(timestamp) {
-            let delta = timestamp - previousTimestamp
+            delta += timestamp - previousTimestamp            
             if (delta >= interval) {
+                //frameCount++
+                // if (this.scene === Constants.scenes.threeandcanvas.projEdgeCube && frameCount%80 === 0) {
+                //     Objects3D.colorProjCubeSquare(this.state, outToInCubes[cubeIndex], Constants.hypercubeColor)
+                //     cubeIndex = (cubeIndex+1)%3
+                // }
+                
                 //console.log(camera.position.x + ", " + camera.position.y + ", " + camera.position.z)
+                
                 if (this.objectNeedsUpdate) {
-                    //this.translateZ = this.translateZ > 1.2 ? -1.2 : this.translateZ + 0.02
-                    //this.angleDegXZ+=2
+                    //this.translateZ = this.translateZ > 1.5 ? -1.5 : this.translateZ + 0.018
                     this.updateDisplay()
                     this.objectNeedsUpdate = false
                 }
@@ -375,10 +390,10 @@ export default {
                 if (this.orthoCamActive) {
                     bottomRend.render(threeScene, orthoCam)
                 }
-
-                previousTimestamp = timestamp
+                delta = delta % interval
             }
             if (this.isComponentActive) {
+                previousTimestamp = timestamp
                 requestAnimationFrame(this.animate)
             }
         },
@@ -451,8 +466,10 @@ export default {
                 case (Constants.scenes.threeandcanvas.projEdgeCube):
                     bottomCam.position.set(0, 0, -projObjZ)
                     bottomCam.lookAt(0, 0, 0)
+                    bottomCam.updateProjectionMatrix()
                     this.state = Objects3D.initProjCube(threeScene, -projObjZ)
                     Util.toggleBoolsInObj(this.slidersEnabled, 'XZ', 'YZ', 'RESET')
+                    //Objects3D.colorProjCubeSquare(this.state, 1, Constants.hypercubeColor)
                     break
                 case (Constants.scenes.threeandcanvas.projSphere):
                     mainLight.intensity = 0.8
@@ -469,7 +486,10 @@ export default {
                     this.state = Objects3D.initProjSpherePoints(threeScene, -projObjZ)
                     Util.toggleBoolsInObj(this.slidersEnabled, 'XZ', 'YZ', 'RESET')
                     break
-
+                case (Constants.scenes.threeandcanvas.squareSlice):
+                    this.state = Objects3D.initSingleSquare(threeScene)
+                    Util.toggleBoolsInObj(this.slidersEnabled, 'XZ', 'YZ', 'Z', 'RESET')
+                    break
             }
             this.objectNeedsUpdate = true
         },

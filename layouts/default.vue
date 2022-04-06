@@ -289,6 +289,18 @@ h1, h2, .navlink, button {
     /* box-shadow: 4px 4px 5px rgb(0 0 0 / 50%); */
 }
 
+.img-300 {
+    margin: auto;
+    display: block;
+    margin-top: 12px;
+    margin-bottom: 26px;
+    width: 70%;
+    max-width: 300px;
+    border: solid 2px rgb(100, 100, 100);
+    border-radius: 8px;
+    /* box-shadow: 4px 4px 5px rgb(0 0 0 / 50%); */
+}
+
 .gray-rounded-button {
     background: rgb(60, 60, 60);
     color: rgb(232, 232, 232);
@@ -321,5 +333,37 @@ h1, h2, .navlink, button {
 *::-webkit-scrollbar-thumb {
   background-color: gray;
   border-radius: 20px;
+}
+
+.cube0 {
+    background: #FF7E47;
+}
+
+.cube1 {
+    background: #31a25e;
+}
+
+.cube2 {
+    background: #90210f;
+}
+
+.cube3 {
+    background: #783f6b;
+}
+
+.cube4 {
+    background: #efa7a7;
+}
+
+.cube5 {
+    background: #abc8c0;
+}
+
+.cube6 {
+    background: #1f5673;
+}
+
+.cube7 {
+    background: #57540f;
 }
 </style>

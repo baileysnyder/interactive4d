@@ -15,7 +15,9 @@ export const scenes = {
         rotate4D: 12,
         sphereSliceAnim: 13,
         sphereOutlineRadius: 14,
-        sphereSlicesLined: 15
+        sphereSlicesLined: 15,
+        projCone3D: 16,
+        projCone3DAnimation: 17,
     },
     firstperson2d: {
         firstperson2d: 100
@@ -31,6 +33,7 @@ export const scenes = {
         projSphere: 207,
         projSpherePoints: 208,
         squareSlice: 209,
+        coneNoToggle: 210,
     }
 }
 
@@ -43,6 +46,8 @@ export const navPages = [
     {title: '3D PROJECTION', path: '/3d-projection'},
     {title: '4D SPHERES', path: '/4d-spheres'},
     {title: '4D CUBES', path: '/4d-cubes'},
+    {title: '4D CONES', path: '/4d-cones'},
+    {title: '4D EXPLORATION', path: '/4d-exploration'},
 ]
 
 export const coneColor = '#F31414'

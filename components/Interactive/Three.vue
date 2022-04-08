@@ -65,9 +65,9 @@
                     <input class="slider-text" v-model="translateW" type="text" size="4">
                     <span class="unit-text invisible">°</span>
                 </div>
-                <div class="slider-row" v-show="slidersEnabled.RAP">
-                    <input v-model="angleDegRAP" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
-                    <input class="slider-text" v-model="angleDegRAP" type="text" size="4">
+                <div class="slider-row" v-show="slidersEnabled.GEN">
+                    <input v-model="angleDegGEN" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
+                    <input class="slider-text" v-model="angleDegGEN" type="text" size="4">
                     <span class="unit-text">°</span>
                 </div>
             </div>
@@ -87,6 +87,7 @@ import * as Sphere4D from '../../scripts/sphere-4d'
 import * as Axes from '../../scripts/axes'
 import * as Rotations from '../../scripts/rotations' 
 import * as Objects3D from '../../scripts/objects-3d'
+import * as Cone from '../../scripts/cone'
 
 class SliderState {
     constructor(sceneID, vueContext) {
@@ -95,7 +96,7 @@ class SliderState {
         this.angleDegYW = vueContext.angleDegYW
         this.angleDegZW = vueContext.angleDegZW
         this.angleDegIN = vueContext.angleDegIN
-        this.angleRAP = vueContext.angleRAP
+        this.angleGEN = vueContext.angleGEN
         this.translateW = vueContext.translateW
         this.colorCubes = vueContext.colorCubes
     }
@@ -105,7 +106,7 @@ class SliderState {
         vueContext.angleDegYW = this.angleDegYW
         vueContext.angleDegZW = this.angleDegZW
         vueContext.angleDegIN = this.angleDegIN
-        vueContext.angleRAP = this.angleRAP
+        vueContext.angleGEN = this.angleGEN
         vueContext.translateW = this.translateW
         vueContext.colorCubes = this.colorCubes
     }
@@ -140,12 +141,12 @@ export default {
             angleYW: 0.0,
             angleZW: 0.0,
             angleIN: 0.0,
-            angleRAP: 0.0,
+            angleGEN: 0.0,
             angleDegXW: 0,
             angleDegYW: 0,
             angleDegZW: 0,
             angleDegIN: 0,
-            angleDegRAP: 0,
+            angleDegGEN: 0,
             translateW: 0.0,
             slidersEnabled: {
                 XW: false,
@@ -153,7 +154,7 @@ export default {
                 ZW: false,
                 IN: false,
                 W: false,
-                RAP: false,
+                GEN: false,
                 RESET: false
             },
             angleMax: 0,
@@ -244,8 +245,8 @@ export default {
             this.angleIN = Util.degreeToRadian(this.angleDegIN)
             this.objectNeedsUpdate = true
         },
-        angleDegRAP: function() {
-            this.angleRAP = Util.degreeToRadian(this.angleDegRAP)
+        angleDegGEN: function() {
+            this.angleGEN = Util.degreeToRadian(this.angleDegGEN)
             this.objectNeedsUpdate = true
         },
         translateW: function() {
@@ -294,14 +295,21 @@ export default {
             delta += clock.getDelta();
             
             if (delta > interval) {
-                frameCount++
-                if (this.scene === Constants.scenes.three.sphereSliceAnim && frameCount%15 === 0) {                   
-                    Objects3D.updateSphereSliceAnim(this.state, sphereSliceCount)
-                    sphereSliceCount = (sphereSliceCount+1)%state.circleMeshes.length
-                }
+                //frameCount++
+                // if (this.scene === Constants.scenes.three.sphereSliceAnim && frameCount%15 === 0) {                   
+                //     Objects3D.updateSphereSliceAnim(this.state, sphereSliceCount)
+                //     sphereSliceCount = (sphereSliceCount+1)%state.circleMeshes.length
+                // }
                 // else if (this.scene === Constants.scenes.three.projHypercube && frameCount%80 === 0) {
                 //     Cube4D.colorSingleCubeHypProj(this.state, cubeIndex, Constants.cubeColors[cubeIndex])
                 //     cubeIndex = (cubeIndex+1)%8
+                // }
+                // if (this.scene === Constants.scenes.three.projCone3D){
+                //     this.angleXZ+=0.017
+                //     Cone.updateConeProj3D(this.state, this.angleYZ, this.angleXZ, this.angleXY)
+                // }
+                // else if (this.scene === Constants.scenes.three.projCone3DAnimation) {
+                //     Cone.animateConeProj3D(this.state, frameCount)
                 // }
                 
                 //console.log(camera.position.x + ", " + camera.position.y + ", " + camera.position.z)
@@ -327,7 +335,7 @@ export default {
                             Cone4D.updateSliceCone(this.state, threeScene, parseFloat(this.angleIN), parseFloat(this.translateW))
                             break
                         case (Constants.scenes.three.rotateAxisPlane):
-                            Rotations.updateRotateAxisPlane(this.state, parseFloat(this.angleRAP), this.isPlaneActive)
+                            Rotations.updateRotateAxisPlane(this.state, parseFloat(this.angleGEN), this.isPlaneActive)
                             break
                     }
                     this.objectNeedsUpdate = false
@@ -412,7 +420,7 @@ export default {
                     break
                 case (Constants.scenes.three.rotateAxisPlane):
                     this.angleMax = 360
-                    Util.toggleBoolsInObj(this.slidersEnabled, "RAP", 'RESET')
+                    Util.toggleBoolsInObj(this.slidersEnabled, "GEN", 'RESET')
                     this.state = Rotations.initRotateAxisPlane(threeScene, this.interactiveSize.w, this.interactiveSize.h)
                     camera.position.set(-2.674, 3.265, 4.265)
                     controls.update()
@@ -444,6 +452,16 @@ export default {
                     Util.toggleBoolsInObj(this.slidersEnabled)
                     this.state = Objects3D.initSphereSlicesLined(threeScene)
                     break
+                case (Constants.scenes.three.projCone3D):
+                    Util.toggleBoolsInObj(this.slidersEnabled)
+                    this.state = Cone.initConeProj3D(threeScene)
+                    this.angleYZ = 0
+                    this.angleXZ = 0
+                    this.angleXY = 0
+                    break
+                case (Constants.scenes.three.projCone3DAnimation):
+                    Util.toggleBoolsInObj(this.slidersEnabled)
+                    this.state = Cone.initConeProj3D(threeScene)
             }
             this.objectNeedsUpdate = true
         },
@@ -452,7 +470,7 @@ export default {
             this.angleDegYW = 0
             this.angleDegZW = 0
             this.angleDegIN = 0
-            this.angleDegRAP = 0
+            this.angleDegGEN = 0
             this.translateW = 0           
         }
     },

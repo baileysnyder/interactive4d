@@ -366,4 +366,8 @@ h1, h2, .navlink, button {
 .cube7 {
     background: #57540f;
 }
+
+a {
+    color: #62DDE5;
+}
 </style>

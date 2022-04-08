@@ -2,7 +2,7 @@
   <div>
     <h2 class="article-header">4D CUBES</h2>
     <div class="main-content">
-      <p>4D spheres were a good introduction, but if you put in the work to understand this next shape I believe you can understand any 4D shape. It’s time to observe the 4D cube, also known as a 4D hypercube or tesseract.</p>
+      <p>4D spheres were a good introduction, but if you take the time to understand this next shape I believe you can understand any 4D shape. It’s time to observe the 4D cube, also known as a 4D hypercube or tesseract.</p>
       <p>To build a 4D cube, let’s start all the way back with a simple 1D line.</p>
       <img class="img-wide" src="~assets/white_line.png" alt="White 1D line">
       <p>Drag that line along the y axis to create a 2D square.</p>

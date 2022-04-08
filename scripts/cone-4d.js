@@ -46,11 +46,11 @@ export function initProjCone(scene) {
 function initSpheres(scene) {
     let meshes = []
     for (let i = 0; i < conePoints.length; i++){
-        let radius = projectionPointRadius
-        let color = lineColor
-        if (i !== 0) {
-            radius = projectionPointRadius/1.5
-            color = pointColor
+        let radius = projectionPointRadius/1.5
+        let color = pointColor
+        if (i === 0) {
+            radius = projectionPointRadius
+            //color = lineColor
         }
 
         const geometry = new THREE.SphereGeometry(radius, 24, 12)

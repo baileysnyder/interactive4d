@@ -1,4 +1,5 @@
 import * as Util from './util'
+import * as Constants from './constants'
 
 const parabolaThreshold = 0.001
 const coneAngle = Math.PI/6
@@ -326,4 +327,75 @@ function projectedYInterceptOnPlane(start, end) {
     let line = Util.subtractVectors(start, end)
     let t = -(start[2] / line[2])
     return start[1] + (line[1]*t)
+}
+
+export function initConeProj3D(scene) {
+    const radialPoints = 32
+    const coneRadius = 1.1
+    
+    let state = {
+        sphereMeshes: undefined,
+        cylinderMeshes: undefined,
+        points: [],
+        edges: [],
+        coneHeight: coneRadius*Math.tan(Math.PI/3)
+    }
+
+    state.points.push([0, 0, state.coneHeight])
+
+    for (let i = 0; i < radialPoints; i++) {
+        let theta = (i/radialPoints)*(2*Math.PI)
+        let x = Math.sin(theta)*coneRadius
+        let y = Math.cos(theta)*coneRadius
+        state.points.push([x, y, 0])
+        state.edges.push([0, i+1])
+    }
+
+    state.sphereMeshes = Util.initProjSpheres(scene, Constants.projectionSphereRadius, state.points.length, 20, 10, Constants.projPointColor)
+    state.cylinderMeshes = Util.initProjCylinders(scene, state.edges.length, Constants.projCylColor)
+
+    Util.drawSpherePoints(state.points, state.sphereMeshes)
+    Util.drawCylinders(state.points, state.cylinderMeshes, state.edges, 0.05)
+
+    return state
+}
+
+export function updateConeProj3D(state, angleYZ, angleXZ, angleXY) {
+    let m = Util.rotMat3DPlanes4D(angleYZ, angleXZ, angleXY)
+    let points = Util.applyMatXYZ4D(state.points, m)
+    Util.drawSpherePoints(points, state.sphereMeshes)
+    Util.drawCylinders(points, state.cylinderMeshes, state.edges, 0.05)
+}
+
+export function animateConeProj3D(state, frameCount) {
+    const frameTotal = 310
+    const split = 110
+
+    const currentFrame = frameCount%frameTotal
+
+    if (currentFrame < split) {
+        let z = Util.lerp(0, state.coneHeight, currentFrame/split)
+        state.points[0][2] = z
+        Util.drawSpherePoints(state.points, state.sphereMeshes)
+
+        for (let i = 0; i < state.cylinderMeshes.length; i++) {
+            state.cylinderMeshes[i].visible = false            
+        }
+    } else {
+        //const localFrame = currentFrame - split
+        //const localMax = frameTotal - split
+        Util.drawSpherePoints(state.points, state.sphereMeshes)
+
+        if (currentFrame%5 !== 0) {
+            return
+        }
+
+        for (let i = 0; i < state.cylinderMeshes.length; i++) {
+            if (state.cylinderMeshes[i].visible === false) {
+                state.cylinderMeshes[i].visible = true
+                return
+            }                       
+        }
+    }
+
 }

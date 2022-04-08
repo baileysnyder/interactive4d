@@ -359,6 +359,9 @@ export default {
                 case (Constants.scenes.threeandcanvas.squareSlice):
                     Objects3D.updateSingleSquare(this.state, this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
                     break
+                case (Constants.scenes.threeandcanvas.coneNoToggle):
+                    Objects3D.updateCone(this.state, this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
+                    break
             }
         },
         animate(timestamp) {
@@ -441,6 +444,12 @@ export default {
                     mainLight.intensity = 0.7
                     ambientLight.intensity = 0.3
                     this.state = Objects3D.initCone(threeScene, this.showObject)
+                    Util.toggleBoolsInObj(this.slidersEnabled, 'YZ', 'Z', 'RESET')
+                    break
+                case (Constants.scenes.threeandcanvas.coneNoToggle):
+                    mainLight.intensity = 0.7
+                    ambientLight.intensity = 0.3
+                    this.state = Objects3D.initCone(threeScene, true)
                     Util.toggleBoolsInObj(this.slidersEnabled, 'YZ', 'Z', 'RESET')
                     break
                 case (Constants.scenes.threeandcanvas.sideView2D):

@@ -37,7 +37,7 @@
                 </div>
                 <div class="slider-row" v-show="slidersEnabled.ZW">
                     <label for="angleZW">ZW</label>
-                    <input id="angleZW" v-model="angleDegZW" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
+                    <input id="angleZW" v-model="angleDegZW" type="range" :min="startSliderAt0 ? 0 : -angleMax" :max="angleMax" value="0" step="1">
                     <input v-model="angleDegZW" class="slider-text" type="text" size="4">
                     <span class="unit-text">°</span>
                 </div>
@@ -179,6 +179,9 @@ export default {
         },
         enableOppositeCubeColors() {
             return this.scene === Constants.scenes.three.projHypercube && this.colorCubes
+        },
+        startSliderAt0() {
+            return this.scene === Constants.scenes.three.rotateCubeIn4D
         }
     },
     watch: {
@@ -337,6 +340,9 @@ export default {
                         case (Constants.scenes.three.rotateAxisPlane):
                             Rotations.updateRotateAxisPlane(this.state, parseFloat(this.angleGEN), this.isPlaneActive)
                             break
+                        case (Constants.scenes.three.rotateCubeIn4D):
+                            Cube4D.updateRotateCubeIn4D(this.state, parseFloat(this.angleZW))
+                            break
                     }
                     this.objectNeedsUpdate = false
                 }
@@ -462,6 +468,12 @@ export default {
                 case (Constants.scenes.three.projCone3DAnimation):
                     Util.toggleBoolsInObj(this.slidersEnabled)
                     this.state = Cone.initConeProj3D(threeScene)
+                    break
+                case (Constants.scenes.three.rotateCubeIn4D):
+                    this.angleMax = 180
+                    Util.toggleBoolsInObj(this.slidersEnabled, "ZW", "RESET")
+                    this.state = Cube4D.initRotateCubeIn4D(threeScene)
+                    break
             }
             this.objectNeedsUpdate = true
         },

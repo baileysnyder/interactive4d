@@ -4,6 +4,7 @@ import { LineGeometry } from 'three/examples/jsm/lines/LineGeometry.js'
 import { LineMaterial } from 'three/examples/jsm/lines/LineMaterial.js'
 import { Line2 } from 'three/examples/jsm/lines/Line2.js'
 import * as Constants from './constants'
+import * as Cube from './cube'
 
 const cubePoints = [
     [-1, -1, -1, -1], //0
@@ -128,9 +129,9 @@ export function initSliceHypercube(scene, width, height) {
 
 function initConvexShape(scene) {
     const geometry = new THREE.BufferGeometry()
-    const positionAttribute = new THREE.BufferAttribute(new Float32Array(0), 3)
+    //const positionAttribute = new THREE.BufferAttribute(new Float32Array(0), 3)
     //positionAttribute.setUsage(THREE.DynamicDrawUsage)
-    geometry.setAttribute('position', positionAttribute)
+    //geometry.setAttribute('position', positionAttribute)
 
     const material = new THREE.MeshStandardMaterial()
     material.transparent = true
@@ -227,18 +228,16 @@ export function colorSingleCubeHypProj(state, cIndex, color) {
 
 export function updateHypercubeSlice(state, angleXW, angleYW, angleZW, translateW, colorCubes){
     let rotatedPoints = Util.rotate4D(cubePoints, angleXW, angleYW, angleZW)
-    let points4d = []
     const decimalPlaces = 15
     for (let i = 0; i < rotatedPoints.length; i++){
-        let workingVector = Util.vectorToMatrix(rotatedPoints[i]);
-        for (let j = 0; j < workingVector.length; j++) {
-            workingVector[j][0] = Util.round(workingVector[j][0], decimalPlaces) // removes floating point errors   
+        for (let j = 0; j < rotatedPoints[i].length; j++) {
+            rotatedPoints[i][j] = Util.round(rotatedPoints[i][j], decimalPlaces) // removes floating point errors   
         }
 
-        // Translate and turn matrices back to numbers
-        points4d.push([workingVector[0][0], workingVector[1][0], workingVector[2][0], workingVector[3][0] + translateW])
+        // Translate
+        rotatedPoints[i][3] += translateW
     }
-    let intersectionPoints = get3DIntersectionPoints(points4d)
+    let intersectionPoints = get3DIntersectionPoints(rotatedPoints, edgeIndices)
     let faceGeometry = separatePointsByCube(intersectionPoints)
 
     setConvexColors(state.convexMeshes, colorCubes)
@@ -261,7 +260,7 @@ class FaceGeometry {
     }
 }
 
-function get3DIntersectionPoints(points4D) {
+function get3DIntersectionPoints(points4D, edgeIndices) {
     let wClip = 0.0
     let intersectionPoints = {} // edge index is key, point is value
     for (let i = 0; i < edgeIndices.length; i++) {
@@ -332,9 +331,6 @@ function drawFaces(convexMeshes, lineMeshes, faceGeometry) {
     }
 
     let pointsByFace = faceGeometry.pointsByFace
-    //let positions = []
-    //let normals = []
-
     for (let i = 0; i < pointsByFace.length; i++) {
         if (pointsByFace[i].length < 3) {
             // Cannot make a face with less than 3 points
@@ -350,7 +346,6 @@ function drawFaces(convexMeshes, lineMeshes, faceGeometry) {
         drawEdgesForFace(pointsByFace[i])
         let faceVertices = Util.triangulateSortedFace(pointsByFace[i].map(ip => ip.point))
 
-        //positions.push(...faceVertices)
         let normals = []
         for (let k = 0; k < faceVertices.length/3; k++) {
             normals.push(...normal)            
@@ -374,4 +369,127 @@ function drawFaces(convexMeshes, lineMeshes, faceGeometry) {
     for (let i = edgeIndex; i < lineMeshes.length; i++) {
         lineMeshes[i].visible = false        
     }
+}
+
+function initSliceMesh(scene, color) {
+    const geometry = new THREE.BufferGeometry()
+    //const positionAttribute = new THREE.BufferAttribute(new Float32Array(0), 3)
+    //positionAttribute.setUsage(THREE.DynamicDrawUsage)
+    // geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(0), 3))
+    // geometry.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(0), 3))
+
+    const material = new THREE.MeshStandardMaterial()
+    material.color = new THREE.Color(color)
+    material.side = THREE.DoubleSide
+    const mesh = new THREE.Mesh(geometry, material)
+    mesh.visible = false
+    scene.add(mesh)
+    return mesh
+}
+
+function initTexturedCube(scene, cubeLength, tUrls) {
+    const geometry = new THREE.BoxGeometry(cubeLength, cubeLength, cubeLength)
+    const loader = new THREE.TextureLoader()
+    
+    let materials = []
+
+    for (let i = 0; i < 6; i++) {
+        let mat = new THREE.MeshStandardMaterial()
+        let tex = loader.load(tUrls[i])
+        tex.anisotropy = 4
+        mat.map = tex
+
+        materials.push(mat)       
+    }
+
+    const mesh = new THREE.Mesh(geometry, materials)
+    mesh.visible = false
+    scene.add(mesh)
+    return mesh
+}
+
+export function initRotateCubeIn4D(scene) {
+    let state = {
+        cubeMeshNormal: undefined,
+        cubeMeshFlipped: undefined,
+        sliceMesh: undefined,
+        points: undefined
+    }
+
+    const cubeColor = '#006f76'
+    const cubeLength = 2
+
+    const axes3D = [
+        [1, 0, 0],
+        [0, 1, 0],
+        [0, 0, 1],
+    ]
+    state.points = Cube.calcCube(axes3D, cubeLength, [-0.5, -0.5, -0.5])
+    for (const point of state.points) {
+        point.push(0)
+    }
+
+    state.sliceMesh = initSliceMesh(scene, cubeColor)
+
+    state.cubeMeshNormal = initTexturedCube(scene, cubeLength, [
+        '/textures/cube_r.png',
+        '/textures/cube_l.png',
+        '/textures/cube_u.png',
+        '/textures/cube_d.png',
+        '/textures/cube_f.png',
+        '/textures/cube_b.png',
+    ])
+
+    state.cubeMeshFlipped = initTexturedCube(scene, cubeLength, [
+        '/textures/mcube_r.png',
+        '/textures/mcube_l.png',
+        '/textures/mcube_u.png',
+        '/textures/mcube_d.png',
+        '/textures/mcube_b.png',
+        '/textures/mcube_f.png',
+    ])
+
+    return state
+}
+
+export function updateRotateCubeIn4D(state, angleZW) {
+    state.cubeMeshNormal.visible = false
+    state.cubeMeshFlipped.visible = false
+    state.sliceMesh.visible = false
+
+    if (Math.cos(angleZW) === 1) {
+        state.cubeMeshNormal.visible = true
+        return
+    }
+
+    if (Math.cos(angleZW) === -1) {
+        state.cubeMeshFlipped.visible = true
+        return
+    }
+
+    let rotatedPoints = Util.rotate4D(state.points, 0, 0, angleZW)
+    let iPoints = get3DIntersectionPoints(rotatedPoints, Cube.edgeI)
+    
+    if (iPoints.length < 3) {
+        return
+    }
+
+    let points = Object.values(iPoints)
+    let normal = Util.getFaceNormal(points, [0, 0, 0])        
+    
+    Util.sortFacePointsFromNormal(points, normal, points)
+    let faceVertices = Util.triangulateSortedFace(points)
+
+    let normals = []
+    for (let k = 0; k < faceVertices.length/3; k++) {
+        normals.push(...normal)            
+    }
+
+    const positionAttribute = new THREE.BufferAttribute(new Float32Array(faceVertices), 3)
+    const normalAttribute = new THREE.BufferAttribute(new Float32Array(normals), 3)
+
+    state.sliceMesh.geometry.setAttribute('position', positionAttribute)
+    state.sliceMesh.geometry.setAttribute('normal', normalAttribute)
+
+    state.sliceMesh.visible = true
 }

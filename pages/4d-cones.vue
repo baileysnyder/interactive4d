@@ -22,8 +22,9 @@
       <p>Once the basic structure of a shape is understood you’re ready to look at its slices. Before looking at slices of the 4D cone, let’s revisit the slices of a 3D cone real quick.</p>
       <SceneButtonSingle :sceneID="scenes.threeandcanvas.coneNoToggle" :text="'LOAD SCENE'" :imgName="'slice_3dcone.png'"></SceneButtonSingle>
       <p>These slices are known as the conic sections. They can be circles, ellipses, parabolas, or hyperbolas depending on the angle at which the slice occurs.</p>      
-      <img class="img-wide" src="~assets/conic_sections.png" alt="Conic sections shown in diagram of a cone">
+      <!-- <img class="img-wide" src="~assets/conic_sections.png" alt="Conic sections shown in diagram of a cone"> -->
       <!-- By Magister_Mathematicae - Own work based on: Secciones cónicas.svg, CC BY-SA 3.0, https://commons.wikimedia.org/w/index.php?curid=18556148 -->
+      <div class="img-link-box"><a title="Magister_Mathematicae, CC BY-SA 3.0 &lt;https://creativecommons.org/licenses/by-sa/3.0&gt;, via Wikimedia Commons" href="https://commons.wikimedia.org/wiki/File:Conic_Sections.svg" target="_blank"><img class="link-img img-wide" alt="Conic sections shown in diagram of a cone" src="~assets/conic_sections.png"></a></div>
       <p>The shape of a 3D cone’s slice can be determined using only 2 variables: 1) The cone’s distance from the 2D plane and 2) The angle of the cone’s center line (the line tip to base) with the 2D plane.</p>
       <img class="img-wide" src="~assets/cone_2_variables.png" alt="Diagrams of 2 variables needed for cone slice">
       <p>The same is true in 4D. The slice shape is completely determined by the angle of the cone’s center line with the 3D universe, and the cone’s distance along the w axis. This makes it much easier to understand the slices because we only need to consider these 2 variables.</p>
@@ -63,3 +64,13 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.img-link-box {
+  text-align: center;
+}
+
+.link-img {
+  display: inline-block;
+}
+</style>

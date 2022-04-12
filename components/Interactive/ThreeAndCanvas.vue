@@ -96,6 +96,7 @@ const outToInCubes = [4, 2, 5]
 let cubeIndex = 0
 
 let frameCount = 0
+let debugFlag = false
 
 export default {
     data() {
@@ -184,6 +185,7 @@ export default {
                     newSliders.extractValues(this)
                 } else {
                     this.resetSliderValues()
+                    debugFlag = false
                 }
                 this.initScene(newScene)
             }
@@ -372,6 +374,10 @@ export default {
                 //     Objects3D.colorProjCubeSquare(this.state, outToInCubes[cubeIndex], Constants.hypercubeColor)
                 //     cubeIndex = (cubeIndex+1)%3
                 // }
+
+                // if (this.scene === Constants.scenes.threeandcanvas.squareSlice && debugFlag) {
+                //     this.angleDegXZ+=1
+                // }
                 
                 //console.log(camera.position.x + ", " + camera.position.y + ", " + camera.position.z)
                 
@@ -506,6 +512,7 @@ export default {
             this.angleDegXZ = 0
             this.angleDegYZ = 0
             this.translateZ = 0
+            debugFlag = true
         },
         resetControls() {
             controls.minAzimuthAngle = Infinity

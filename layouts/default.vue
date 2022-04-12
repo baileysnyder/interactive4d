@@ -24,7 +24,14 @@
         </div>
     </div>
     <Navigation ref="navigation" id="navigation"/>
-    <p>Donate</p>
+    <div class="donation-section" :style="{'width': mainSize.w + 'px'}">
+        <p class="donation-text">If you've found this site useful and would like to help support it please consider donating!</p>
+        <form action="https://www.paypal.com/donate" method="post" target="_top">
+            <input type="hidden" name="hosted_button_id" value="DZUQU9XR384U6" />
+            <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
+            <img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
+        </form>
+    </div>
 </div>
 </template>
 
@@ -153,7 +160,6 @@ h1 {
     font-style: italic;
 }
 
-
 #main-content {
     display: inline-block;
     border-radius: 16px;
@@ -241,6 +247,17 @@ h1 {
 .handler-grip {
     width: 100%;
     height: 4%;
+}
+
+.donation-section {
+    text-align: center;
+}
+
+.donation-text {
+    margin-top: 5px;
+    margin-bottom: 3px;
+    font-size: 13px;
+    color: rgb(160, 160, 160);
 }
 
 </style>

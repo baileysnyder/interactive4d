@@ -18,6 +18,7 @@ export const scenes = {
         sphereSlicesLined: 15,
         projCone3D: 16,
         projCone3DAnimation: 17,
+        rotateCubeIn4D: 18
     },
     firstperson2d: {
         firstperson2d: 100
@@ -72,6 +73,6 @@ export const cubeColors = [
 export const hypercubeColor = '#FFEE56'
 
 export const navigationWidth = 234
-export const headerFooterHeight = 150
+export const headerFooterHeight = 132
 
 export const projectionSphereRadius = 0.09

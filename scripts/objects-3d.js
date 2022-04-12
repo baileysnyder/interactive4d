@@ -5,6 +5,7 @@ import * as THREE from 'three'
 import * as Constants from './constants'
 import * as Cube from './cube'
 import { createLine } from './axes'
+import { MaterialLoader } from 'three'
 
 const planeColor = '#1B1B1B'
 //const planeColor = '#000000'
@@ -162,7 +163,13 @@ export function initSingleSquare(scene) {
     state.plane = initPlane(scene, planeWidth)
 
     const geometry = new THREE.PlaneGeometry(cubeLength, cubeLength)
-    const material = new THREE.MeshStandardMaterial({color: 0xFFEE56, side: THREE.DoubleSide})
+    const material = new THREE.MeshStandardMaterial({side: THREE.DoubleSide})
+    //material.color = new THREE.Color(0xFFEE56)
+
+    const loader = new THREE.TextureLoader()
+    let tex = loader.load('/textures/square_lr.png')
+    tex.anisotropy = 4
+    material.map = tex
 
     const mesh = new THREE.Mesh(geometry, material)
     mesh.renderOrder = 1
@@ -369,7 +376,7 @@ export function updateEdgeCube(state, canvas, angleXZ, angleYZ, translateZ) {
 
 export function updateSingleSquare(state, canvas, angleXZ, angleYZ, translateZ) {
     if (Math.abs(Math.sin(angleXZ)) < 0.00001 && Math.abs(Math.sin(angleYZ)) < 0.00001 && translateZ === 0) {
-        transformMesh(state.mainMesh, angleXZ, angleYZ, translateZ)
+        transformMesh(state.mainMesh, angleXZ, angleYZ, 0.0001)
         state.mainMesh.updateMatrix()
 
         Draw.drawSliceCanvas(canvas, planeColor)
@@ -379,7 +386,7 @@ export function updateSingleSquare(state, canvas, angleXZ, angleYZ, translateZ) 
             new Util.IntersectionPoint(2, [-cubeLength/2, -cubeLength/2]),
             new Util.IntersectionPoint(3, [cubeLength/2, -cubeLength/2]),
         ]
-        Draw.drawSolidCubeSlice(canvas, points2D, cubeColor, planeWidth)
+        Draw.drawSolidCubeSlice(canvas, points2D, '#006f76', planeWidth)
         return
     }
 
@@ -393,7 +400,7 @@ export function updateSingleSquare(state, canvas, angleXZ, angleYZ, translateZ) 
     }
 
     Util.sortFacePoints2D(points2D.map(p => p.point), points2D)
-    Draw.drawEdgeCubeSlice(canvas, points2D, 'transparent', cubeColor, planeWidth)
+    Draw.drawEdgeCubeSlice(canvas, points2D, 'transparent', '#006f76', planeWidth)
 }
 
 export function updateCone(state, canvas, angleXZ, angleYZ, translateZ) {

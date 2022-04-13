@@ -71,6 +71,13 @@
                     <span class="unit-text">°</span>
                 </div>
             </div>
+            <div class="bottom-left">
+                <!-- <p class="icon-text">rotate</p> -->
+                <!-- <p class="icon-text">controls</p> -->
+                <img class="icon-img" src="~assets/icons/rotate_icons.png" alt="Rotate 3D camera">
+                <!-- <p class="icon-text">zoom</p> -->
+                <img class="icon-img" src="~assets/icons/zoom_icons.png" alt="Zoom 3D camera">
+            </div>
         </div>
     </div>
 </div>
@@ -512,17 +519,25 @@ export default {
 }
 
 .top-right {
-    position: absolute;
     right: 0;
 }
 
 .bottom-right {
-    position: absolute;
     right: 0;
     bottom: 0;
 }
 
+.bottom-left {
+    bottom: 0;
+    position: absolute;
+    padding: 4px;
+    pointer-events: none;
+    width: 80px;
+    text-align: center;
+}
+
 .sticky-box {
+    position: absolute;
     padding: 4px;
     pointer-events: auto;
 }
@@ -584,5 +599,16 @@ export default {
     height: 10px;
     display: inline-block;
     border: solid 1px;
+}
+
+.icon-img {
+    width: 100%;
+    opacity: 0.5;
+}
+
+.icon-text {
+    opacity: 0.5;
+    margin-bottom: 2px;
+    font-size: 13px;
 }
 </style>

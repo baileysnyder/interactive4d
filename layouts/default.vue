@@ -11,15 +11,28 @@
                 </svg>
             </div>
             <div class="resizable-box article-box">
-                <nuxt class="article"/>
-                <div class="navbar">
-                    <NuxtLink :to="previousRoute" v-show="previousRoute !== ''">
-                        <button class="nav-button previous-button gray-rounded-button">← Prev</button>
-                    </NuxtLink>
-                    <NuxtLink :to="nextRoute" v-show="nextRoute !== ''">
-                        <button class="nav-button next-button gray-rounded-button">Next →</button>
-                    </NuxtLink>
-                </div>
+                <div class="article-box-in">
+                    <div class="article-dark" :class="{'dark-overlay': burgerActive, 'no-p-events': !burgerActive}"  @click="burgerActive = false"></div>
+                    <div class="nav-overlay" :class="{'overlay-move': burgerActive}">
+                        <NuxtLink v-for="(page, index) in navPages" v-bind:key="page.title" :to="page.path" class="navlink" :class="{'top-link': index === 0}" @click.native="burgerActive = false">{{page.title}}</NuxtLink>
+                    </div>
+                    <button v-show="isNavHidden" class="nav-burger gray-rounded-button" :class="{'button-move': burgerActive}" @click="burgerActive = !burgerActive">
+                        <svg v-show="!burgerActive" class="burger-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 490"><!--! Font Awesome Pro 6.1.1 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path fill="#e8e8e8" d="M0 96C0 78.33 14.33 64 32 64H416C433.7 64 448 78.33 448 96C448 113.7 433.7 128 416 128H32C14.33 128 0 113.7 0 96zM0 256C0 238.3 14.33 224 32 224H416C433.7 224 448 238.3 448 256C448 273.7 433.7 288 416 288H32C14.33 288 0 273.7 0 256zM416 448H32C14.33 448 0 433.7 0 416C0 398.3 14.33 384 32 384H416C433.7 384 448 398.3 448 416C448 433.7 433.7 448 416 448z"/></svg>
+                        <svg v-show="burgerActive" viewBox="0 0 10 10">
+                            <line x1="1.5" y1="1.5" x2="8.5" y2="8.5" stroke="rgb(232, 232, 232)" stroke-linecap="round" stroke-width="1.2"/>
+                            <line x1="8.5" y1="1.5" x2="1.5" y2="8.5" stroke="rgb(232, 232, 232)" stroke-linecap="round" stroke-width="1.2"/>
+                        </svg>
+                    </button>
+                    <nuxt class="article"/>                
+                    <div class="navbar">
+                        <NuxtLink :to="previousRoute" v-show="previousRoute !== ''">
+                            <button class="nav-button previous-button gray-rounded-button" @click="burgerActive = false">← Prev</button>
+                        </NuxtLink>
+                        <NuxtLink :to="nextRoute" v-show="nextRoute !== ''">
+                            <button class="nav-button next-button gray-rounded-button" @click="burgerActive = false">Next →</button>
+                        </NuxtLink>
+                    </div>
+                </div>            
             </div>
         </div>
     </div>
@@ -51,6 +64,9 @@ export default {
     data() {
         return {
             isHandlerDragging: false,
+            isNavHidden: true,
+            burgerActive: false,
+            navPages: Constants.navPages
         }
     },
     computed: {
@@ -224,7 +240,9 @@ h1 {
 
 .navbar {
     height: 5%;
-    background: rgb(32, 32, 32)
+    background: rgb(32, 32, 32);
+    position: absolute;
+    width: 100%;
 }
 
 .handler {
@@ -258,6 +276,75 @@ h1 {
     margin-bottom: 3px;
     font-size: 13px;
     color: rgb(160, 160, 160);
+}
+
+.article-box-in {
+    position: relative;
+    height: 100%;
+    width: 100%;
+}
+
+.nav-burger {
+    position: absolute;
+    right: 14px;
+    top: 14px;
+    width: 40px;
+    height: 40px;
+    transition: right 0.5s;
+}
+
+.burger-icon {
+    width: 90%;
+    height: 90%;
+}
+
+.nav-overlay {
+    position: absolute;
+    top: 0;
+    right: -234px;
+    width: 234px;
+    height: 95%;
+    margin: 0;
+    list-style: none;
+    background: rgb(26, 26, 26);
+    transition: right 0.5s;
+}
+
+.overlay-move {
+    right: 0;
+    box-shadow: -4px 0 6px rgb(0 0 0 / 50%);
+}
+
+.button-move {
+    right: 248px;
+}
+
+.article-dark {
+    width: 100%;
+    height: 95%;
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0);
+    transition: background-color 0.4s;
+}
+
+.dark-overlay {
+    background-color: rgba(0, 0, 0, 0.8);
+}
+
+.no-p-events {
+    pointer-events: none;
+}
+
+.navlink {
+    display: block;
+    color: rgb(232, 232, 232);
+    text-decoration: none;
+    padding-left: 14px;
+    padding-top: 8px;
+}
+
+.top-link {
+    padding-top: 14px;
 }
 
 </style>

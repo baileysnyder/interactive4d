@@ -5,9 +5,9 @@ export const state = () => ({
     sceneID: undefined,
     sceneSliders: [],
     pageURLs: [],
-    mainSize: new Dimensions(window.innerWidth - Constants.navigationWidth, window.innerHeight - Constants.headerFooterHeight),
-    interactiveSize: new Dimensions((window.innerWidth - Constants.navigationWidth) / 2, window.innerHeight - Constants.headerFooterHeight),
-    articleSize: new Dimensions((window.innerWidth - Constants.navigationWidth) / 2, window.innerHeight - Constants.headerFooterHeight)
+    mainSize: new Dimensions(0, 0),
+    interactiveSize: new Dimensions(0, 0),
+    articleSize: new Dimensions(0, 0)
 })
 
 export const mutations = {

@@ -2,16 +2,16 @@
   <div>
     <h2 class="article-header">PLANES OF ROTATION</h2>
     <div class="main-content">
-      <p>Before we get too far, this is a good time to dip our toes back into the 4th dimension and talk about rotations.</p>
-      <p>A common way to describe rotations is in terms of axes. To rotate a single point around an axis, I like to imagine a solid metal beam being glued between the two. Now when the axis spins, the point will spin with it.</p>
+      <p>Before we get too far, this is a good time to dip our toes back into the 4th dimension and learn how 4D rotations work.</p>
+      <p>A common way to describe rotations is in terms of axes. To rotate a single point around an axis, I like to imagine a solid beam being glued between the two. Now when the axis spins, the point will spin with it.</p>
       <p>Another way to think of rotations is in terms of 2D planes. Now our imaginary beam is simply glued between the point and plane.</p>
       <p>In this scene you can rotate random points with the slider on the bottom right and switch between the “Plane” and "Axis" buttons to see how the points move in relation to each:</p>
       <SceneButtonSingle :sceneID="scenes.three.rotateAxisPlane" :text="'LOAD SCENE'" :imgName="'rotate_axis_plane.png'"></SceneButtonSingle>
-      <p>If we wanted to construct planes of rotation for say, a 3D universe with 3 perpendicular axes, we’d just create a plane of rotation between each pair of axes like this:</p>
+      <p>If we wanted to construct planes of rotation for say, a 3D universe made with 3 perpendicular axes, we’d just create a plane of rotation between each pair of axes like this:</p>
       <SceneButtonSingle :sceneID="scenes.three.rotate3D" :text="'LOAD SCENE'" :imgName="'3d_planes.png'"></SceneButtonSingle>
       <p>In practice you'd place all the planes at the world's center - I'm only placing them further out because when they're all overlapping it looks like a mess.</p>
       <img class="img-300" src="~assets/3d_planes_squish.png" alt="rotation planes all at origin">
-      <p>Seems simple enough though, we've got 3 planes of rotation for 3 axes. But what happens in 4D?</p>
+      <p>Seems simple enough though, we've got 3 planes of rotation for 3 axes. So what happens in 4D?</p>
       <SceneButtonSingle :sceneID="scenes.three.rotate4D" :text="'LOAD SCENE'" :imgName="'4d_planes.png'"></SceneButtonSingle>
       <p>6 planes of rotation for 4 axes??? From 2D to 4D this is what we have:</p>
       <ul>

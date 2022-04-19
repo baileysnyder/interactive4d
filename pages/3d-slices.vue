@@ -2,13 +2,13 @@
   <div>
     <h2 class="article-header">3D SLICES</h2>
     <div class="main-content">
-      <p>Previously we’ve visited the 2nd dimension, but there’s still more insight to be gained from these lower dimensions. Our goal is to understand 4D objects, but more specifically our goal is to understand 4D objects as a 3D being. What if we started with a simpler version of the problem and tried to understand 3D objects as a 2D being?</p>
-      <p>I’d like to point out that this ends up being extremely useful. This 3D to 2D example is what helps provide the most insight whenever I get stuck trying to understand 4D.</p>
+      <p>Our goal is to understand 4D objects, but more specifically our goal is to understand 4D objects as a 3D being. What if we started with a simpler version of the problem and tried to understand 3D objects as a 2D being?</p>
+      <p>I’d like to point out that this ends up being extremely useful. This 3D to 2D process is what provides the most insight when something in 4D confuses me.</p>
       <p>So what happens when we drag a 3D sphere along the z axis through a 2D universe?</p>
       <SceneButtonSingle :sceneID="scenes.threeandcanvas.sphere" :text="'LOAD SCENE'" :imgName="'slice_3dsphere.png'"></SceneButtonSingle>
       <p>At any given moment, the 2D being can only see the part of the sphere that intersects with their universe. Each intersection, called a "slice", is just a 2D circle of varying size. If you stack these slices together on the z axis you can see the sphere begin to take shape.</p>
       <img class="img-wide" src="~assets/sphere_slices.gif" alt="circular sphere slices being aligned on the z axis">
-      <p>An important realization here is that while the 2D being can only see 1 slice at a time, all of these slices actually exist in the object simultaneously, just at different distances on the z axis.</p>
+      <p>An important realization is that while the 2D being can only see one slice at a time, all of these slices actually exist in the object simultaneously, just at different distances on the z axis.</p>
       <p>So far things still seem pretty tame – surely a 2D being has seen a circle grow and shrink before. But what happens if we send a 3D cube through there?</p>
       <SceneButtonSingle :sceneID="scenes.threeandcanvas.solidCube" :text="'LOAD SCENE'" :imgName="'slice_3dcube.png'"></SceneButtonSingle>
       <p>This is where things start to get interesting. Now the shape of the slice will vary depending on the rotation of the cube. Moving the cube on the z axis face first <button class="slider-button" @click="onFaceFirst"><img src="~assets/icons/square_face.png" alt="align cube face first icon"/></button> just makes a square that suddenly appears, remains still, and suddenly disappears. Edge first <button class="slider-button" @click="onEdgeFirst"><img src="~assets/icons/square_edge.png" alt="align cube edge first icon"/></button> you get a rectangle that grows and shrinks. Corner first <button class="slider-button" @click="onPointFirst"><img src="~assets/icons/square_point.png" alt="align cube point first icon"/></button> and you get a combination of triangles and 6 sided shapes (at one point a perfect hexagon!!!)</p>

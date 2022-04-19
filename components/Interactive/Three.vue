@@ -71,13 +71,6 @@
                     <span class="unit-text">°</span>
                 </div>
             </div>
-            <div class="bottom-left">
-                <!-- <p class="icon-text">rotate</p> -->
-                <!-- <p class="icon-text">controls</p> -->
-                <img class="icon-img" src="~assets/icons/rotate_icons.png" alt="Rotate 3D camera">
-                <!-- <p class="icon-text">zoom</p> -->
-                <img class="icon-img" src="~assets/icons/zoom_icons.png" alt="Zoom 3D camera">
-            </div>
         </div>
     </div>
 </div>
@@ -133,7 +126,6 @@ let interval = 1 / 60
 let sphereSliceCount = 0
 let frameCount = 0
 
-const outToInCubes = [7, 6, 0]
 let cubeIndex = 0
 
 
@@ -267,7 +259,7 @@ export default {
         updateResolution(width, height) {
             camera.aspect = width / height
             camera.updateProjectionMatrix()
-            renderer.setSize(width, height)
+            renderer.setSize(width, height)           
 
             if (this.state != null && this.state.lineMeshes != null) {
                 Util.updateLineResolution(this.state.lineMeshes, width, height)
@@ -310,8 +302,8 @@ export default {
                 //     Objects3D.updateSphereSliceAnim(this.state, sphereSliceCount)
                 //     sphereSliceCount = (sphereSliceCount+1)%state.circleMeshes.length
                 // }
-                // else if (this.scene === Constants.scenes.three.projHypercube && frameCount%80 === 0) {
-                //     Cube4D.colorSingleCubeHypProj(this.state, cubeIndex, Constants.cubeColors[cubeIndex])
+                // if (this.scene === Constants.scenes.three.projHypercube && frameCount%80 === 0) {
+                //     Cube4D.colorSingleCubeHypProj(this.state, cubeIndex, Constants.projCylColor)
                 //     cubeIndex = (cubeIndex+1)%8
                 // }
                 // if (this.scene === Constants.scenes.three.projCone3D){
@@ -320,6 +312,11 @@ export default {
                 // }
                 // else if (this.scene === Constants.scenes.three.projCone3DAnimation) {
                 //     Cone.animateConeProj3D(this.state, frameCount)
+                // }
+
+                // if (this.scene === Constants.scenes.three.sliceHypercube && frameCount%40 === 0) {
+                //     Cube4D.highlightSliceFace(this.state, cubeIndex, Constants.hypercubeColor)
+                //     cubeIndex = (cubeIndex+1)%8
                 // }
                 
                 //console.log(camera.position.x + ", " + camera.position.y + ", " + camera.position.z)
@@ -527,15 +524,6 @@ export default {
     bottom: 0;
 }
 
-.bottom-left {
-    bottom: 0;
-    position: absolute;
-    padding: 4px;
-    pointer-events: none;
-    width: 80px;
-    text-align: center;
-}
-
 .sticky-box {
     position: absolute;
     padding: 4px;
@@ -599,16 +587,5 @@ export default {
     height: 10px;
     display: inline-block;
     border: solid 1px;
-}
-
-.icon-img {
-    width: 100%;
-    opacity: 0.5;
-}
-
-.icon-text {
-    opacity: 0.5;
-    margin-bottom: 2px;
-    font-size: 13px;
 }
 </style>

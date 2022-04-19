@@ -2,8 +2,9 @@
   <div>
     <h2 class="article-header">INTRODUCTION</h2>
     <div class="main-content">
-      <p>Hello! The goal of this website is to give you an intuitive understanding of a 4th spatial dimension. Our universe is generally considered to have 3 spatial dimensions with the 4th dimension being time, but how would things behave if we added an extra dimension of space?</p>
-      <p>To get your first glimpse, tap these 6 buttons below. Each loads a different 4D object into the interactive scene that you can manipulate using the sliders at the bottom right. Once you’re sufficiently confused, tap the Next button below to learn how these objects work!</p>
+      <p>"The fourth dimension is uhhhh... time! Right??" 🤮</p>
+      <p>No thank you. On this website, my goal is to give you an intuitive understanding of a 4th spatial dimension. To achieve this, we'll first brush up on simple 2D and 3D space, then using that knowledge we'll observe the most fundamental 4D shapes.</p>
+      <p>To get your first glimpse of 4D, tap these 6 buttons below. Each loads a different 4D object that you can manipulate with the sliders at the bottom right. Once you’re sufficiently confused, tap the Next button below to learn how these objects work!</p>
       <SceneButtonGrid :buttonData="buttonData" />
     </div>
   </div>
@@ -35,7 +36,7 @@ export default {
   },
   beforeCreate() {
     if (!activeScene) {
-      activeScene = scenes.three.sliceHypercube
+      activeScene = scenes.three.projHypercube
     }
     this.$store.commit('updateScene', activeScene)
   },

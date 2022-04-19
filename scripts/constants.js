@@ -72,7 +72,4 @@ export const cubeColors = [
 ]
 export const hypercubeColor = '#FFEE56'
 
-export const navigationWidth = 234
-export const headerFooterHeight = 132
-
 export const projectionSphereRadius = 0.09

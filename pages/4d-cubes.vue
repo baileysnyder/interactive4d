@@ -2,7 +2,7 @@
   <div>
     <h2 class="article-header">4D CUBES</h2>
     <div class="main-content">
-      <p>4D spheres were a good introduction, but if you take the time to understand this next shape I believe you can understand any 4D shape. It’s time to observe the 4D cube, also known as a 4D hypercube or tesseract.</p>
+      <p>4D spheres were a good introduction, but 4D cubes (also known as 4D hypercubes or tesseracts) are worth taking the time to really sit with. They're simple enough to understand, yet complex enough to reveal most of the strangeness found in 4D.</p>
       <p>To build a 4D cube, let’s start all the way back with a simple 1D line.</p>
       <img class="img-wide" src="~assets/white_line.png" alt="White 1D line">
       <p>Drag that line along the y axis to create a 2D square.</p>
@@ -15,21 +15,25 @@
       <img class="img-300" src="~assets/colored_tesseract_cubes.gif" alt="Tesseract with all 8 cubes being highlighted one by one">
       <p>But don't worry too much about deciphering this squished image – this visualization is beneath us. Behold the world’s most famous 4D object: the projection of a 4D hypercube!</p>
       <SceneButtonSingle :sceneID="scenes.three.projHypercube" :text="'LOAD SCENE'" :imgName="'proj_cube.png'"></SceneButtonSingle>
-      <p>To start, just play around with all the rotation sliders to get an idea of how things can morph around.</p>
-      <p>Remember that due to projection, points that are further away on the w axis will shrink towards the center of the 3D image. To see how this affects the tesseract’s 8 cubes, set all the rotation sliders to 0°. The large outer cube is near us on the w axis, the small inner cube is further away, and all 6 connecting cubes are moving from near to far so they get skewed into trapezoidal prisms along the way. This is analogous to the 2 squares connected by trapezoids you see in the projection of a 3D cube.</p>
+      <p>To start, just play around with all the rotation sliders to see how the projection morphs around.</p>
+      <p>Remember that due to projection, points that are further away on the w axis will shrink towards the center of the 3D image. To see how this affects the tesseract’s 8 cubes, set all the rotation sliders to 0°. The outer cube appears larger because it's near us on the w axis, and the inner cube appears smaller because it's further away.</p>
+      <img class="img-wide" src="~assets/near_far_cubes.png" alt="Near and far cubes on tesseract highlighted">
+      <p>All 6 connecting cubes are moving from near to far so they get skewed into trapezoidal prisms along the way. This is all analogous to the 2 squares connected by trapezoids you see in the projection of a 3D cube.</p>
       <img class="img-wide" src="~assets/proj_cube_out_to_in.gif" alt="Highlighting outer cube, connecting cube, then inner cube in 4D and 3D">
       <p>Rotate on one plane and you see the cubes growing and shrinking as they move in and out of the center. Again, a similar motion can be seen with squares in a 3D cube projection.</p>
       <img class="img-wide" src="~assets/proj_cube_1plane.gif" alt="Rotating 4D and 3D cubes on 1 plane with one cube or face highlighted">
-      <p>Now that we’re familiar with the basic structure of the 4D cube, we're ready to observe its slices. This is what a 4D cube would look like if it moved through our 3D universe 😮</p>
+      <p>Now that we’re familiar with the basic structure of the 4D cube, we're ready to observe its slices. This is what a 4D cube would look like if it moved through our 3D universe! 😮</p>
       <SceneButtonSingle :sceneID="scenes.three.sliceHypercube" :text="'LOAD SCENE'" :imgName="'slice_cube.png'"></SceneButtonSingle>
       <p>Again, just go crazy playing with all the sliders for a bit. Does anything seem familiar?</p>
-      <p>The first big realization is that the object you’re looking at is just a bunch of 2D slices of the tesseract's 8 cubes stuck together! ..But if we're viewing in 3D, why would the 3D cubes get sliced to 2D?</p>
+      <p>The first big realization is that the object you’re looking at is just a bunch of 2D slices of the tesseract's 8 cubes stuck together!</p>
+      <img class="img-300" src="~assets/slice_8_cubes.gif" alt="Highlight each face of the tesseract slice 1-8">
+      <p>..But if we're viewing in 3D, why would the 3D cubes get sliced to 2D?</p>
       <p>This is due to the cubes being situated somewhere along the w axis. You could give a cube the slightest twist into the fourth dimension and all that would remain in our 3D universe is a 2D slice. The same can be seen one dimension lower where a square rotating into the third dimension instantly turns into a 1D slice.</p>
       <!-- <SceneButtonSingle :sceneID="scenes.threeandcanvas.squareSlice" :text="'LOAD SCENE'" :imgName="'slice_cube.png'"></SceneButtonSingle> -->
       <img class="img-wide" src="~assets/square_rotate_plane.gif" alt="A 2D square rotating into a 2D plane creating a 1D line as a slice">
       <p>Of course if a cube is too far from us on the w axis, then not even a slice will appear in our 3D universe. Observe the slice created when all the sliders are set to 0. Even though the tesseract has 8 potential cubes to slice, the final image appears to be a normal cube with only 6 faces.</p>
       <img class="img-300" src="~assets/normal_cube.png" alt="Tesseract slice with sliders set to 0">
-      <p>This makes sense when you realize the 2D slice of a 3D cube in the same position is just a square with 4 sides even though the cube has 6 faces. The 3D cube has two faces that aren’t intersecting with the 2D universe, and the 4D hypercube has two cubes that aren’t intersecting with the 3D universe.</p>
+      <p>This makes sense when you realize the 2D slice of a 3D cube in the same position is just a square with 4 sides, even though the cube has 6 faces. The 3D cube has two faces that aren’t intersecting with the 2D universe, and the 4D hypercube has two cubes that aren’t intersecting with the 3D universe.</p>
       <img class="img-300" src="~assets/slice_3d_cube_at_0.png" alt="Slice of 3D cube when the sliders are set to 0 is a square">
       <p>Here are some more direct parallels with the 2D slices of a 3D cube.</p>
       <p>Moving face first:</p>

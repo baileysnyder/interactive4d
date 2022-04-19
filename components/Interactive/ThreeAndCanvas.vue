@@ -8,8 +8,6 @@
                     <label v-show="enableShowObject" for="show-object">Show Object</label>
                     <input v-show="enableHighlightFace" type="checkbox" id="highlight-face" v-model="highlightFace">
                     <label v-show="enableHighlightFace" for="highlight-face">Highlight Face</label>
-                    <!-- <button v-show="enableOrthoPersp" class="top-right-button" :class="{'active': !isOrthoActive, 'inactive': isOrthoActive}" @click="isOrthoActive=false">Perspective</button>
-                    <button v-show="enableOrthoPersp" class="top-right-button" :class="{'active': isOrthoActive, 'inactive': !isOrthoActive}" @click="isOrthoActive=true">Orthographic</button> -->
                 </div>
                 <div class="bottom-right sticky-box">
                     <div class="slider-row" v-show="slidersEnabled.RESET">
@@ -369,9 +367,9 @@ export default {
         animate(timestamp) {
             delta += timestamp - previousTimestamp            
             if (delta >= interval) {
-                //frameCount++
+                // frameCount++
                 // if (this.scene === Constants.scenes.threeandcanvas.projEdgeCube && frameCount%80 === 0) {
-                //     Objects3D.colorProjCubeSquare(this.state, outToInCubes[cubeIndex], Constants.hypercubeColor)
+                //     Objects3D.colorProjCubeSquare(this.state, outToInCubes[cubeIndex], Constants.projCylColor)
                 //     cubeIndex = (cubeIndex+1)%3
                 // }
 
@@ -484,7 +482,8 @@ export default {
                     bottomCam.updateProjectionMatrix()
                     this.state = Objects3D.initProjCube(threeScene, -projObjZ)
                     Util.toggleBoolsInObj(this.slidersEnabled, 'XZ', 'YZ', 'RESET')
-                    //Objects3D.colorProjCubeSquare(this.state, 1, Constants.hypercubeColor)
+                    
+                    // Objects3D.colorProjCubeSquare(this.state, 1, Constants.projCylColor)
                     break
                 case (Constants.scenes.threeandcanvas.projSphere):
                     mainLight.intensity = 0.8
@@ -639,6 +638,7 @@ export default {
 
 .canvas-border {
     border-top: 4px solid rgb(40, 40, 40);
+    box-sizing: border-box;
 }
 
 .reset-icon {

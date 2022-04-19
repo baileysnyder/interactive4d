@@ -1,9 +1,9 @@
 <template>
 <div>
-    <div v-show="noneActive" class="placeholder resizable" :style="{'width': interactiveSize.w + 'px'}"></div>
-    <Three v-show="isThreeActive" :isComponentActive="isThreeActive" class="resizable" :style="{'width': interactiveSize.w + 'px'}"/>
-    <FirstPerson2D v-show="isFirstPerson2DActive" :isComponentActive="isFirstPerson2DActive" class="resizable" :style="{'width': interactiveSize.w + 'px'}"/>
-    <ThreeAndCanvas v-show="isThreeAndCanvasActive" :isComponentActive="isThreeAndCanvasActive" class="resizable" :style="{'width': interactiveSize.w + 'px'}" />
+    <div v-show="noneActive" class="placeholder resizable" :style="{'width': interactiveSize.w + 'px', 'height': interactiveSize.h + 'px'}"></div>
+    <Three v-show="isThreeActive" :isComponentActive="isThreeActive" class="resizable" :style="{'width': interactiveSize.w + 'px', 'height': interactiveSize.h + 'px'}"/>
+    <FirstPerson2D v-show="isFirstPerson2DActive" :isComponentActive="isFirstPerson2DActive" class="resizable" :style="{'width': interactiveSize.w + 'px', 'height': interactiveSize.h + 'px'}"/>
+    <ThreeAndCanvas v-show="isThreeAndCanvasActive" :isComponentActive="isThreeAndCanvasActive" class="resizable" :style="{'width': interactiveSize.w + 'px', 'height': interactiveSize.h + 'px'}" />
 </div>
 </template>
 

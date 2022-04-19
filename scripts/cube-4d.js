@@ -178,6 +178,19 @@ function setConvexColors(convexMeshes, colorCubes) {
     }
 }
 
+export function highlightSliceFace(state, index, color) {
+    for (let i = 0; i < state.convexMeshes.length; i++) {       
+        if (i === index) {
+            let m = new THREE.MeshBasicMaterial()
+            m.color = new THREE.Color(color)
+            m.side = THREE.DoubleSide
+            state.convexMeshes[i].material = m
+            state.convexMeshes[i].visible = true
+        } else {
+            state.convexMeshes[i].visible = false
+        }       
+    }
+}
 export function updateHypercubeProjection(state, angleXW, angleYW, angleZW, colorCubes, oppositeCubeIndex) {
     let rotatedPoints = Util.rotate4D(cubePoints, angleXW, angleYW, angleZW)
     let finalPoints = Util.project4DTo3D(rotatedPoints, projectionDistance4D, scaleFactor)
@@ -188,7 +201,7 @@ export function updateHypercubeProjection(state, angleXW, angleYW, angleZW, colo
         colorHypercubeProj(state, oppositeCubeIndex)
     } else {
         resetColorsHypercubeProj(state)
-        //colorSingleCubeHypProj(state, 1, Constants.hypercubeColor)
+        //colorSingleCubeHypProj(state, 7, Constants.projCylColor)
     }
 }
 

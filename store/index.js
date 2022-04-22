@@ -7,7 +7,8 @@ export const state = () => ({
     pageURLs: [],
     mainSize: new Dimensions(0, 0),
     interactiveSize: new Dimensions(0, 0),
-    articleSize: new Dimensions(0, 0)
+    articleSize: new Dimensions(0, 0),
+    sliderWidth: 130
 })
 
 export const mutations = {
@@ -28,5 +29,8 @@ export const mutations = {
     },
     setArticleSize(state, d) {
         state.articleSize = d
+    },
+    setSliderWidth(state, w) {
+        state.sliderWidth = w
     }
 }

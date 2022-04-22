@@ -48,6 +48,15 @@ import SceneButtonSingle from '../components/SceneButtonSingle'
 let activeScene = undefined
 
 export default {
+  head: {
+    title: 'Interactive 4D Handbook - 4D Spheres',
+    meta: [
+      {
+        name: 'description',
+        content: 'Interact with the projection and slices of a 4D sphere to learn how they work.'
+      }
+    ]
+  },
   components: {
     SceneButtonSingle
   },

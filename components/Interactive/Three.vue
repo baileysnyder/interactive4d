@@ -37,37 +37,37 @@
                 </div>
                 <div class="slider-row" v-show="slidersEnabled.ZW">
                     <label for="angleZW">ZW</label>
-                    <input id="angleZW" v-model="angleDegZW" type="range" :min="startSliderAt0 ? 0 : -angleMax" :max="angleMax" value="0" step="1">
-                    <input v-model="angleDegZW" class="slider-text" type="text" size="4">
+                    <input id="angleZW" v-model="angleDegZW" type="range" :min="startSliderAt0 ? 0 : -angleMax" :max="angleMax" value="0" step="1" :style="{'width': sliderWidth + 'px'}">
+                    <input v-model="angleDegZW" class="slider-text" type="text" size="4" maxlength="5">
                     <span class="unit-text">°</span>
                 </div>
                 <div class="slider-row" v-show="slidersEnabled.YW">
                     <label for="angleYW">YW</label>
-                    <input id="angleYW" v-model="angleDegYW" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
-                    <input v-model="angleDegYW" class="slider-text" type="text" size="4">
+                    <input id="angleYW" v-model="angleDegYW" type="range" :min="-angleMax" :max="angleMax" value="0" step="1" :style="{'width': sliderWidth + 'px'}">
+                    <input v-model="angleDegYW" class="slider-text" type="text" size="4" maxlength="5">
                     <span class="unit-text">°</span>
                 </div>
                 <div class="slider-row" v-show="slidersEnabled.XW">
                     <label for="angleXW">XW</label>
-                    <input id="angleXW" v-model="angleDegXW" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
-                    <input v-model="angleDegXW" class="slider-text" type="text" size="4">
+                    <input id="angleXW" v-model="angleDegXW" type="range" :min="-angleMax" :max="angleMax" value="0" step="1" :style="{'width': sliderWidth + 'px'}">
+                    <input v-model="angleDegXW" class="slider-text" type="text" size="4" maxlength="5">
                     <span class="unit-text">°</span>
                 </div>
                 <div class="slider-row" v-show="slidersEnabled.IN">
                     <label for="angleIN">IN/OUT</label>
-                    <input id="angleIN" v-model="angleDegIN" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
-                    <input v-model="angleDegIN" class="slider-text" type="text" size="4">
+                    <input id="angleIN" v-model="angleDegIN" type="range" :min="-angleMax" :max="angleMax" value="0" step="1" :style="{'width': sliderWidth + 'px'}">
+                    <input v-model="angleDegIN" class="slider-text" type="text" size="4" maxlength="5">
                     <span class="unit-text">°</span>
                 </div>
                 <div class="slider-row" v-show="slidersEnabled.W">
                     <label for="translateW">W</label>
-                    <input id="translateW" v-model="translateW" type="range" min="-2" max="2" value="0" step="0.01">
-                    <input class="slider-text" v-model="translateW" type="text" size="4">
+                    <input id="translateW" v-model="translateW" type="range" :min="-wMax" :max="wMax" value="0" step="0.01" :style="{'width': sliderWidth + 'px'}">
+                    <input class="slider-text" v-model="translateW" type="text" size="4" maxlength="5">
                     <span class="unit-text invisible">°</span>
                 </div>
                 <div class="slider-row" v-show="slidersEnabled.GEN">
-                    <input v-model="angleDegGEN" type="range" :min="-angleMax" :max="angleMax" value="0" step="1">
-                    <input class="slider-text" v-model="angleDegGEN" type="text" size="4">
+                    <input v-model="angleDegGEN" type="range" :min="-angleMax" :max="angleMax" value="0" step="1" :style="{'width': sliderWidth + 'px'}">
+                    <input class="slider-text" v-model="angleDegGEN" type="text" size="4" maxlength="5">
                     <span class="unit-text">°</span>
                 </div>
             </div>
@@ -128,7 +128,6 @@ let frameCount = 0
 
 let cubeIndex = 0
 
-
 export default {
     data() {
         return {
@@ -156,11 +155,12 @@ export default {
                 GEN: false,
                 RESET: false
             },
-            angleMax: 0,
+            angleMax: 180,
+            wMax: 2,
 
             objectNeedsUpdate: false,
             state: undefined,
-            rapSceneID: Constants.scenes.three.rotateAxisPlane
+            rapSceneID: Constants.scenes.three.rotateAxisPlane,
         }
     },
     props: {
@@ -181,17 +181,18 @@ export default {
         },
         startSliderAt0() {
             return this.scene === Constants.scenes.three.rotateCubeIn4D
+        },
+        sliderWidth() {
+            return this.$store.state.sliderWidth
         }
     },
     watch: {
         interactiveSize: function(newD, oldD) {
-            if (newD.w === oldD.w && newD.h === oldD.h) {
+            if (newD.w === oldD.w && newD.h === oldD.h || this.isComponentActive === false) {
                 return
             }
             
-            if (this.isComponentActive) {
-                this.updateResolution(newD.w, newD.h)
-            }
+            this.updateResolution(newD.w, newD.h)
         },
         scene: function(newScene, oldScene) {
             if (Util.isValueInObject(oldScene, Constants.scenes.three)) {
@@ -217,6 +218,11 @@ export default {
             }
         },
         isComponentActive: function(newA, oldA) {
+            if (newA && this.scene && this.scene === Constants.scenes.three.projHypercube ||
+            this.scene === Constants.scenes.three.sliceHypercube) {
+                camera.position.set(-4.9987, 1.6528, 2.8776)
+                controls.update()
+            }
             if (oldA === false && newA) {
                 this.updateResolution(this.interactiveSize.w, this.interactiveSize.h)
                 requestAnimationFrame(this.animate)
@@ -232,23 +238,23 @@ export default {
             this.objectNeedsUpdate = true
         },
         angleDegXW: function() {
-            this.angleXW = Util.degreeToRadian(this.angleDegXW)
+            this.angleXW = Util.degreeToSafeRadian(this.angleDegXW)
             this.objectNeedsUpdate = true
         },
         angleDegYW: function() {
-            this.angleYW = Util.degreeToRadian(this.angleDegYW)
+            this.angleYW = Util.degreeToSafeRadian(this.angleDegYW)
             this.objectNeedsUpdate = true
         },
         angleDegZW: function() {
-            this.angleZW = Util.degreeToRadian(this.angleDegZW)
+            this.angleZW = Util.degreeToSafeRadian(this.angleDegZW)
             this.objectNeedsUpdate = true
         },
         angleDegIN: function() {
-            this.angleIN = Util.degreeToRadian(this.angleDegIN)
+            this.angleIN = Util.degreeToSafeRadian(this.angleDegIN)
             this.objectNeedsUpdate = true
         },
         angleDegGEN: function() {
-            this.angleGEN = Util.degreeToRadian(this.angleDegGEN)
+            this.angleGEN = Util.degreeToSafeRadian(this.angleDegGEN)
             this.objectNeedsUpdate = true
         },
         translateW: function() {
@@ -256,8 +262,28 @@ export default {
         }
     },
     methods: {
+        setCameraAxis1D() {
+            const fov = 80
+            const planeAspectRatio = 430/110
+
+            if (camera.aspect > planeAspectRatio) {
+                // window too large
+                camera.fov = fov;
+            } else {
+                // window too narrow
+                const cameraHeight = Math.tan(Util.degreeToRadian(fov / 2));
+                const ratio = camera.aspect / planeAspectRatio;
+                const newCameraHeight = cameraHeight / ratio;
+                camera.fov = Util.radianToDegree(Math.atan(newCameraHeight)) * 2;
+            }
+        },
         updateResolution(width, height) {
             camera.aspect = width / height
+
+            if (this.scene != null && this.scene === Constants.scenes.three.axis1D) {
+                this.setCameraAxis1D()
+            }
+            
             camera.updateProjectionMatrix()
             renderer.setSize(width, height)           
 
@@ -370,9 +396,13 @@ export default {
             controls.update()
             mainLight.intensity = 0.5
             ambientLight.intensity = 0.5
+            camera.fov = 80
+            camera.zoom = 1
+            camera.updateProjectionMatrix()
             switch(sceneID) {
                 case (Constants.scenes.three.sliceHypercube):
                     this.angleMax = 180
+                    this.wMax = 2
                     Util.toggleBoolsInObj(this.slidersEnabled, 'XW', 'YW', 'ZW', 'W', 'RESET')
                     this.state = Cube4D.initSliceHypercube(threeScene, this.interactiveSize.w, this.interactiveSize.h) 
                     break
@@ -383,6 +413,7 @@ export default {
                     break
                 case (Constants.scenes.three.sliceHypersphere):
                     this.angleMax = 0
+                    this.wMax = 1.4
                     mainLight.intensity = 0.8
                     ambientLight.intensity = 0.25
                     Util.toggleBoolsInObj(this.slidersEnabled, 'W', 'RESET')
@@ -392,18 +423,25 @@ export default {
                     this.angleMax = 180
                     Util.toggleBoolsInObj(this.slidersEnabled, 'XW', 'YW', 'ZW', 'RESET')
                     this.state = Sphere4D.initProjHypersphere(threeScene)
+                    camera.position.set(-5.231, 0.1, -2.9331)
+                    controls.update()
                     break
                 case (Constants.scenes.three.projCone):
                     this.angleMax = 360
                     Util.toggleBoolsInObj(this.slidersEnabled, 'XW', 'YW', 'ZW', 'RESET')
                     this.state = Cone4D.initProjCone(threeScene)
+                    camera.position.set(-4.190126212948289, 0, -4.294130258798469)
+                    controls.update()
                     break
                 case (Constants.scenes.three.sliceCone):
                     this.angleMax = 360
+                    this.wMax = 1.6
                     mainLight.intensity = 0.8
                     ambientLight.intensity = 0.25
                     Util.toggleBoolsInObj(this.slidersEnabled, 'IN', 'W', 'RESET')
                     this.state = Cone4D.initSliceCone(threeScene)
+                    camera.position.set(-2.184879, -1.64316, -5.338797)
+                    controls.update()
                     break
                 case (Constants.scenes.three.axesWithCube):
                     Util.toggleBoolsInObj(this.slidersEnabled)
@@ -413,9 +451,14 @@ export default {
                     break
                 case (Constants.scenes.three.axis1D):
                     Util.toggleBoolsInObj(this.slidersEnabled)
-                    this.state = Axes.init1D(threeScene, this.interactiveSize.w, this.interactiveSize.h)
+                    this.state = Axes.init1D(threeScene, this.interactiveSize.w, this.interactiveSize.h)                   
                     controls.enableRotate = false
                     controls.reset()
+                    this.setCameraAxis1D()
+                    camera.zoom = 7
+                    camera.updateProjectionMatrix()
+                    //camera.position.set(0, 0, 0.7710729393906183)
+                    //controls.update()
                     break
                 case(Constants.scenes.three.axis2D):
                     Util.toggleBoolsInObj(this.slidersEnabled)
@@ -477,6 +520,8 @@ export default {
                     this.angleMax = 180
                     Util.toggleBoolsInObj(this.slidersEnabled, "ZW", "RESET")
                     this.state = Cube4D.initRotateCubeIn4D(threeScene)
+                    camera.position.set(-3.428675742232244, 3.1778096225860617, 3.7610781243185922)
+                    controls.update()
                     break
             }
             this.objectNeedsUpdate = true
@@ -587,5 +632,6 @@ export default {
     height: 10px;
     display: inline-block;
     border: solid 1px;
+    margin-top: 3px;
 }
 </style>

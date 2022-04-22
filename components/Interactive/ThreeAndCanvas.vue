@@ -19,20 +19,20 @@
                     </div>                    
                     <div class="slider-row" v-show="slidersEnabled.XZ">
                         <label for="angleXZ">XZ</label>
-                        <input id="angleXZ" v-model="angleDegXZ" type="range" min="-360" max="360" value="0" step="1">
-                        <input v-model="angleDegXZ" class="slider-text" type="text" size="4">
+                        <input id="angleXZ" v-model="angleDegXZ" type="range" min="-360" max="360" value="0" step="1" :style="{'width': sliderWidth + 'px'}">
+                        <input v-model="angleDegXZ" class="slider-text" type="text" size="4" maxlength="5">
                         <span class="unit-text">°</span>
                     </div>
                     <div class="slider-row" v-show="slidersEnabled.YZ">
                         <label for="angleYZ">YZ</label>
-                        <input id="angleYZ" v-model="angleDegYZ" type="range" min="-360" max="360" value="0" step="1">
-                        <input v-model="angleDegYZ" class="slider-text" type="text" size="4">
+                        <input id="angleYZ" v-model="angleDegYZ" type="range" min="-360" max="360" value="0" step="1" :style="{'width': sliderWidth + 'px'}">
+                        <input v-model="angleDegYZ" class="slider-text" type="text" size="4" maxlength="5">
                         <span class="unit-text">°</span>
                     </div>
                     <div class="slider-row" v-show="slidersEnabled.Z">
                         <label for="translateZ">Z</label>
-                        <input id="translateZ" v-model="translateZ" type="range" min="-1.5" max="1.5" value="0" step="0.01">
-                        <input v-model="translateZ" class="slider-text" type="text" size="4">
+                        <input id="translateZ" v-model="translateZ" type="range" min="-1.5" max="1.5" value="0" step="0.01" :style="{'width': sliderWidth + 'px'}">
+                        <input v-model="translateZ" class="slider-text" type="text" size="4" maxlength="5">
                         <span class="unit-text invisible">°</span>
                     </div>
                 </div>
@@ -148,6 +148,9 @@ export default {
         },
         orthoCamActive() {
             return this.scene === Constants.scenes.threeandcanvas.projCube && this.isOrthoActive === true
+        },
+        sliderWidth() {
+            return this.$store.state.sliderWidth
         }
     },
     watch: {
@@ -169,6 +172,10 @@ export default {
                     this.$store.commit('updateSceneSlider', new SliderState(Constants.scenes.threeandcanvas.solidCube, this))
                 } else if (oldScene === Constants.scenes.threeandcanvas.solidCube) {
                     this.$store.commit('updateSceneSlider', new SliderState(Constants.scenes.threeandcanvas.edgeCube, this))
+                } else if (oldScene === Constants.scenes.threeandcanvas.projCube) {
+                    this.$store.commit('updateSceneSlider', new SliderState(Constants.scenes.threeandcanvas.projEdgeCube, this))
+                } else if (oldScene === Constants.scenes.threeandcanvas.projEdgeCube) {
+                    this.$store.commit('updateSceneSlider', new SliderState(Constants.scenes.threeandcanvas.projCube, this))
                 }
 
                 if (oldScene === Constants.scenes.threeandcanvas.sideView2D) {
@@ -191,7 +198,7 @@ export default {
         isComponentActive: function(newA, oldA) {
             if (newA && this.scene && this.scene === Constants.scenes.threeandcanvas.sphere ||
             this.scene === Constants.scenes.threeandcanvas.solidCube || this.scene === Constants.scenes.threeandcanvas.edgeCube ||
-            this.scene === Constants.scenes.threeandcanvas.cone) {
+            this.scene === Constants.scenes.threeandcanvas.cone || this.scene === Constants.scenes.threeandcanvas.coneNoToggle) {
                 camera.position.set(-6.011, 0.447, 3.556)
                 controls.update()
             }
@@ -207,11 +214,11 @@ export default {
             }
         },
         angleDegXZ: function() {
-            this.angleXZ = this.angleDegXZ*(Math.PI/180)
+            this.angleXZ = Util.degreeToSafeRadian(this.angleDegXZ)
             this.objectNeedsUpdate = true
         },
         angleDegYZ: function() {
-            this.angleYZ = this.angleDegYZ*(Math.PI/180)
+            this.angleYZ = Util.degreeToSafeRadian(this.angleDegYZ)
             this.objectNeedsUpdate = true
         },
         translateZ: function() {
@@ -329,20 +336,20 @@ export default {
         updateDisplay() {
             switch (this.scene) {
                 case (Constants.scenes.threeandcanvas.sphere):
-                    Objects3D.updateSphere(this.state, this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
+                    Objects3D.updateSphere(this.state, this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(Util.toSafeNumber(this.translateZ)))
                     //Objects3D.updateSphereRing(this.sillyState, parseFloat(this.angleXZ))
                     break
                 case (Constants.scenes.threeandcanvas.solidCube):
-                    Objects3D.updateSolidCube(this.state, this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
+                    Objects3D.updateSolidCube(this.state, this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(Util.toSafeNumber(this.translateZ)))
                     break
                 case (Constants.scenes.threeandcanvas.edgeCube):
-                    Objects3D.updateEdgeCube(this.state, this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
+                    Objects3D.updateEdgeCube(this.state, this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(Util.toSafeNumber(this.translateZ)))
                     break
                 case (Constants.scenes.threeandcanvas.projCube):
                     Objects3D.transformMesh(this.state.mainMesh, parseFloat(this.angleXZ), parseFloat(this.angleYZ), projObjZ)
                     break
                 case (Constants.scenes.threeandcanvas.cone):
-                    Objects3D.updateCone(this.state, this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
+                    Objects3D.updateCone(this.state, this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(Util.toSafeNumber(this.translateZ)))
                     break
                 case (Constants.scenes.threeandcanvas.sideView2D):
                     Axes.updateZLine(this.state, camera.position)
@@ -357,10 +364,10 @@ export default {
                     Objects3D.updateProjSpherePoints(this.state, threeScene, parseFloat(this.angleXZ), parseFloat(this.angleYZ), projObjZ)
                     break
                 case (Constants.scenes.threeandcanvas.squareSlice):
-                    Objects3D.updateSingleSquare(this.state, this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
+                    Objects3D.updateSingleSquare(this.state, this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(Util.toSafeNumber(this.translateZ)))
                     break
                 case (Constants.scenes.threeandcanvas.coneNoToggle):
-                    Objects3D.updateCone(this.state, this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(this.translateZ))
+                    Objects3D.updateCone(this.state, this.sliceCanvas, parseFloat(this.angleXZ), parseFloat(this.angleYZ), parseFloat(Util.toSafeNumber(this.translateZ)))
                     break
             }
         },

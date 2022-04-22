@@ -1,37 +1,42 @@
 <template>
-    <div id="fp-container">
-        <canvas id="main-canvas" ref="canvas"></canvas>
-        <div ref="controls" id="controls">
-            <div id="left-section">
-                <p class="controls-header">Move:</p>
-                <div class="buttons">
-                    <button ref="upArrow" @pointerdown="onPressDirection('up', true)" @pointerup="onPressDirection('up', false)" @pointerout="onPressDirection('up', false)"
-                    class="control-button gray-rounded-button" :style="{'width': buttonWidth + 'px'}">↑</button>
-                    <div class="button-column">
-                        <button ref="leftArrow" @pointerdown="onPressDirection('left', true)" @pointerup="onPressDirection('left', false)" @pointerout="onPressDirection('left', false)"
-                        class="control-button gray-rounded-button" :style="{'width': buttonWidth + 'px'}">←</button>
-                        <div class="button-center gray-rounded-button" :style="{'width': buttonWidth + 'px'}"></div>
-                        <button ref="rightArrow" @pointerdown="onPressDirection('right', true)" @pointerup="onPressDirection('right', false)" @pointerout="onPressDirection('right', false)"
-                        class="control-button gray-rounded-button" :style="{'width': buttonWidth + 'px'}">→</button>
-                    </div>
-                    <button ref="downArrow" @pointerdown="onPressDirection('down', true)" @pointerup="onPressDirection('down', false)" @pointerout="onPressDirection('down', false)"
-                    class="control-button gray-rounded-button" :style="{'width': buttonWidth + 'px'}">↓</button>
+    <div class="fp-container" :class="{'fp-container-vert': isVertical, 'fp-container-horiz': !isVertical}">
+        <div class="canvas-container" :class="{'canvas-container-vert': isVertical, 'canvas-container-horiz': !isVertical}">
+            <canvas ref="canvas"></canvas>
+            <div class="canvas-overlay">
+                <div class="bottom-left">
+                    <div class="inputs-grid">
+                        <p class="inputs-text-1">Look Around:</p>
+                        <img class="icon-1" src="~assets/icons/side_icons.png" alt="Rotate camera">
+                        <p class="inputs-text-2">Move Keys:</p>
+                        <img class="icon-2" src="~assets/icons/fp_keys.png" alt="Move">
+                    </div>             
                 </div>
             </div>
-            <div id="right-section">
-                <p>Look around:</p>
-                <img src="" alt="">
-                <p>Move Keys:</p>
-                <img src="" alt="">
+        </div>
+        <div ref="controls" class="controls">
+            <p class="controls-header">Move:</p>
+            <div class="button-square" ref="buttonContainer">
+                <div class="buttons" :style="{'width': buttonsSize + 'px', 'height': buttonsSize + 'px'}">
+                    <button ref="upArrow" @pointerdown="onPressDirection('up', true)" @pointerup="onPressDirection('up', false)" @pointerout="onPressDirection('up', false)"
+                    class="control-button gray-rounded-button button-up">↑</button>
+                    <button ref="leftArrow" @pointerdown="onPressDirection('left', true)" @pointerup="onPressDirection('left', false)" @pointerout="onPressDirection('left', false)"
+                    class="control-button gray-rounded-button button-left">←</button>
+                    <button ref="rightArrow" @pointerdown="onPressDirection('right', true)" @pointerup="onPressDirection('right', false)" @pointerout="onPressDirection('right', false)"
+                    class="control-button gray-rounded-button button-right">→</button>
+                    <button ref="downArrow" @pointerdown="onPressDirection('down', true)" @pointerup="onPressDirection('down', false)" @pointerout="onPressDirection('down', false)"
+                    class="control-button gray-rounded-button button-down">↓</button>
+                </div>
             </div>
         </div>
-        <div ref="toggleOverhead">
-            <!-- <button class="overhead-button gray-rounded-button">Toggle Overhead View</button> -->
-            <input type="checkbox" id="overhead" v-model="showOverhead">
-            <label for="overhead">Show Overhead Display</label>
+        <div class="overhead-section" ref="overheadSection" :class="{'overhead-section-vert': isVertical, 'overhead-section-horiz': !isVertical}">
+            <div class="toggle-overhead" ref="toggleOverhead">
+                <input type="checkbox" id="overhead" v-model="showOverhead">
+                <label for="overhead">Show Overhead Display</label>
+            </div>
+            <div class="oh-canvas-container" ref="ohCanvasContainer">
+                <canvas v-show="showOverhead" class="overhead-canvas" ref="overheadCanvas"></canvas>
+            </div>           
         </div>
-
-        <canvas v-show="showOverhead" id="overhead-canvas" ref="overheadCanvas"></canvas>
     </div>
 </template>
 
@@ -43,18 +48,21 @@ let previousTimestamp = 0;
 let interval = 1000/60;
 const rotPerFullSwipe = 3*Math.PI/4
 
+const buttonsMaxSize = 170
+const buttonsPadding = 10
+
 export default {
     data() {
         return {
-            canvasPercentH: 0.45,
-            overheadCanvasPercentH: 0.3,
             overheadPadding: 8,
             canvas: undefined,
             overheadCanvas: undefined,
             prevOffsetX: 0,
             angleNeedsUpdate: true,
-            buttonWidth: 20,
-            showOverhead: false
+            buttonsSize: 100,
+            showOverhead: false,
+            isVertical: false,
+            isSmallInputs: false
         }
     },
     props: {
@@ -67,25 +75,21 @@ export default {
     },
     watch: {
         interactiveSize: function(newD, oldD) {
-            if (newD.w === oldD.w && newD.h === oldD.h) {
+            if (newD.w === oldD.w && newD.h === oldD.h || !this.isComponentActive) {
                 return
-            }
-            this.updateCanvases(newD.w, newD.h)
-            this.buttonWidth = this.$refs.upArrow.clientHeight
+            }            
 
-            if (!this.isComponentActive) {
-                return
-            }
-            drawCanvas(this.canvas)
-            drawOverheadCanvas(this.overheadCanvas)
+            this.updateCanvases(newD.w, newD.h)
         },
         isComponentActive: function(newA, oldA) {
             if (oldA === false && newA) {
                 this.updateCanvases(this.interactiveSize.w, this.interactiveSize.h)
-                this.buttonWidth = this.$refs.upArrow.clientHeight
-                drawCanvas(this.canvas)
-                drawOverheadCanvas(this.overheadCanvas)
                 requestAnimationFrame(this.animate)
+            }
+        },
+        showOverhead: function(newV) {
+            if (newV === true) {
+                drawOverheadCanvas(this.overheadCanvas)
             }
         },
     },
@@ -96,27 +100,47 @@ export default {
                 if (this.angleNeedsUpdate || pressedUp || pressedLeft || pressedDown || pressedRight) {
                     updatePlayerPosition()
                     drawCanvas(this.canvas)
-                    drawOverheadCanvas(this.overheadCanvas)
+                    if (this.showOverhead) {
+                        drawOverheadCanvas(this.overheadCanvas)
+                    }
                     this.angleNeedsUpdate = false
                 }
                 delta = delta % interval
             }
-            if (this.isComponentActive) {
+            if (this.isComponentActive === true) {
                 previousTimestamp = timestamp
                 requestAnimationFrame(this.animate)
             }
         },
         updateCanvases(width, height) {
-            this.canvas.width = width
-            this.canvas.height = height*this.canvasPercentH
+            this.canvas.width = this.canvas.clientWidth
+            this.canvas.height = this.canvas.clientHeight
+            drawCanvas(this.canvas)
 
-            let remainingHeight = height - this.canvas.offsetHeight - this.$refs.controls.offsetHeight - this.$refs.toggleOverhead.offsetHeight
-            if (remainingHeight*2 < width) {
-                this.overheadCanvas.width = 2*remainingHeight - (this.overheadPadding*2)
-                this.overheadCanvas.height = remainingHeight - (this.overheadPadding*2)
+            //this.isSmallInputs = this.canvas.height < 230
+            this.isSmallInputs = true
+
+            const flipRatio = 1.9
+            this.isVertical = height / width < flipRatio
+
+            // waiting for dom to update from isVertical
+            requestAnimationFrame(this.resizeElements)
+        },
+        resizeElements() {
+            this.buttonsSize = Math.min(this.$refs.buttonContainer.clientHeight - buttonsPadding, buttonsMaxSize, this.$refs.buttonContainer.clientWidth - buttonsPadding*2)
+
+            let h = this.$refs.ohCanvasContainer.clientHeight
+            let w = this.$refs.ohCanvasContainer.clientWidth
+            if (h*2 < w) {
+                this.overheadCanvas.width = 2*h - (this.overheadPadding*2)
+                this.overheadCanvas.height = h - (this.overheadPadding*2)
             } else {
-                this.overheadCanvas.width = width - (this.overheadPadding*2)
-                this.overheadCanvas.height = width/2 - (this.overheadPadding*2)
+                this.overheadCanvas.width = w - (this.overheadPadding*2)
+                this.overheadCanvas.height = w/2 - (this.overheadPadding*2)
+            }
+
+            if (this.showOverhead) {
+                drawOverheadCanvas(this.overheadCanvas)
             }
         },
         onCanvasPointerDown(e) {
@@ -182,8 +206,6 @@ export default {
         this.canvas.addEventListener("touchmove", function(e) {
             e.preventDefault()
         }, {passive: false})
-
-        requestAnimationFrame(this.animate)
     },
 }
 
@@ -875,72 +897,184 @@ function drawGameLine(context, line, scaleX, scaleY) {
 
 <style>
 
-#fp-container {
+.fp-container {
+    display: grid;
     text-align: center;
     height: 100%;
+    overflow: hidden;
 
     background: rgb(15, 15, 15);
     color: white;
 }
 
-#main-canvas {
-    display: block;
+.fp-container-horiz {
+    grid-template-rows: minmax(60px, 45%) 28% 27%;
 }
 
-#overhead-canvas {
+.fp-container-vert {
+    grid-template-rows: minmax(60px, 2fr) 1fr;
+    grid-template-columns: 35% 65%;
+}
+
+.bottom-left {
+    opacity: 0.55;
+    bottom: 0;
+    position: absolute;
+    padding: 4px;
+    pointer-events: none;
+    max-width: 220px;
+    font-size: 0.75rem;
+    text-align: center;
+}
+
+.inputs-grid {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr;
+    column-gap: 10px;
+    width: 100%;
+    max-width: 170px;
+    justify-items: center;
+}
+
+.inputs-text-1 {
+    margin-top: 0;
+    margin-bottom: 4px;
+    grid-column: 1;
+    grid-row: 1;
+}
+
+.inputs-text-2 {
+    margin-top: 0;
+    margin-bottom: 4px;
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.icon-1 {
+    grid-column: 1;
+    grid-row: 2;
+    max-width: 75%;
+}
+
+.icon-2 {
+    grid-column: 2;
+    grid-row: 2;
+    max-width: 75%;
+    padding: 2px;
+}
+
+.overhead-canvas {
     display: inline-block;
     padding: 8px;
 }
 
-#controls {
-    padding: 10px;
-    height: 25%;
-}
-
-#controls p {
-    text-align: left;
-    margin: 0;
-}
-
-#left-section {
-    width: 50%;
-    height: 100%;
-    float: left;
+.controls {
+    grid-column: 1;
+    grid-row: 2;
     display: flex;
     flex-direction: column;
 }
 
-#right-section {
-    width: 50%;
-    height: 100%;
-    display: inline-block;
+.controls p {
+    text-align: left;
+    margin: 10px;
+    margin-bottom: 4px;
+}
+
+.overhead-section {    
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.overhead-section-horiz {
+    grid-column: 1;
+    grid-row: 3;
+}
+
+.overhead-section-vert {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+.oh-canvas-container {
+    flex: auto;
+    overflow: hidden;
+    margin-bottom: 6px;
+}
+
+.canvas-container {
+    grid-row: 1;
+    position: relative;
     text-align: left;
 }
 
-.control-button {
-    margin: 0;
-    padding: 0;
+.canvas-container-vert {
+    grid-column: 1 / 3;
 }
 
-.buttons {
-    flex: auto;
+.canvas-container-horiz {
+    grid-column: 1;
 }
 
-.control-button, .button-column {
-    height: 33%;
-    max-height: 55px;
-}
-
-.button-column {
-    font-size: 0;
-}
-
-.button-column .control-button {
+.canvas-container canvas {
+    position: absolute;
+    width: 100%;
     height: 100%;
 }
 
-.button-center {
-    display: inline-block;
+.canvas-overlay {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    pointer-events: none;
+}
+
+.toggle-overhead {
+    margin-top: 10px;
+}
+
+.button-square {
+    flex: auto;
+    overflow: hidden;
+    min-height: 90px;
+    min-width: 90px;
+    position: relative;
+}
+
+.buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-rows: 1fr 1fr 1fr;
+
+    position: absolute;
+    left: 0;
+    right: 0;
+    margin-left: auto;
+    margin-right: auto;
+
+    margin-bottom: 10px;
+    margin-top: 0;
+}
+
+.button-up {
+    grid-row: 1;
+    grid-column: 2;
+}
+
+.button-left {
+    grid-row: 2;
+    grid-column: 1;
+}
+
+.button-right {
+    grid-row: 2;
+    grid-column: 3;
+}
+
+.button-down {
+    grid-row: 3;
+    grid-column: 2;
 }
 
 </style>

@@ -50,8 +50,24 @@ export function lerpColor(c1, c2, t) {
     return createColor(r, g, b)
 }
 
+export function toSafeNumber(input) {
+    input = input.toString()
+    if (!input.match(/^(-\d+\.?\d*)$|^(-\.\d+)$|^(\d+\.?\d*)$|^(\.\d+)$/)) {
+        return '0'
+    }
+    return input
+}
+
 export function degreeToRadian(deg) {
     return deg*(Math.PI/180)
+}
+
+export function radianToDegree(rad) {
+    return (rad*180)/Math.PI
+}
+
+export function degreeToSafeRadian(deg) {
+    return degreeToRadian(toSafeNumber(deg))
 }
 
 export function subtractVectors(vDommy, vSub){
@@ -492,8 +508,8 @@ export function rotMat3DPlanes4D(angleYZ, angleXZ, angleXY) {
         [0, 0, 0, 1]
     ];
 
-    let m = multiplyMatrices(rotationXY, rotationXZ)
-    return multiplyMatrices(m, rotationYZ)
+    let m = multiplyMatrices(rotationYZ, rotationXZ)
+    return multiplyMatrices(m, rotationXY)
 }
 
 export function scaleMatXYZ4D(scale) {

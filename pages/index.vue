@@ -2,9 +2,10 @@
   <div>
     <h2 class="article-header">INTRODUCTION</h2>
     <div class="main-content">
+      <!-- <h2 class="article-header">INTRODUCTION</h2> -->
       <p>"The fourth dimension is uhhhh... time! Right??" 🤮</p>
       <p>No thank you. On this website, my goal is to give you an intuitive understanding of a 4th spatial dimension. To achieve this, we'll first brush up on simple 2D and 3D space, then using that knowledge we'll observe the most fundamental 4D shapes.</p>
-      <p>To get your first glimpse of 4D, tap these 6 buttons below. Each loads a different 4D object that you can manipulate with the sliders at the bottom right. Once you’re sufficiently confused, tap the Next button below to learn how these objects work!</p>
+      <p>To begin, try interacting with these six 4D objects below. Once you’re sufficiently confused, tap the Next button to learn how these objects work!</p>
       <SceneButtonGrid :buttonData="buttonData" />
     </div>
   </div>
@@ -18,6 +19,15 @@ import SceneButtonGrid from '../components/SceneButtonGrid'
 let activeScene = undefined
 
 export default {
+  head: {
+    title: 'Interactive 4D Handbook',
+    meta: [
+      {
+        name: 'description',
+        content: 'Interact with 4D shapes and learn about 4D universes!'
+      }
+    ]
+  },
   components: {
     LoadSceneButton,
     SceneButtonGrid

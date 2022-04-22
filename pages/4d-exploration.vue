@@ -31,6 +31,15 @@ import SceneButtonSingle from '../components/SceneButtonSingle'
 let activeScene = undefined
 
 export default {
+  head: {
+    title: 'Interactive 4D Handbook - 4D Exploration',
+    meta: [
+      {
+        name: 'description',
+        content: 'What to explore once you have a basic understanding of 4D.'
+      }
+    ]
+  },
   components: {
     SceneButtonSingle
   },

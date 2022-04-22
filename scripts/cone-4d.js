@@ -53,7 +53,7 @@ function initSpheres(scene) {
             //color = lineColor
         }
 
-        const geometry = new THREE.SphereGeometry(radius, 24, 12)
+        const geometry = new THREE.SphereGeometry(radius, 20, 10)
         const material = new THREE.MeshStandardMaterial()
         material.color = new THREE.Color(color)
 

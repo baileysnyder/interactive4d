@@ -31,7 +31,7 @@
       <p>It’s 3D versions of the conic sections! We went from 2D circles, ellipses, parabolas, and hyperbolas to 3D spheres, ellipsoids, paraboloids, and hyperboloids.</p>
       <img class="img-wide" src="~assets/cone_slice_comparison_s.png" alt="Comparing 3D and 4D cone slices">
       <p>Hopefully by this point I've proven how useful it is to compare slices and projections between dimensions. Understand them in 3D and you nearly understand them in 4D. Understand them in 4D and you nearly understand the entire 4D shape.</p>
-      <p>Now that we've gone through this process with our basic shapes, working with any other 4D shape will be much easier. 4D cylinder? Just like a 4D cone but instead of a single point dragged into the fourth dimension it’s a 3D sphere. <a href="https://en.wikipedia.org/wiki/24-cell" target="_blank">Icositetrachoron</a>? Just an object that’s somewhere between a tesseract and a 4D sphere. 4D doesn’t have to be scary if you break things into small manageable pieces.</p>
+      <p>Now that we've gone through this process with our basic shapes, working with any other 4D shape will be much easier. 4D cylinder? Just like a 4D cone but instead of a single point dragged into the fourth dimension it’s a 3D sphere. <a href="https://en.wikipedia.org/wiki/24-cell" target="_blank">Icositetrachoron</a>? Just an object that’s somewhere between a tesseract and a 4D sphere. Break things up into small manageable pieces and 4D won't be so scary.</p>
     </div>
   </div>
 </template>
@@ -43,6 +43,15 @@ import SceneButtonSingle from '../components/SceneButtonSingle'
 let activeScene = undefined
 
 export default {
+  head: {
+    title: 'Interactive 4D Handbook - 4D Cones',
+    meta: [
+      {
+        name: 'description',
+        content: 'Interact with the projection and slices of a 4D cone to learn how they work.'
+      }
+    ]
+  },
   components: {
     SceneButtonSingle
   },

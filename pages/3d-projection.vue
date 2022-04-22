@@ -30,6 +30,15 @@ import SceneButtonSingle from '../components/SceneButtonSingle'
 let activeScene = undefined
 
 export default {
+  head: {
+    title: 'Interactive 4D Handbook - 3D Projection',
+    meta: [
+      {
+        name: 'description',
+        content: 'Interact with 3D spheres and cubes to see what their perspective projection to 2D looks like.'
+      }
+    ]
+  },
   components: {
     SceneButtonSingle
   },

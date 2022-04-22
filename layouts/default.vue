@@ -1,6 +1,6 @@
 <template>
 <div ref="topContainer" class="top-container">
-    <h1 ref="header">INTERACTIVE 4D VISUALIZER</h1>
+    <h1 ref="header">INTERACTIVE 4D HANDBOOK</h1>
     <div id="main-content">
         <div class="wrapper" :class="{'vert-wrapper': isVerticalLayout, 'horiz-wrapper': !isVerticalLayout} " ref="wrapper">
             <Interactive ref="interactive" class="resizable-box interactive-box" :style="{'width': interactiveSize.w + 'px', 'height': interactiveSize.h + 'px'}"/>
@@ -60,7 +60,7 @@
 import Navigation from '../components/Navigation'
 import Interactive from '../components/Interactive/Interactive'
 import * as Constants from '../scripts/constants'
-import {Dimensions} from '../scripts/util'
+import {Dimensions, clamp} from '../scripts/util'
 
 const minInteractiveWidth = 0.2
 
@@ -138,9 +138,9 @@ export default {
 
             const mainH = this.$refs.wrapper.clientHeight
             let mainW = undefined
-
-            // hard coded yumm
+            
             const wPadding = 20
+            // hard coded because can't get from DOM when nav is not active
             const navW = 210
             const minArticleWidth = 475
 
@@ -171,10 +171,16 @@ export default {
             this.$store.commit('setInteractiveSize', iSize)
 
 
-            let articleWidth = this.mainWidth === interactiveW ? interactiveW : this.mainWidth - interactiveW
-            let articleHeight = this.mainHeight === interactiveH ? interactiveH : this.mainHeight - interactiveH
+            const handlerWidth = 22
+            let articleWidth = mainW === interactiveW ? interactiveW : mainW - interactiveW - handlerWidth
+            let articleHeight = mainH === interactiveH ? interactiveH : mainH - interactiveH - handlerWidth
             let aSize = new Dimensions(articleWidth, articleHeight)
             this.$store.commit('setArticleSize', aSize)
+
+            const maxSliderWidth = 300
+            const minSliderWidth = 130
+            const sliderRatio = 0.3
+            this.$store.commit('setSliderWidth', clamp(interactiveW*sliderRatio, minSliderWidth, maxSliderWidth))
         }
     }
 }
@@ -195,8 +201,8 @@ function dragHorizontal(e, vueContext, wrapper) {
     let maxWidth = vueContext.mainSize.w - minWidth
 
     // Resize box A
-    // * 8px is the left/right spacing between .handler and its inner pseudo-element
-    let width = pointerRelativeXpos - 8
+    const halfHandler = 11
+    let width = pointerRelativeXpos - halfHandler
     if (width < minWidth) {
         width = minWidth
     } else if (width > maxWidth) {
@@ -214,7 +220,8 @@ function dragVertical(e, vueContext, wrapper) {
     let minH = vueContext.mainSize.h * minInteractiveWidth
     let maxH = vueContext.mainSize.h - minH
 
-    let h = pointerRelativeYpos - 8
+    const halfHandler = 11
+    let h = pointerRelativeYpos - halfHandler
     if (h < minH) {
         h = minH
     } else if (h > maxH) {
@@ -226,27 +233,6 @@ function dragVertical(e, vueContext, wrapper) {
 </script>
 
 <style scoped>
-h1 {
-    margin-top: 18px;
-    margin-bottom: 6px;
-    margin-left: 8px;
-    font-style: italic;
-    grid-column: 1 / 3;
-    grid-row: 1;
-}
-
-@media screen and (max-width: 600px) {
-  h1 {
-    font-size: 24px;
-  }
-}
-
-@media screen and (max-width: 800px) {
-  h1 {
-    margin-top: 8px;
-  }
-}
-
 #main-content {
     grid-column: 1;
     grid-row: 2;
@@ -291,13 +277,6 @@ h1 {
     min-height: 0;
 }
 
-.article {
-    height: calc(100% - 40px);
-    display: flex;
-    flex-flow: column;
-    background: rgb(24, 24, 24);
-}
-
 .nav-button {
     padding-left: 8px;
     padding-right: 8px;
@@ -327,7 +306,7 @@ h1 {
 }
 
 .handler-horiz {
-  width: 18px;
+  width: 22px;
   padding: 0;
   cursor: ew-resize;
   flex: 0 0 auto;
@@ -338,7 +317,7 @@ h1 {
 }
 
 .handler-vert {
-    height: 18px;
+    height: 22px;
     padding: 0;
     cursor: ns-resize;
     flex: 0 0 auto;
@@ -371,31 +350,16 @@ h1 {
     grid-row: 3;
 }
 
-.donation-text {
-    margin-top: 5px;
-    margin-bottom: 3px;
-    font-size: 13px;
-    color: rgb(160, 160, 160);
-}
-
 .article-box-in {
     position: relative;
     height: 100%;
     width: 100%;
-}
-
-.nav-burger {
-    position: absolute;
-    right: 14px;
-    top: 14px;
-    width: 40px;
-    height: 40px;
-    transition: right 0.5s;
+    overflow: hidden;
 }
 
 .burger-icon {
-    width: 90%;
-    height: 90%;
+    width: 85%;
+    height: 85%;
 }
 
 .nav-overlay {
@@ -470,6 +434,67 @@ a.navlink:hover {
 <style>
 /* global styling */
 
+html {
+    font-size: 16px;
+}
+
+h1 {
+    margin-bottom: 6px;
+    margin-left: 8px;
+    font-style: italic;
+    grid-column: 1 / 3;
+    grid-row: 1;
+}
+
+.gray-rounded-button {
+    background: rgb(60, 60, 60);
+    color: rgb(232, 232, 232);
+    border: none;
+    border-radius: 5px;
+    box-shadow: 2px 2px 3px rgb(0 0 0 / 50%);
+
+    -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Old versions of Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome, Edge, Opera and Firefox */
+}
+
+.gray-rounded-button:hover {
+  background: rgb(75, 75, 75);
+}
+
+.nav-burger {
+    position: absolute;
+    right: 14px;
+    top: 14px;
+    width: 42px;
+    height: 42px;
+    transition: right 0.5s;
+    border-radius: 8px;
+}
+
+.donation-text {
+    margin-top: 5px;
+    margin-bottom: 3px;
+    font-size: 0.8125rem;
+    color: rgb(160, 160, 160);
+}
+
+.article .main-content {
+    overflow-y: auto;
+    padding-bottom: 50px;
+}
+
+.article {
+    height: calc(100% - 40px);
+    display: flex;
+    flex-flow: column;
+    background: rgb(24, 24, 24);
+}
+
 html, body, #__nuxt, #__layout {
     height: 100%;
 }
@@ -502,11 +527,6 @@ h1, h2, .navlink, button {
     margin-right: 20px;
 }
 
-.article .main-content {
-  overflow-y: auto;
-    padding-bottom: 50px;
-}
-
 .img-wide {
     margin: auto;
     display: block;
@@ -531,16 +551,8 @@ h1, h2, .navlink, button {
     /* box-shadow: 4px 4px 5px rgb(0 0 0 / 50%); */
 }
 
-.gray-rounded-button {
-    background: rgb(60, 60, 60);
-    color: rgb(232, 232, 232);
-    border: none;
-    border-radius: 5px;
-    box-shadow: 2px 2px 3px rgb(0 0 0 / 50%);
-}
-
-.gray-rounded-button:hover {
-  background: rgb(75, 75, 75);
+input {
+    accent-color: rgb(110, 110, 110);
 }
 
 /* Scrollbar */
@@ -599,5 +611,56 @@ h1, h2, .navlink, button {
 
 a {
     color: #62DDE5;
+}
+
+@media screen and (max-width: 800px),
+        screen and (max-height: 700px) {
+  h1 {
+    margin-top: 8px;
+  }
+
+  h2 {
+    margin-top: 14px;
+    margin-bottom: 14px;
+  }
+
+  .nav-burger {
+    top: 8px;
+  }
+}
+
+@media screen and (max-width: 600px),
+        screen and (max-height: 500px) {
+  h1 {
+    font-size: 1.5rem;
+    margin-top: 4px;
+  }
+
+  h2 {
+    font-size: 1.25rem;
+  }
+
+  .nav-burger {
+    /* width: 38px;
+    height: 36px;
+    top: 6px; */
+    top: auto;
+    bottom: 50px;
+    right: 24px;
+    box-shadow: 3px 3px 3px rgb(0 0 0 / 80%);
+    outline: solid 1px rgb(22, 22, 22);
+  }
+
+  .donation-text {
+      font-size: 0.75rem;
+  }
+
+    .article .main-content {
+      overflow-y: visible;
+  }
+
+  .article {
+      overflow-y: auto;
+  }
 }
 </style>

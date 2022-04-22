@@ -27,6 +27,15 @@ import SceneButtonSingle from '../components/SceneButtonSingle'
 let activeScene = undefined
 
 export default {
+  head: {
+    title: 'Interactive 4D Handbook - Thinking in Dimensions',
+    meta: [
+      {
+        name: 'description',
+        content: 'Interactive scenes moving from a 1D universe to a 4D universe.'
+      }
+    ]
+  },
   components: {
     SceneButtonSingle
   },

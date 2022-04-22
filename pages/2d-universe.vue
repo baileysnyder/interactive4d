@@ -36,6 +36,15 @@ import SceneButtonSingle from '../components/SceneButtonSingle'
 let activeScene = undefined
 
 export default {
+  head: {
+    title: 'Interactive 4D Handbook - 2D Universe',
+    meta: [
+      {
+        name: 'description',
+        content: 'Simulate what 2D Flatland would look like from the perspective of a 2D being.'
+      }
+    ]
+  },
   components: {
     SceneButtonSingle
   },

@@ -114,7 +114,6 @@ function initSkewPlaneMesh(scene, verts, normal) {
     material.transparent = true
     material.opacity = 0.5
     material.color = new THREE.Color(planeColor)
-    //material.color = new THREE.Color(axisColors[2])
     material.depthTest = false
 
     const mesh = new THREE.Mesh(geometry, material)
@@ -133,7 +132,6 @@ export function initRotateAxisPlane(scene, canvasW, canvasH) {
         localAxes: undefined,
     }
 
-    //let rot = Util.rotMat3DPlanes4D(0, 0.3, 0.4)  
     let rot = Util.rotMat3DPlanes4D(0, 0, 0)  
     let rotAxisPoints = Util.applyMatXYZ4D(axisPoints, rot)
 
@@ -165,8 +163,6 @@ export function initRotateAxisPlane(scene, canvasW, canvasH) {
 }
 
 export function updateRotateAxisPlane(state, angle, showPlane) {
-    //state.plane.visible = showPlane
-    //state.axis.visible = !showPlane
     if (showPlane) {
         state.plane.material.opacity = 0.7
 
@@ -184,7 +180,6 @@ export function updateRotateAxisPlane(state, angle, showPlane) {
     let rot = Util.multiplyMatrices(state.localAxes, Util.rotMat3DPlanes4D(angle, 0, 0))
     let rotatedPoints = Util.applyMatXYZ4D(spherePoints, rot)
 
-    //let linePositions = getLinePositions(spherePoints, showPlane)
     let linePositions = showPlane ? linePositionsPlane : linePositionsAxis
     let rotatesLines = []
     for (let i = 0; i < linePositions.length; i++) {

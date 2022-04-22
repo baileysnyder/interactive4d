@@ -36,6 +36,15 @@ import SceneButtonSingle from '../components/SceneButtonSingle'
 let activeScene = undefined
 
 export default {
+  head: {
+    title: 'Interactive 4D Handbook - Planes of Rotation',
+    meta: [
+      {
+        name: 'description',
+        content: 'Learn the difference between axes and planes for rotation. See what the planes of rotation look like in 4D.'
+      }
+    ]
+  },
   components: {
     SceneButtonSingle
   },

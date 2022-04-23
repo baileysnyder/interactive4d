@@ -45,7 +45,7 @@
 
 <script>
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { OrbitControls } from '../../node_modules/three/examples/jsm/controls/OrbitControls'
 import * as Objects3D from '../../scripts/objects-3d'
 import * as Constants from '../../scripts/constants'
 import * as Util from '../../scripts/util'
@@ -167,7 +167,7 @@ export default {
             if (Util.isValueInObject(oldScene, Constants.scenes.threeandcanvas)) {
                 this.undoInits(oldScene)
                 this.$store.commit('updateSceneSlider', new SliderState(oldScene, this))
-                // Keep the same values between cube proj and slice so the user can compare them more easily
+                // Keep the same values so the user can compare more easily
                 if (oldScene === Constants.scenes.threeandcanvas.edgeCube) {
                     this.$store.commit('updateSceneSlider', new SliderState(Constants.scenes.threeandcanvas.solidCube, this))
                 } else if (oldScene === Constants.scenes.threeandcanvas.solidCube) {
@@ -176,6 +176,10 @@ export default {
                     this.$store.commit('updateSceneSlider', new SliderState(Constants.scenes.threeandcanvas.projEdgeCube, this))
                 } else if (oldScene === Constants.scenes.threeandcanvas.projEdgeCube) {
                     this.$store.commit('updateSceneSlider', new SliderState(Constants.scenes.threeandcanvas.projCube, this))
+                } else if (oldScene === Constants.scenes.threeandcanvas.projSphere) {
+                    this.$store.commit('updateSceneSlider', new SliderState(Constants.scenes.threeandcanvas.projSpherePoints, this))
+                } else if (oldScene === Constants.scenes.threeandcanvas.projSpherePoints) {
+                    this.$store.commit('updateSceneSlider', new SliderState(Constants.scenes.threeandcanvas.projSphere, this))
                 }
 
                 if (oldScene === Constants.scenes.threeandcanvas.sideView2D) {
@@ -262,8 +266,8 @@ export default {
             this.updateDisplay()
 
             if (this.scene === Constants.scenes.threeandcanvas.sideView2D) {
-                let mainD =  new Util.Dimensions(width, mainCanvasHeight)
-                let bottomD = new Util.Dimensions(width, bottomHeight)
+                let mainD =  new Util.createDimensions(width, mainCanvasHeight)
+                let bottomD = new Util.createDimensions(width, bottomHeight)
                 Axes.updateSideViewResolutions(this.state, mainD, bottomD)
             }
         },
@@ -477,9 +481,9 @@ export default {
                     bottomCam.lookAt(0, 0, 3)
 
                     let mainCanvasHeight = this.interactiveSize.h*canvasPercentH
-                    let mainD =  new Util.Dimensions(this.interactiveSize.w, mainCanvasHeight)
+                    let mainD =  new Util.createDimensions(this.interactiveSize.w, mainCanvasHeight)
                     let bottomHeight = this.interactiveSize.h*sliceCanvasPercentH
-                    let bottomD = new Util.Dimensions(this.interactiveSize.w, bottomHeight)
+                    let bottomD = new Util.createDimensions(this.interactiveSize.w, bottomHeight)
                     this.state = Axes.initSideView2D(threeScene, mainD, bottomD, camera)
                     Util.toggleBoolsInObj(this.slidersEnabled)
                     break

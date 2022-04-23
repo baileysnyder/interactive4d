@@ -64,6 +64,7 @@ export default {
     title: 'Interactive 4D Handbook - 4D Cubes',
     meta: [
       {
+        hid: 'description',
         name: 'description',
         content: 'Interact with the projection and slices of a 4D cube to learn how they work.'
       }
@@ -77,7 +78,7 @@ export default {
       scenes: scenes,
     }
   },
-  beforeCreate() {
+  beforeMount() {
     if (!activeScene) {
       activeScene = scenes.three.projHypercube
     }

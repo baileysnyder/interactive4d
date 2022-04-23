@@ -1,7 +1,6 @@
 export default {
   // Target: https://go.nuxtjs.dev/config-target
   target: 'static',
-  ssr: false,
 
   // Global page headers: https://go.nuxtjs.dev/config-head
   head: {
@@ -44,10 +43,11 @@ export default {
 
   // Modules: https://go.nuxtjs.dev/config-modules
   modules: [
+    
   ],
 
   // Build Configuration: https://go.nuxtjs.dev/config-build
   build: {
-
+    // transpile: ['three/examples/jsm/controls/OrbitControls', 'three/examples/jsm/lines/LineGeometry', 'three/examples/jsm/lines/LineMaterial', 'three/examples/jsm/lines/Line2', 'three/examples/jsm/loaders/GLTFLoader']
   }
 }

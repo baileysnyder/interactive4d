@@ -26,11 +26,8 @@ export function toggleBoolsInObj(obj, ...propNames) {
     }
 }
 
-export class Dimensions {
-    constructor(width, height) {
-        this.w = width
-        this.h = height
-    }
+export function createDimensions(w, h) {
+    return {w, h}
 }
 
 export function round(number, decimalPlaces) {

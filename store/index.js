@@ -1,13 +1,10 @@
-import * as Constants from '../scripts/constants'
-import { Dimensions } from '~/scripts/util'
-
 export const state = () => ({
     sceneID: undefined,
     sceneSliders: [],
     pageURLs: [],
-    mainSize: new Dimensions(0, 0),
-    interactiveSize: new Dimensions(0, 0),
-    articleSize: new Dimensions(0, 0),
+    mainSize: {w: 0, h: 0},
+    interactiveSize: {w: 0, h: 0},
+    articleSize: {w: 0, h: 0},
     sliderWidth: 130
 })
 

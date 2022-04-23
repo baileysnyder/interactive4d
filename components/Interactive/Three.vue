@@ -78,7 +78,7 @@
 
 <script>
 import * as THREE from 'three'
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js'
+import { OrbitControls } from '../../node_modules/three/examples/jsm/controls/OrbitControls'
 import * as Util from '../../scripts/util'
 import * as Constants from '../../scripts/constants'
 import * as Cone4D from '../../scripts/cone-4d'
@@ -290,6 +290,9 @@ export default {
             if (this.state != null && this.state.lineMeshes != null) {
                 Util.updateLineResolution(this.state.lineMeshes, width, height)
             }
+
+            // canvas was flashing black on resize in firefox
+            renderer.render(threeScene, camera)
         },
         initThree() {
             let width = this.interactiveSize.w
@@ -318,6 +321,34 @@ export default {
 
             ambientLight = new THREE.AmbientLight(0xffffff, 0.5)
             threeScene.add(ambientLight)
+        },
+        updateDisplay() {
+            switch (this.scene) {
+                case (Constants.scenes.three.sliceHypercube):
+                    Cube4D.updateHypercubeSlice(this.state, parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW), this.colorCubes)
+                    break
+                case (Constants.scenes.three.projHypercube):
+                    Cube4D.updateHypercubeProjection(this.state, parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), this.colorCubes, this.oppCubeIndex)
+                    break
+                case (Constants.scenes.three.sliceHypersphere):
+                    Sphere4D.updateSliceHypersphere(this.state, parseFloat(this.translateW))
+                    break
+                case (Constants.scenes.three.projHypersphere):
+                    Sphere4D.updateProjHypersphere(this.state, parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW))
+                    break
+                case (Constants.scenes.three.projCone):
+                    Cone4D.updateProjectionCone(this.state, parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
+                    break
+                case (Constants.scenes.three.sliceCone):
+                    Cone4D.updateSliceCone(this.state, threeScene, parseFloat(this.angleIN), parseFloat(this.translateW))
+                    break
+                case (Constants.scenes.three.rotateAxisPlane):
+                    Rotations.updateRotateAxisPlane(this.state, parseFloat(this.angleGEN), this.isPlaneActive)
+                    break
+                case (Constants.scenes.three.rotateCubeIn4D):
+                    Cube4D.updateRotateCubeIn4D(this.state, parseFloat(this.angleZW))
+                    break
+            }
         },
         animate() {
             delta += clock.getDelta();
@@ -348,32 +379,7 @@ export default {
                 //console.log(camera.position.x + ", " + camera.position.y + ", " + camera.position.z)
                 if (this.objectNeedsUpdate) {
                     //this.translateW = this.translateW > 2 ? -2 : this.translateW + 0.024
-                    switch (this.scene) {
-                        case (Constants.scenes.three.sliceHypercube):
-                            Cube4D.updateHypercubeSlice(this.state, parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW), this.colorCubes)
-                            break
-                        case (Constants.scenes.three.projHypercube):
-                            Cube4D.updateHypercubeProjection(this.state, parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), this.colorCubes, this.oppCubeIndex)
-                            break
-                        case (Constants.scenes.three.sliceHypersphere):
-                            Sphere4D.updateSliceHypersphere(this.state, parseFloat(this.translateW))
-                            break
-                        case (Constants.scenes.three.projHypersphere):
-                            Sphere4D.updateProjHypersphere(this.state, parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW))
-                            break
-                        case (Constants.scenes.three.projCone):
-                            Cone4D.updateProjectionCone(this.state, parseFloat(this.angleXW), parseFloat(this.angleYW), parseFloat(this.angleZW), parseFloat(this.translateW))
-                            break
-                        case (Constants.scenes.three.sliceCone):
-                            Cone4D.updateSliceCone(this.state, threeScene, parseFloat(this.angleIN), parseFloat(this.translateW))
-                            break
-                        case (Constants.scenes.three.rotateAxisPlane):
-                            Rotations.updateRotateAxisPlane(this.state, parseFloat(this.angleGEN), this.isPlaneActive)
-                            break
-                        case (Constants.scenes.three.rotateCubeIn4D):
-                            Cube4D.updateRotateCubeIn4D(this.state, parseFloat(this.angleZW))
-                            break
-                    }
+                    this.updateDisplay()
                     this.objectNeedsUpdate = false
                 }
 

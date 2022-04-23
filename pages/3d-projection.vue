@@ -34,6 +34,7 @@ export default {
     title: 'Interactive 4D Handbook - 3D Projection',
     meta: [
       {
+        hid: 'description',
         name: 'description',
         content: 'Interact with 3D spheres and cubes to see what their perspective projection to 2D looks like.'
       }
@@ -47,7 +48,7 @@ export default {
       scenes: scenes,
     }
   },
-  beforeCreate() {
+  beforeMount() {
     if (!activeScene) {
       activeScene = scenes.threeandcanvas.projCube
     }

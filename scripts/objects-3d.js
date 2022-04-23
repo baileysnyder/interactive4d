@@ -5,7 +5,6 @@ import * as THREE from 'three'
 import * as Constants from './constants'
 import * as Cube from './cube'
 import { createLine } from './axes'
-import { MaterialLoader } from 'three'
 
 const planeColor = '#1B1B1B'
 //const planeColor = '#000000'

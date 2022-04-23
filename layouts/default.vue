@@ -1,9 +1,10 @@
 <template>
-<div ref="topContainer" class="top-container">
+<div ref="topContainer" class="top-container" :class="{'no-select': isHandlerDragging, 'yes-select': !isHandlerDragging}">
     <h1 ref="header">INTERACTIVE 4D HANDBOOK</h1>
-    <div id="main-content">
-        <div class="wrapper" :class="{'vert-wrapper': isVerticalLayout, 'horiz-wrapper': !isVerticalLayout} " ref="wrapper">
-            <Interactive ref="interactive" class="resizable-box interactive-box" :style="{'width': interactiveSize.w + 'px', 'height': interactiveSize.h + 'px'}"/>
+    <div id="main-content" ref="mainContent">
+        <div v-show="mounted" class="wrapper" :class="{'vert-wrapper': isVerticalLayout, 'horiz-wrapper': !isVerticalLayout} " ref="wrapper">
+            <Interactive ref="interactive" class="resizable-box interactive-box" :style="{'width': interactiveSize.w + 'px', 'height': interactiveSize.h + 'px'}"
+                :isThreeActive="isThreeActive" :isFirstPerson2DActive="isFirstPerson2DActive" :isThreeAndCanvasActive="isThreeAndCanvasActive"/>
             <div @pointerdown="onMousedownHandler" class="handler-horiz" v-show="!isVerticalLayout">
                 <svg class="handler-grip-horiz">
                     <rect x="21%" y="0" width="18%" height="100%" rx="4px" fill="rgb(56, 56, 56)" />
@@ -47,7 +48,7 @@
     <Navigation ref="navigation" id="navigation" v-show="!isNavHidden"/>
     <div ref="footer" class="donation-section">
         <p class="donation-text">If you've found this site useful and would like to help support it please consider donating!</p>
-        <form action="https://www.paypal.com/donate" method="post" target="_top">
+        <form class="paypal" action="https://www.paypal.com/donate" method="post" target="_top">
             <input type="hidden" name="hosted_button_id" value="DZUQU9XR384U6" />
             <input type="image" src="https://www.paypalobjects.com/en_US/i/btn/btn_donate_SM.gif" border="0" name="submit" title="PayPal - The safer, easier way to pay online!" alt="Donate with PayPal button" />
             <img alt="" border="0" src="https://www.paypal.com/en_US/i/scr/pixel.gif" width="1" height="1" />
@@ -60,9 +61,12 @@
 import Navigation from '../components/Navigation'
 import Interactive from '../components/Interactive/Interactive'
 import * as Constants from '../scripts/constants'
-import {Dimensions, clamp} from '../scripts/util'
+import {createDimensions, clamp} from '../scripts/util'
 
 const minInteractiveWidth = 0.2
+
+let previousWidth = 0
+let previousHeight = 0
 
 export default {
     components: {
@@ -75,7 +79,14 @@ export default {
             isNavHidden: true,
             burgerActive: false,
             navPages: Constants.navPages,
-            isVerticalLayout: false
+            isVerticalLayout: false,
+            isMobile: false,
+
+            isThreeActive: false,
+            isFirstPerson2DActive: false,
+            isThreeAndCanvasActive: false,
+
+            mounted: false
         }
     },
     computed: {
@@ -98,10 +109,28 @@ export default {
         },
         mainSize() {
             return this.$store.state.mainSize
+        },
+        scene() {
+            return this.$store.state.sceneID
+        },
+    },
+    watch: {
+        scene: function(newScene) {
+            if (this.isSceneInComponent(newScene, Constants.scenes.three)) {
+                this.activateComponent(true, false, false)
+            } else if (this.isSceneInComponent(newScene, Constants.scenes.firstperson2d)) {
+                this.activateComponent(false, true, false)
+            } else if (this.isSceneInComponent(newScene, Constants.scenes.threeandcanvas)) {
+                this.activateComponent(false, false, true)
+            }
         }
     },
     mounted() {
-        this.onResize()
+        this.mounted = true
+        this.setLayout()
+        this.isMobile = navigator.userAgent.toLowerCase().includes('mobile')
+        previousWidth = window.innerWidth
+        previousHeight = window.innerHeight
         window.addEventListener('resize', this.onResize)     
 
         const vueContext = this
@@ -127,6 +156,21 @@ export default {
         })
     },
     methods: {
+        isSceneInComponent(scene, sceneParent) {
+            for (const key in sceneParent) {
+                if (Object.hasOwnProperty.call(sceneParent, key)) {
+                    if (scene === sceneParent[key]) {
+                        return true 
+                    }                
+                }
+            }
+            return false
+        },
+        activateComponent(three, firstPerson2D, threeAndCanvas) {
+            this.isThreeActive = three
+            this.isFirstPerson2DActive = firstPerson2D
+            this.isThreeAndCanvasActive = threeAndCanvas
+        },
         onMousedownHandler(e) {
             this.isHandlerDragging = true
             const topContainter = this.$refs.topContainer
@@ -134,9 +178,30 @@ export default {
             topContainter.addEventListener('pointermove', preventEvent)
         },
         onResize() {
+            let wChange = Math.abs(1-window.innerWidth/previousWidth)
+            let hChange = 1-window.innerHeight/previousHeight
+            // detect on screen keyboard
+            if (this.isMobile && wChange < 0.01) {
+                // activated
+                if (hChange > 0.35) {
+                    const metaViewport = document.querySelector('meta[name=viewport]')
+                    metaViewport.setAttribute('content', 'height=' + previousHeight + 'px, width=device-width, initial-scale=1.0')
+                }
+                // deactivated
+                else if (hChange < -0.35) {
+                    const metaViewport = document.querySelector('meta[name=viewport]')
+                    metaViewport.setAttribute('content', 'width=device-width, initial-scale=1.0')
+                }
+            }
+
+            previousWidth = window.innerWidth
+            previousHeight = window.innerHeight
+            this.setLayout()
+        },
+        setLayout() {
             this.burgerActive = false
 
-            const mainH = this.$refs.wrapper.clientHeight
+            const mainH = this.$refs.mainContent.clientHeight
             let mainW = undefined
             
             const wPadding = 20
@@ -163,25 +228,25 @@ export default {
             this.storeSizes(mainW, mainH, interactW, interactH)
         },
         storeSizes(mainW, mainH, interactiveW, interactiveH) {
-            let mSize = new Dimensions(mainW, mainH)           
+            let mSize = createDimensions(mainW, mainH)           
             this.$store.commit('setMainSize', mSize)
 
 
-            let iSize = new Dimensions(interactiveW, interactiveH)
+            let iSize = createDimensions(interactiveW, interactiveH)
             this.$store.commit('setInteractiveSize', iSize)
 
 
             const handlerWidth = 22
             let articleWidth = mainW === interactiveW ? interactiveW : mainW - interactiveW - handlerWidth
             let articleHeight = mainH === interactiveH ? interactiveH : mainH - interactiveH - handlerWidth
-            let aSize = new Dimensions(articleWidth, articleHeight)
+            let aSize = createDimensions(articleWidth, articleHeight)
             this.$store.commit('setArticleSize', aSize)
 
             const maxSliderWidth = 300
             const minSliderWidth = 130
             const sliderRatio = 0.3
             this.$store.commit('setSliderWidth', clamp(interactiveW*sliderRatio, minSliderWidth, maxSliderWidth))
-        }
+        },
     }
 }
 
@@ -238,8 +303,7 @@ function dragVertical(e, vueContext, wrapper) {
     grid-row: 2;
     border-radius: 16px;
     overflow: hidden;
-    /* height: 100%; */
-    /* box-shadow: 6px 6px 3px rgba(0, 0, 0, 0.5); */
+    background-color: rgb(24, 24, 24);
 }
 
 #navigation {
@@ -273,7 +337,7 @@ function dragVertical(e, vueContext, wrapper) {
 }
 
 .article-box {
-    flex: 1 1 auto;
+    flex: auto;
     min-height: 0;
 }
 
@@ -429,6 +493,35 @@ a.navlink:hover {
     height: 10px;
 }
 
+.no-select {
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+     -khtml-user-select: none;
+       -moz-user-select: none;
+        -ms-user-select: none;
+            user-select: none;
+}
+
+.yes-select {
+    -webkit-touch-callout: unset;
+    -webkit-user-select: unset;
+     -khtml-user-select: unset;
+       -moz-user-select: unset;
+        -ms-user-select: unset;
+            user-select: unset;
+}
+
+/* Hardcoded because button height is 4 pixels too small when it first loads. Messes up the canvas height calculation */
+.paypal {
+    height: 26px;
+}
+
+.placeholder {
+    background-color: black;
+    flex: auto;
+    width: 100%;
+}
+
 </style>
 
 <style>
@@ -558,8 +651,8 @@ input {
 /* Scrollbar */
 /* Works on Firefox */
 * {
-  scrollbar-width: thin;
-  scrollbar-color: lightgray gray;
+  scrollbar-width: auto;
+  scrollbar-color: gray transparent;
 }
 
 /* Works on Chrome, Edge, and Safari */

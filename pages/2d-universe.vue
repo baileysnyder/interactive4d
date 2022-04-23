@@ -6,7 +6,7 @@
       <p>Before we do anything though, something a bit problematic needs to be addressed: Our previous representation of a 2D universe was already tainted by the bias of a 3D being. You can see that to get this view of a 2D universe, our observer (the white sphere) is placed somewhere along a third z axis.</p>
       <SceneButtonSingle :sceneID="scenes.threeandcanvas.sideView2D" :text="'LOAD SCENE'" :imgName="'side_view_2d.png'"></SceneButtonSingle>
       <p>What would this world look like to a 2D being who only had access to 2 dimensions? The answer is actually a bit complicated.</p>
-      <p>With the way light works in our universe, they would see nothing. Lining yourself up perfectly with a 2D grid would make everything invisible because none of the objects would have any thickness in the 3rd dimension to bounce light back to your eyes.</p>
+      <p>With the way light works in our universe, they would see nothing. A 2D object has no thickness in the 3rd dimension, so perfectly line up with it and there's nothing for light to bounce off of.</p>
       <img class="img-wide" src="~assets/side_view_2d.gif" alt="Rotating 2D axis to 90 degrees making 2D objects disappear">
       <p>Kind of annoying to work around. For now let's just create new laws of physics 😃 Consider an alternate universe where light <i>can</i> bounce off the sides of 2 dimensional objects. In this universe we have a 2D being (the white circle) looking at a pink square.</p>
       <img class="img-wide" src="~assets/pink_square_overhead.png" alt="A white circle looking at a pink square">
@@ -22,7 +22,7 @@
         <li>Physics - gravity, light, sound, etc.</li>
         <li>Shape - the space objects take up when stationary, moving, or rotating</li>
       </ol>
-      <p>Most of this website will focus on #3. Here we're free to twist the laws of physics around and use any representations we want as long as it gives us more information about an underlying shape. That's why in 2D we're safe to imagine a universe where light bounces off 2D objects, and we're even safe to view 2D worlds from a perspective along the z axis.</p>
+      <p>Most of this website will focus on #3. Here we're free to twist the laws of physics and represent objects in wacky ways as long as it makes an underlying shape easier to understand. That's why in 2D we're safe to imagine a universe where light bounces off 2D objects, and we're even safe to view 2D worlds from a perspective along the z axis.</p>
       <img class="img-300" src="~assets/z_axis_check.png" alt="2D world viewed from z axis with a checkmark indicating it's okay to use">
       <p>Moving forward, just how we can use different tools than a 2D being to understand 2D shapes, we can use different tools than a 4D being to understand 4D shapes.</p>
     </div>
@@ -40,6 +40,7 @@ export default {
     title: 'Interactive 4D Handbook - 2D Universe',
     meta: [
       {
+        hid: 'description',
         name: 'description',
         content: 'Simulate what 2D Flatland would look like from the perspective of a 2D being.'
       }
@@ -53,7 +54,7 @@ export default {
       scenes: scenes,
     }
   },
-  beforeCreate() {
+  beforeMount() {
     if (!activeScene) {
       activeScene = scenes.threeandcanvas.sideView2D
     }

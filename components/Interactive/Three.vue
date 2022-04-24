@@ -577,7 +577,7 @@ export default {
 
 .sticky-box {
     position: absolute;
-    padding: 4px;
+    padding: 6px;
     pointer-events: auto;
 }
 

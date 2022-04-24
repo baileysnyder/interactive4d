@@ -611,7 +611,7 @@ export default {
 }
 
 .sticky-box {
-    padding: 4px;
+    padding: 6px;
     pointer-events: auto;
 }
 

@@ -54,7 +54,7 @@ let hypersphereMesh = undefined
 
 export function initProjHypersphere(scene) {
     return {
-        sphereMeshes: Util.initProjSpheres(scene, Constants.projectionSphereRadius, hyperspherePoints.length, 18, 9, maxPointColor),
+        sphereMeshes: Util.initProjSpheres(scene, Constants.projectionSphereRadius, hyperspherePoints.length, 16, 8, maxPointColor),
         //cylinderMeshes: Util.initProjCylinders(scene, 1, '#fc2e2e')
     }
 }

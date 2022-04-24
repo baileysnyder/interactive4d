@@ -92,7 +92,7 @@ function initImage(scene, url, position, width, height) {
 // "Low Poly Male Base" (https://skfb.ly/KVAp) by wh_nerevar is licensed under Creative Commons Attribution (http://creativecommons.org/licenses/by/4.0/).
 function initMan(state, scene) {
     const loader = new GLTFLoader()
-    loader.load('/man.glb', function(gltf) {
+    loader.load('man.glb', function(gltf) {
         if (state.meshes == null) {
             throw new Error('state does not have meshes field to add man.glb')
         }
@@ -113,7 +113,7 @@ function initMan(state, scene) {
 
 function initTrapezoidal(state, scene) {
     const loader = new GLTFLoader()
-    loader.load('/trapezoidal.glb', function(gltf) {
+    loader.load('trapezoidal.glb', function(gltf) {
         if (state.meshes == null) {
             throw new Error('state does not have meshes field to add trapezoidal.glb')
         }
@@ -295,10 +295,10 @@ export function init2D(scene, canvasW, canvasH) {
     y.layers.set(1)
     state.lineMeshes.push(x, y)
 
-    state.meshes.push(initImage(scene, '/textures/blueman.png', [1.2, -0.2], 1.4, 1.4))
-    state.meshes.push(initImage(scene, '/textures/circle.png', [-1.2, 1.3], 1, 1))
-    state.meshes.push(initImage(scene, '/textures/square.png', [0.1, 0.8], 0.8, 0.8))
-    state.meshes.push(initImage(scene, '/textures/trapezoid.png', [-0.75, -1], 1.3, 1.3))
+    state.meshes.push(initImage(scene, 'textures/blueman.png', [1.2, -0.2], 1.4, 1.4))
+    state.meshes.push(initImage(scene, 'textures/circle.png', [-1.2, 1.3], 1, 1))
+    state.meshes.push(initImage(scene, 'textures/square.png', [0.1, 0.8], 0.8, 0.8))
+    state.meshes.push(initImage(scene, 'textures/trapezoid.png', [-0.75, -1], 1.3, 1.3))
 
     return state
 }

@@ -166,7 +166,7 @@ export function initSingleSquare(scene) {
     //material.color = new THREE.Color(0xFFEE56)
 
     const loader = new THREE.TextureLoader()
-    let tex = loader.load('/textures/square_lr.png')
+    let tex = loader.load('textures/square_lr.png')
     tex.anisotropy = 4
     material.map = tex
 
@@ -437,7 +437,7 @@ export function initSphereSliceAnim(scene, canvasW, canvasH) {
         let z = (i/stepHalf) * radius
         let innerRadius = Util.getSphereIntersectionRadius(radius, z)
 
-        state.circleMeshes.push(addSphereSlice(scene, '/textures/slice_circle.png', [0, 0, z], innerRadius*2, innerRadius*2))
+        state.circleMeshes.push(addSphereSlice(scene, 'textures/slice_circle.png', [0, 0, z], innerRadius*2, innerRadius*2))
 
         let plane = initPlane(scene, 6)
         plane.position.set(0, 0, z)

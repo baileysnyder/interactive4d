@@ -445,21 +445,21 @@ export function initRotateCubeIn4D(scene) {
     state.sliceMesh = initSliceMesh(scene, cubeColor)
 
     state.cubeMeshNormal = initTexturedCube(scene, cubeLength, [
-        '/textures/cube_r.png',
-        '/textures/cube_l.png',
-        '/textures/cube_u.png',
-        '/textures/cube_d.png',
-        '/textures/cube_f.png',
-        '/textures/cube_b.png',
+        'textures/cube_r.png',
+        'textures/cube_l.png',
+        'textures/cube_u.png',
+        'textures/cube_d.png',
+        'textures/cube_f.png',
+        'textures/cube_b.png',
     ])
 
     state.cubeMeshFlipped = initTexturedCube(scene, cubeLength, [
-        '/textures/mcube_r.png',
-        '/textures/mcube_l.png',
-        '/textures/mcube_u.png',
-        '/textures/mcube_d.png',
-        '/textures/mcube_b.png',
-        '/textures/mcube_f.png',
+        'textures/mcube_r.png',
+        'textures/mcube_l.png',
+        'textures/mcube_u.png',
+        'textures/mcube_d.png',
+        'textures/mcube_b.png',
+        'textures/mcube_f.png',
     ])
 
     return state

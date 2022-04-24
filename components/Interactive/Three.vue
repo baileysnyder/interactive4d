@@ -463,8 +463,6 @@ export default {
                     this.setCameraAxis1D()
                     camera.zoom = 7
                     camera.updateProjectionMatrix()
-                    //camera.position.set(0, 0, 0.7710729393906183)
-                    //controls.update()
                     break
                 case(Constants.scenes.three.axis2D):
                     Util.toggleBoolsInObj(this.slidersEnabled)

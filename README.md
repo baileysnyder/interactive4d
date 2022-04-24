@@ -1,6 +1,6 @@
 # Interactive 4D Handbook
 
-Interactive 4D shapes and a guide to the fourth dimension.
+Interactive 4D shapes and a guide to the fourth dimension. Live at https://baileysnyder.com/interactive-4d
 
 Interactive elements include:
 * 3D slices and projections of 4D cubes, spheres, and cones

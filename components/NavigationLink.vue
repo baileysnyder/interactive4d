@@ -1,8 +1,8 @@
 <template>
     <div>
         <svg class="nav-circle">
-            <circle v-show="$route.path === routePath" cx="50%" cy="50%" r="45%" fill="lightgray" />
-            <circle v-show="$route.path !== routePath" cx="50%" cy="50%" r="20%" fill="gray" />
+            <circle v-show="isActivePath" cx="50%" cy="50%" r="45%" fill="lightgray" />
+            <circle v-show="!isActivePath" cx="50%" cy="50%" r="20%" fill="gray" />
         </svg>
         <NuxtLink :to="routePath" class="navlink">{{linkText}}</NuxtLink>
     </div>
@@ -13,6 +13,11 @@ export default {
     props: {
         linkText: String,
         routePath: String
+    },
+    computed: {
+      isActivePath() {
+        return this.$route.path === this.routePath
+      }
     }
 }
 </script>

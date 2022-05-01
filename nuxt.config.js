@@ -3,7 +3,8 @@ export default {
   target: 'static',
 
   router: {
-    base: '/interactive-4d/'
+    base: '/interactive-4d/',
+    trailingSlash: true,
   },
 
   // Global page headers: https://go.nuxtjs.dev/config-head

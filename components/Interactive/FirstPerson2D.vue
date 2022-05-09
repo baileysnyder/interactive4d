@@ -207,6 +207,10 @@ export default {
             e.preventDefault()
         }, {passive: false})
     },
+    destroyed() {
+        window.removeEventListener("keydown", onKeyDown)
+        window.removeEventListener("keyup", onKeyUp)
+    }
 }
 
 let pressedUp = false

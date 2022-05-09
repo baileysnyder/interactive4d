@@ -11,28 +11,28 @@
                 </div>
                 <div class="bottom-right sticky-box">
                     <div class="slider-row" v-show="slidersEnabled.RESET">
-                        <button class="slider-button" @click="setFaceAngle" v-show="enableCubeAligns"><img src="~assets/icons/square_face.png" alt="align cube face first icon"></button>
-                        <button class="slider-button" @click="setEdgeAngle" v-show="enableCubeAligns"><img src="~assets/icons/square_edge.png" alt="align cube edge first icon"></button>
-                        <button class="slider-button" @click="setPointAngle" v-show="enableCubeAligns"><img src="~assets/icons/square_point.png" alt="align cube point first icon"></button>
-                        <button class="slider-button" @click="resetSliderValues"><svg class="reset-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Pro 6.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path fill="#e8e8e8" d="M480 256c0 123.4-100.5 223.9-223.9 223.9c-48.84 0-95.17-15.58-134.2-44.86c-14.12-10.59-16.97-30.66-6.375-44.81c10.59-14.12 30.62-16.94 44.81-6.375c27.84 20.91 61 31.94 95.88 31.94C344.3 415.8 416 344.1 416 256s-71.69-159.8-159.8-159.8c-37.46 0-73.09 13.49-101.3 36.64l45.12 45.14c17.01 17.02 4.955 46.1-19.1 46.1H35.17C24.58 224.1 16 215.5 16 204.9V59.04c0-24.04 29.07-36.08 46.07-19.07l47.6 47.63C149.9 52.71 201.5 32.11 256.1 32.11C379.5 32.11 480 132.6 480 256z"/></svg></button>
+                        <button aria-label="align cube face" class="slider-button" @click="setFaceAngle" v-show="enableCubeAligns"><img src="~assets/icons/square_face.png" alt="align cube face first icon"></button>
+                        <button aria-label="align cube edge" class="slider-button" @click="setEdgeAngle" v-show="enableCubeAligns"><img src="~assets/icons/square_edge.png" alt="align cube edge first icon"></button>
+                        <button aria-label="align cube point" class="slider-button" @click="setPointAngle" v-show="enableCubeAligns"><img src="~assets/icons/square_point.png" alt="align cube point first icon"></button>
+                        <button aria-label="reset" class="slider-button" @click="resetSliderValues"><svg class="reset-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--! Font Awesome Pro 6.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license (Commercial License) Copyright 2022 Fonticons, Inc. --><path fill="#e8e8e8" d="M480 256c0 123.4-100.5 223.9-223.9 223.9c-48.84 0-95.17-15.58-134.2-44.86c-14.12-10.59-16.97-30.66-6.375-44.81c10.59-14.12 30.62-16.94 44.81-6.375c27.84 20.91 61 31.94 95.88 31.94C344.3 415.8 416 344.1 416 256s-71.69-159.8-159.8-159.8c-37.46 0-73.09 13.49-101.3 36.64l45.12 45.14c17.01 17.02 4.955 46.1-19.1 46.1H35.17C24.58 224.1 16 215.5 16 204.9V59.04c0-24.04 29.07-36.08 46.07-19.07l47.6 47.63C149.9 52.71 201.5 32.11 256.1 32.11C379.5 32.11 480 132.6 480 256z"/></svg></button>
                         <span class="unit-text invisible">°</span>
                     </div>                    
                     <div class="slider-row" v-show="slidersEnabled.XZ">
                         <label for="angleXZ">XZ</label>
                         <input id="angleXZ" v-model="angleDegXZ" type="range" min="-360" max="360" value="0" step="1" :style="{'width': sliderWidth + 'px'}">
-                        <input v-model="angleDegXZ" class="slider-text" type="text" size="4" maxlength="5">
+                        <input aria-label="XZ value" v-model="angleDegXZ" class="slider-text" type="text" size="4" maxlength="5">
                         <span class="unit-text">°</span>
                     </div>
                     <div class="slider-row" v-show="slidersEnabled.YZ">
                         <label for="angleYZ">YZ</label>
                         <input id="angleYZ" v-model="angleDegYZ" type="range" min="-360" max="360" value="0" step="1" :style="{'width': sliderWidth + 'px'}">
-                        <input v-model="angleDegYZ" class="slider-text" type="text" size="4" maxlength="5">
+                        <input aria-label="YZ value" v-model="angleDegYZ" class="slider-text" type="text" size="4" maxlength="5">
                         <span class="unit-text">°</span>
                     </div>
                     <div class="slider-row" v-show="slidersEnabled.Z">
                         <label for="translateZ">Z</label>
                         <input id="translateZ" v-model="translateZ" type="range" min="-1.5" max="1.5" value="0" step="0.01" :style="{'width': sliderWidth + 'px'}">
-                        <input v-model="translateZ" class="slider-text" type="text" size="4" maxlength="5">
+                        <input aria-label="Z value" v-model="translateZ" class="slider-text" type="text" size="4" maxlength="5">
                         <span class="unit-text invisible">°</span>
                     </div>
                 </div>

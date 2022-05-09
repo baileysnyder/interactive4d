@@ -2,7 +2,7 @@
   <button class="load-button" :class="{'active': isActive, 'inactive': !isActive}" @click="updateScene">
     <span class="button-text">{{buttonText}}</span>
     <div class="img-box">
-      <img class="button-image" :src="require(`~/assets/load-scene-images/${imgName}`)">
+      <img class="button-image" :src="require(`~/assets/load-scene-images/${imgName}`)" :alt="altText">
       <div class="button-image"></div>
     </div>
   </button>
@@ -24,6 +24,14 @@ export default {
           return this.text
         } else {
           return "SCENE LOADED"
+        }
+      },
+      altText() {
+        let dotIndex = this.imgName.length - 4        
+        if (this.imgName.charAt(dotIndex) === '.') {
+          return this.imgName.substring(0, dotIndex)
+        } else {
+          return this.imgName
         }
       }
     },

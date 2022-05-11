@@ -313,6 +313,7 @@ export default {
 
             controls = new OrbitControls(camera, renderer.domElement)
             controls.enablePan = false;
+            controls.maxDistance = 30
             controls.update();
 
             mainLight = new THREE.DirectionalLight(0xffffff, 0.5)

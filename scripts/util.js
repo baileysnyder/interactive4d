@@ -713,8 +713,8 @@ export function initProjCylinders(scene, count, color) {
 
 export function initProjSpheres(scene, radius, count, wSeg, hSeg, color) {
     let meshes = []
-    for (let i = 0; i < count; i++){
-        const geometry = new THREE.SphereGeometry(radius, wSeg, hSeg)
+    const geometry = new THREE.SphereGeometry(radius, wSeg, hSeg)
+    for (let i = 0; i < count; i++){       
         const material = new THREE.MeshStandardMaterial()
         material.color = new THREE.Color(color)
 
